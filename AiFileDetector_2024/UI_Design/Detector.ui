@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>797</width>
+    <height>713</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: rgb(69, 71, 83);</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QListWidget" name="listWidget">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>370</y>
+      <width>461</width>
+      <height>280</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QListWidget {color: white;
+font: 9pt &quot;Helvetica&quot;;}
+
+QHeaderView::section { background-color: gray;  font: 9pt 'Helvetica'; color: white;}
+
+
+</string>
+    </property>
+   </widget>
+   <widget class="QTreeView" name="detectTreeView">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>50</y>
+      <width>461</width>
+      <height>280</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QTreeView {color: rgb(255, 255, 255);
+font: 9pt &quot;Helvetica&quot;;}
+
+QHeaderView::section { background-color: gray;  font: 9pt 'Helvetica'; color: black;}
+
+
+</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>340</y>
+      <width>21</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(189, 195, 207);
+font: 9pt &quot;Helvetica&quot;;</string>
+    </property>
+    <property name="text">
+     <string>&gt;&gt;</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="LoadButton">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>300</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(189, 195, 207);
+font: 9pt &quot;Helvetica&quot;;</string>
+    </property>
+    <property name="text">
+     <string>Detect</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>20</y>
+      <width>161</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 12pt &quot;Helvetica&quot;;
+color: rgb(242, 243, 248);</string>
+    </property>
+    <property name="text">
+     <string>Detect Data</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="comboBox">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>50</y>
+      <width>76</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(255, 255, 255);
+font: 9pt &quot;Helvetica&quot;;</string>
+    </property>
+    <item>
+     <property name="text">
+      <string>새 항목</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>.mp4</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>.png</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>.jpg</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>.m4a</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QComboBox" name="comboBox_1">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>80</y>
+      <width>76</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(255, 255, 255);
+font: 9pt &quot;Helvetica&quot;;</string>
+    </property>
+    <item>
+     <property name="text">
+      <string>Xgboost</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>LSTM</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Random forest</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>LightGBM</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Linear</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QRadioButton" name="binButton">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>120</y>
+      <width>90</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+    </property>
+    <property name="text">
+     <string>binary class</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="mulButton">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>140</y>
+      <width>90</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+    </property>
+    <property name="text">
+     <string>multi class</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>797</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
