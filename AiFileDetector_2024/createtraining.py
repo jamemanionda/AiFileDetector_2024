@@ -2,6 +2,7 @@ import csv
 import os
 import pickle
 import re
+import struct
 import sys
 from tkinter import messagebox
 import tkinter as tk
@@ -47,7 +48,7 @@ with tf.device('/GPU:0'):
             self.choice = 0
             self.file_paths = []
 
-            self.setupUi(self)
+            self.setupUi(self) # UI 요소 초기화
 
             # 확장자 필터
             self.extension_list = [".mp4", ".png", ".jpg", ".pdf", ".m4a"]
@@ -71,19 +72,19 @@ with tf.device('/GPU:0'):
             self.create_value2.clicked.connect(lambda: setattr(self, 'choice', 2))
             self.create_sequence3.clicked.connect(lambda: setattr(self, 'choice', 3))
 
-            self.LoadButton.clicked.connect(self.main)
+            self.LoadButton.clicked.connect(self.main) # Load 버튼 클릭 시 self.main() 호출
 
             # 파일 목록에서 아이템을 더블 클릭할 때 호출되는 슬롯을 연결합니다.
             self.listWidget.itemDoubleClicked.connect(self.remove_selected_file)
 
-        def load_directory(self):
+        def load_directory(self): # 디렉토리 선택
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory")
             if directory:
                 self.dirModel.setRootPath(directory)
                 self.treeView.setRootIndex(self.dirModel.index(directory))
                 self.treeView.clicked.connect(self.file_selected)
 
-        def filter_files_by_extension(self, extension):
+        def filter_files_by_extension(self, extension): # 선택된 확장자에 따라 필터링
             if extension:
                 self.extension = extension[1:]
                 self.dirModel.setNameFilters([f"*{extension}"])
@@ -91,7 +92,7 @@ with tf.device('/GPU:0'):
             else:
                 self.dirModel.setNameFilters([])
 
-        def file_selected(self, index):
+        def file_selected(self, index): # 파일 또는 디렉토리 선택 시 호출
             file_info = self.dirModel.fileInfo(index)
             if file_info.isDir():  # If a directory is selected
                 self.select_all_files_in_directory(file_info.absoluteFilePath())
@@ -103,7 +104,7 @@ with tf.device('/GPU:0'):
                     self.listWidget.addItem(file_path)
                     self.file_paths.append(file_path)
 
-        def select_all_files_in_directory(self, directory_path):
+        def select_all_files_in_directory(self, directory_path): # 선택한 디렉토리의 모든 파일을 선택
             for root, _, files in os.walk(directory_path):
                 for file in files:
                     file_path = os.path.join(root, file)
@@ -111,13 +112,13 @@ with tf.device('/GPU:0'):
                         self.listWidget.addItem(file_path)
                         self.file_paths.append(file_path)
 
-        def remove_selected_file(self, item):
+        def remove_selected_file(self, item): # 선택한 파일을 목록에서 제거
             # 더블 클릭한 파일 아이템을 목록에서 제거합니다.
             file_path = item.text()
             self.listWidget.takeItem(self.listWidget.row(item))
             self.file_paths.remove(file_path)
 
-        def load_common(self):
+        def load_common(self): # 특정 파일에서 데이터 불러오기
             self.data_list2 = []
             self.newlist2 = []
 
@@ -134,7 +135,7 @@ with tf.device('/GPU:0'):
 
             print(self.newlist2)
 
-        def extract_ngram(self, n, file_paths):
+        def extract_ngram(self, n, file_paths): # 바이너리 데이터를 n-gram으로 변환하여 n크기 피처 추출
             ngram_sets = []
             self.ngrams_list = []
             self.hex_lists = []
@@ -145,7 +146,7 @@ with tf.device('/GPU:0'):
                     self.hex_values = content.hex()
                     ngrams = []
 
-                    for i in range(len(self.hex_values) - n + 1):
+                    for i in range(len(self.hex_values) - n + 1): # hex값 돌며 n-gram 추출
                         ngram = self.hex_values[i:i + n]
                         ngrams.append(ngram)
 
@@ -154,6 +155,8 @@ with tf.device('/GPU:0'):
 
                 # 파일 이름과 ngram 저장
                 self.ngrams_list.append((file_path, ngrams))
+                # [(file_path_1, [ngram_1, ngram_2, ngram_3, ...]),
+                # (file_path_2, [ngram_1, ngram_2, ngram_3, ...]), ...]
 
         def lcs(self, X, Y):
             m = len(X)
@@ -191,18 +194,23 @@ with tf.device('/GPU:0'):
 
             return lcs_list
 
-        def lcs_multiple_lists(self, lists):
-            if len(lists) < 2:
+        def lcs_multiple_lists(self, lists): # 가장 긴 공통 서브시퀀스 찾기
+            if len(lists) < 2: # 리스트가 2개 이상 있어야 LCS 찾기 가능
                 raise ValueError("At least two lists are required")
 
-            current_lcs = self.lcs(lists[0], lists[1])
+            current_lcs = self.lcs(lists[0], lists[1]) # 처음 두 리스트의 LCS 계산
 
-            for lst in lists[2:]:
+            for lst in lists[2:]: # 나머지 리스트와의 LCS 반복 계산
                 current_lcs = self.lcs(current_lcs, lst)
                 if not current_lcs:
                     return []
 
             return current_lcs
+            # lists = [
+            #     ['a', 'b', 'c', 'd', 'e'],
+            #     ['b', 'c', 'e', 'f', 'g'],
+            #     ['c', 'e', 'g', 'h', 'i']
+            # ]
 
         def process_files(self):
             progress_window = ProgressWindow()
@@ -225,7 +233,7 @@ with tf.device('/GPU:0'):
             progress_window.set_label_text("작업 완료")
             progress_window.exec_()
 
-        def get_files_value(self):
+        def get_files_value(self): # self.file_paths의 모든 파일 처리하고 self.all_result 저장 및 반환
             results = {}
             self.all_result = []
             self.count = -1
@@ -237,8 +245,6 @@ with tf.device('/GPU:0'):
                 if os.path.isfile(full_path):
                     self.extract_value(full_path)
                     self.all_result.append(self.reres)
-                self.all_result.append(self.reres)
-
 
                 # 진행 상황 업데이트
                 progress_percentage = (i + 1) / len(self.file_paths) * 100
@@ -260,7 +266,7 @@ with tf.device('/GPU:0'):
 
             return self.all_result
 
-        def merge_lists2(self, ngram):
+        def merge_lists2(self, ngram): # LCS 받아서 연속되거나 유사한 n-gram 병합하여 하나의 긴 패턴으로 생성
             count, count2, onecount = 0,0,0
             new_list = []
             merged_list=[]
@@ -268,12 +274,12 @@ with tf.device('/GPU:0'):
             previous_gram = ''
             for onegram1 in ngram :
 
-                if previous_gram == onegram1 and onegram1 != '00000000':
+                if previous_gram == onegram1 and onegram1 != '00000000': # 00000000 이면 제외
                     one_merged_list.append(onegram1)
                     onecount += 1
                     pass
 
-                else :
+                else : # 현재 n-gram과 이전 n-gram 마지막 부분이 일치하는지 확인
                     if count == 0:
                         previous_gram = onegram1
                         count += 1
@@ -295,7 +301,7 @@ with tf.device('/GPU:0'):
                                     one_merged_list.append(previous_gram)
 
                             previous_gram = onegram1
-                    if onecount == len(ngram)-1:
+                    if onecount == len(ngram)-1: # 리스트의 마지막 n-gram 처리
                         if previous_gram != '00000000':
                             one_merged_list.append(previous_gram)
                         break
@@ -303,7 +309,6 @@ with tf.device('/GPU:0'):
                     onecount += 1
 
             merged_list.append(one_merged_list)
-
             return merged_list
 
         def add_numbers_to_duplicates(self, input_list):
@@ -321,7 +326,7 @@ with tf.device('/GPU:0'):
 
             return input_list
 
-        def extract_value(self, fpath):
+        def extract_value(self, fpath): # 파일에서 n-gram 추출하고 병합된 n-gram 리스트와 비교하여 일치하는 패턴 찾아 res 리스트에 저장
             file_type = ""
             res = []
             self.reres = []
@@ -388,7 +393,8 @@ with tf.device('/GPU:0'):
 
             self.reres = res
             return res
-        def extract_rengram(self, result):
+
+        def extract_rengram(self, result): # self.ngrams_list와 result 간 교집합을 계산해 각 파일별로 공통된 n-gram들을 찾아냄
             self.intersection_lists = []
 
             result_set = set(result)
@@ -398,13 +404,13 @@ with tf.device('/GPU:0'):
 
             return self.intersection_lists
 
-        def find_duplicates_count(self):
+        def find_duplicates_count(self): # ngrams_list에서 공통적으로 출현하는 요소 찾기
 
             self.data_list = []
             self.newlist = []
             duplicates = []
 
-            element_count = {}
+            element_count = {} # n-gram 요소 출현 횟수 저장 딕셔너리, 키: 요소, 값: 출현 횟수
 
             # 모든 리스트에서 요소의 출현 횟수를 카운트
             for k in range(len(self.ngrams_list)):
@@ -414,12 +420,11 @@ with tf.device('/GPU:0'):
                         else:
                             element_count[lst] = 1
 
-            # 출현 횟수가 2번 이상인 요소만 선택
+            # 출현 횟수가 2번 이상인 요소만 self.newlist에 저장
             basenum = int(len(self.ngrams_list)*0.7)
-
             self.newlist = [key for key, value in element_count.items() if value >= basenum]
 
-            #중복이 없는 교집합 리스트
+            #중복이 없는 교집합 리스트를 commonlist.pkl에 저장
             commonlistpkl = str(self.extension + '\\' + "commonlist.pkl")
             with open(commonlistpkl, "wb") as fw: #
                 pickle.dump(self.newlist, fw)
@@ -457,15 +462,19 @@ with tf.device('/GPU:0'):
 
             self.sequencedem.append((hexa[0], sequencedem))
 
-        def save_lists_of_10_to_csv(self, data_list, file_name):
+        def save_lists_of_10_to_csv(self, data_list, file_name): # 더 긴 패턴(mergelist 리스트) 주어진 데이터를 CSV로 저장
             with open(file_name, 'w', newline='', encoding='utf-8') as csv_file:
                 csv_writer = csv.writer(csv_file)
 
-                row = [j for j in range(1, len(data_list[0])+1)]
+                row = [j for j in range(1, len(data_list[0])+1)] # 헤더 작성
                 csv_writer.writerow(row)
 
                 for row in data_list:
                     csv_writer.writerow(row)
+                    # 1,2,3
+                    # abcdef,ghijkl,mnopqr
+                    # stuvwx,yzabcd,efghij
+                    # klmnop,qrstuv,wxyzab
 
         # value로 key찾기
         def find_key_by_value(self, dictionary, value):
@@ -476,7 +485,7 @@ with tf.device('/GPU:0'):
 
         # Feature 딕셔너리 업데이트 or 딕셔너리 추가
         # 기존 딕셔너리 없으면 생성, 있으면 업데이트
-        def save_lists_of_10_to_csv_featuredict(self, data_list):
+        def save_lists_of_10_to_csv_featuredict(self, data_list): # header가 새로운 피처로 저장
             data_list = data_list.split(",")
             data_list.remove('name')
             data_set = list(dict.fromkeys(data_list).keys())
@@ -571,16 +580,16 @@ with tf.device('/GPU:0'):
             return
 
         def extract_value_tocsv(self, choice):
-            x = self.get_files_value()
+            x = self.get_files_value() # 정리된 데이터
             y = x[0]
-            second_elements = [tpl[0] for tpl in y]
-            header = ','.join(second_elements)
+            second_elements = [tpl[0] for tpl in y] # y에서 각 튜플의 첫 번째 요소 추출한 리스트
+            header = ','.join(second_elements) # second_elemetns 리스트를 콤마로 연결한 문자열로, csv 파일 헤더로 사용됨
 
             if choice == 1:
-                extractvalue = str(self.extension + '\\' +  "extractvalues_header.csv")  # 헤더추출용
+                extractvalue = str(self.extension + '\\' +  "extractvalues_header.csv") # 헤더추출용
                 commonheader2csv = str(self.extension + '\\' +  "common2_header.csv")
-                self.save_list_of_indivi_to_csv(header, commonheader2csv)
-                with open(extractvalue, 'wt', encoding='utf-8') as fp:
+                self.save_list_of_indivi_to_csv(header, commonheader2csv) # common2_header.csv 저장
+                with open(extractvalue, 'wt', encoding='utf-8') as fp: # extractvalues_header.csv 저장
                     fp.write(header + '\n')
 
             elif choice == 2:  # 인풋파일들에 대한 value 추출
@@ -671,8 +680,68 @@ with tf.device('/GPU:0'):
                 pickle.dump(combined_data, f)
 
             return combined_data
+
+        def extract_box_feature(self, file_paths):  # 기연 추가
+            print(file_paths)
+
+            results = []  # 데이터 저장 리스트
+
+            # 파일 내 Box 파싱
+            def parse_box(f, end_position):
+                while f.tell() < end_position:
+                    box_header = f.read(8) # 첫 8Bytes Box 헤더
+                    if len(box_header) < 8:
+                        break
+
+                    box_size, box_type = struct.unpack(">I4s", box_header) # size 4Bytes, type 4Bytes 추출
+                    box_type = box_type.decode("utf-8")
+
+                    if box_size == 0: # 파일의 끝까지 Box가 확장됨을 의미
+                        break
+                    elif box_size == 1: # 실제 크기는 다음 8Bytes에 저장됨
+                        large_size = f.read(8)
+                        box_size = struct.unpack(">Q", large_size)[0]
+
+                    # 현재 Box의 끝 위치 계산 = 현재 포인터 위치 + (사이즈 - 헤더 8Bytes)
+                    box_end_position = f.tell() + (box_size - 8)
+
+                    # 컨테이너 Box 처리
+                    if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl'):
+                        parse_box(f, box_end_position) # 재귀 처리로 하위 Box 파싱
+                    else: # 컨테이너가 아닌 Box 처리
+                        box_data = f.read(box_size - 8)
+                        box_data_hex = box_data.hex() # hex
+
+                        print(f"Box Type: {box_type}, Box Size: {box_size}")
+                        results.append((box_type, box_data_hex))
+
+                    # 다음 Box로 이동
+                    f.seek(box_end_position)
+
+            with open(file_paths, 'rb') as f:
+                file_size = f.seek(0, 2)  # 파일 끝으로 커서 옮겨서 파일 크기 계산
+                f.seek(0)  # 커서를 파일 시작 위치로 이동
+                parse_box(f, file_size)
+
+            # 결과를 CSV로 저장
+            self.save_to_csv(results)
+
+        def save_to_csv(self, data):  # 기연 추가 - 결과를 CSV로 저장
+            csv_file = 'box_features.csv'
+            with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+                fieldnames = [row[0] for row in data]  # 모든 Box Type을 필드로 사용
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+                writer.writeheader()
+                row_data = {row[0]: row[1] for row in data}
+                writer.writerow(row_data)
+
+            print(f"Results saved to {csv_file}")
+
+
         def main(self):
             self.ngrams = []
+
             while True:
 
                 choice = self.choice
@@ -680,17 +749,17 @@ with tf.device('/GPU:0'):
                 folder_path = os.getcwd()  # 폴더 경로
                 filename = 'lcsdata.pkl'  # 확인하고 싶은 파일 이름
 
-                a = self.file_exists(folder_path, filename)
+                a = self.file_exists(folder_path, filename) # lcsdata.pkl 확인
 
                 if choice == 1: #기준 피처를 만들기 위함, 10개 이내의 파일로 파일형식의 피처 생성
                     print("1클릭")
                     self.extension = (self.file_paths[0].split('.'))[1]
                     if not os.path.exists(self.extension):
                         os.mkdir(self.extension)
-                    if a==False: #lcs pkl 파일이 없으면 생성
-
+                    if a==False: # lcs pkl 파일이 없으면 생성
                         n = 8
-                        self.extract_ngram(n, self.file_paths)
+                        self.extract_ngram(n, self.file_paths) # 8-gram 피처 추출
+
                         pklname = os.path.join(self.extension, "ngramlist.pkl")
                         with open(pklname, "wb") as fw:
                             pickle.dump(self.ngrams_list, fw)
@@ -700,9 +769,9 @@ with tf.device('/GPU:0'):
                             pickle.dump(self.hex_lists, fw)
 
 
-                        self.find_duplicates_count()
-                        self.extract_rengram(self.newlist)
-                        result = self.lcs_multiple_lists(self.intersection_lists)
+                        self.find_duplicates_count() # ngrams_list에서 공통 출현 요소 찾아서 commonlist.pkl 생성
+                        self.extract_rengram(self.newlist) # self.intersection_lists 생성 (self.ngrams_list와 self.newlist 교집합)
+                        result = self.lcs_multiple_lists(self.intersection_lists) # LCS 반환
 
                         lcsdatapkl = str(self.extension + '\\' +  "lcsdata(2).pkl")
                         with open(lcsdatapkl, "wb") as fw:
@@ -714,8 +783,7 @@ with tf.device('/GPU:0'):
                         with open(lcsdatapkl, 'rb') as f:
                             result = pickle.load(f)
 
-                    self.mergelist = self.merge_lists2(result)
-
+                    self.mergelist = self.merge_lists2(result) # 연속 or 유사한 n-gram 병합하여 긴 패턴으로 생성
                     mergepkl = (self.extension + '\\' +  "mergelist.pkl")
                     with open(mergepkl, "wb") as fw:
                         pickle.dump(self.mergelist, fw)
@@ -728,10 +796,13 @@ with tf.device('/GPU:0'):
                     self.save_lists_of_10_to_csv(self.mergelist, commonheadercsv)
                     print(f"{filename} exists in {folder_path}")
 
+                    # 파일 경로 전달해줘서, 추출하는 메소드 위에 작성 (기연 추가)
+                    self.extract_box_feature(self.file_paths[0])
+
                     #헤더딕셔너리(기존딕셔너리에 없으면 추가하기 위함)
-                    header = self.extract_value_tocsv(choice)
-                    headersave = header.replace('name,', '')
-                    filename = str(self.extension+ 'header.txt')
+                    header = self.extract_value_tocsv(choice) # 헤더 추출해서 문자열로 반환
+                    headersave = header.replace('name,', '') # header에서 name 문자열 제거한 결과 저장
+                    filename = str(self.extension+ 'header.txt') # 헤더 정보 저장할 파일 경로, 이름
                     self.add_string_if_not_exists(filename, headersave)
                     messagebox.showinfo("Notification", "Learning data extraction has been completed")
 
