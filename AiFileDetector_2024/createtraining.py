@@ -27,7 +27,7 @@ with tf.device('/GPU:0'):
             self.setWindowTitle("파일 처리 진행 상황")
 
             self.progress_bar = QProgressBar(self)
-            self.progress_bar.setGeometry(30, 50, 250, 20)
+            self.progress_bar.setGeometry(80, 50, 250, 20)
 
             self.label = QLabel("파일 처리 중...", self)
 
@@ -55,7 +55,7 @@ with tf.device('/GPU:0'):
             self.comboBox.currentIndexChanged.connect(self.filter_files_by_extension)
 
             self.progress_bar = QProgressBar(self)
-            self.progress_bar.setGeometry(30, 50, 250, 20)
+            self.progress_bar.setGeometry(170, 30, 250, 20)
 
             # self.progress_bar2 = QProgressBar(self)
             # self.progress_bar2.setGeometry(50, 50, 250, 20)
