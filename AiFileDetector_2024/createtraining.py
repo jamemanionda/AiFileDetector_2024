@@ -685,9 +685,11 @@ with tf.device('/GPU:0'):
             print(file_paths)
 
             results = []  # 데이터 저장 리스트
-
+            results.append(('name', os.path.basename(file_paths)))
             # 파일 내 Box 파싱
             def parse_box(f, end_position):
+                file_name = os.path.basename(file_paths)
+
                 while f.tell() < end_position:
                     box_header = f.read(8) # 첫 8Bytes Box 헤더
                     if len(box_header) < 8:
@@ -754,57 +756,16 @@ with tf.device('/GPU:0'):
                 if choice == 1: #기준 피처를 만들기 위함, 10개 이내의 파일로 파일형식의 피처 생성
                     print("1클릭")
                     self.extension = (self.file_paths[0].split('.'))[1]
-                    if not os.path.exists(self.extension):
-                        os.mkdir(self.extension)
-                    if a==False: # lcs pkl 파일이 없으면 생성
-                        n = 8
-                        self.extract_ngram(n, self.file_paths) # 8-gram 피처 추출
-
-                        pklname = os.path.join(self.extension, "ngramlist.pkl")
-                        with open(pklname, "wb") as fw:
-                            pickle.dump(self.ngrams_list, fw)
-
-                        hexlistpkl = str(self.extension + '\\' +  "hexlist.pkl")
-                        with open(hexlistpkl, "wb") as fw:
-                            pickle.dump(self.hex_lists, fw)
 
 
-                        self.find_duplicates_count() # ngrams_list에서 공통 출현 요소 찾아서 commonlist.pkl 생성
-                        self.extract_rengram(self.newlist) # self.intersection_lists 생성 (self.ngrams_list와 self.newlist 교집합)
-                        result = self.lcs_multiple_lists(self.intersection_lists) # LCS 반환
-
-                        lcsdatapkl = str(self.extension + '\\' +  "lcsdata(2).pkl")
-                        with open(lcsdatapkl, "wb") as fw:
-                            pickle.dump(result, fw)
-
-
-                    else: #lcs pkl 파일이 있으면 열기
-                        lcsdatapkl = str(self.extension + '\\' +  "lcsdata(2).pkl")
-                        with open(lcsdatapkl, 'rb') as f:
-                            result = pickle.load(f)
-
-                    self.mergelist = self.merge_lists2(result) # 연속 or 유사한 n-gram 병합하여 긴 패턴으로 생성
-                    mergepkl = (self.extension + '\\' +  "mergelist.pkl")
-                    with open(mergepkl, "wb") as fw:
-                        pickle.dump(self.mergelist, fw)
-
-                    path = '/base'
-                    file_name = os.path.basename(path)
-                    dpath = os.path.dirname(path)
-
-                    commonheadercsv = (self.extension + '\\' +  "common_header.csv")
-                    self.save_lists_of_10_to_csv(self.mergelist, commonheadercsv)
-                    print(f"{filename} exists in {folder_path}")
-
-                    # 파일 경로 전달해줘서, 추출하는 메소드 위에 작성 (기연 추가)
-                    self.extract_box_feature(self.file_paths[0])
 
                     #헤더딕셔너리(기존딕셔너리에 없으면 추가하기 위함)
-                    header = self.extract_value_tocsv(choice) # 헤더 추출해서 문자열로 반환
+                    """header = self.extract_value_tocsv(choice) # 헤더 추출해서 문자열로 반환
                     headersave = header.replace('name,', '') # header에서 name 문자열 제거한 결과 저장
                     filename = str(self.extension+ 'header.txt') # 헤더 정보 저장할 파일 경로, 이름
                     self.add_string_if_not_exists(filename, headersave)
-                    messagebox.showinfo("Notification", "Learning data extraction has been completed")
+                    messagebox.showinfo("Notification", "Learning data extraction has been completed")"""
+
 
                     break
 
@@ -813,43 +774,8 @@ with tf.device('/GPU:0'):
 
                     self.extension = (self.file_paths[0].split('.'))[1]
 
-                    root = tk.Tk()
-                    root.title("데이터 입력")
-                    self.center_window(root)
-
-                    button = tk.Button(root, text="버튼을 클릭하세요", command=self.on_button_click)
-                    button.pack(pady=20)
-                    root.mainloop()
-
-
-                    if not os.path.exists(self.extension):
-                        os.mkdir(self.extension)
-
-                    self.extension = (self.file_paths[0].split('.'))[1]
-
-                    n = 8
-                    mergepkl = str(self.extension  + '\\' +  "mergelist.pkl")
-                    with open(mergepkl, 'rb') as f:
-                        self.mergelist = pickle.load(f)
-
-                    self.extract_ngram(n, self.file_paths)
-
-                    inputngramspkl = str(self.extension + '\\' + "inputngrams.pkl")
-                    self.ngrams_list = self.merge_and_save_pkl(self.ngrams_list, inputngramspkl)
-
-
-                    inputhexlist = str(self.extension + '\\' +  "hexlist.pkl")
-                    self.hex_lists = self.merge_and_save_pkl(self.hex_lists, inputhexlist)
-
-
-                    self.extract_value_tocsv(choice)
-
-                    first_tuples = [inner_list[0] for inner_list in self.ngrams_list]
-                    with open(inputngramspkl, "wb") as fw:
-                        pickle.dump(first_tuples, fw)
-
-                    messagebox.showinfo("Notification", "Learning data extraction has been completed")
-                    root.destroy()
+                    # 파일 경로 전달해줘서, 추출하는 메소드 위에 작성 (기연 추가)
+                    self.extract_box_feature(self.file_paths[0])
 
                     break
 

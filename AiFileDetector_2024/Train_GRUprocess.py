@@ -53,7 +53,7 @@ with tf.device('/GPU:0'):
             self.setupUi(self)
 
             # 확장자 필터
-            self.extension_list = [" ", ".mp4", ".png", ".jpg", ".m4a"]
+            self.extension_list = [" ", ".mp4", ".mov"]
             self.comboBox.addItems(self.extension_list)
             self.comboBox.currentIndexChanged.connect(self.filter_files_by_extension)
 
