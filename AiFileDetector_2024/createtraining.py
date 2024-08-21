@@ -682,70 +682,94 @@ with tf.device('/GPU:0'):
             return combined_data
 
         def extract_box_feature(self, file_paths):  # 기연 추가
-            print(file_paths)
 
-            results = []  # 데이터 저장 리스트
-            results.append(('name', os.path.basename(file_paths)))
-            # 파일 내 Box 파싱
-            def parse_box(f, end_position):
-                file_name = os.path.basename(file_paths)
+            all_results = [] # 모든 파일 데이터 저장할 리스트
 
-                while f.tell() < end_position:
-                    box_header = f.read(8) # 첫 8Bytes Box 헤더
-                    if len(box_header) < 8:
-                        break
+            for file_path in file_paths:
+                results = [] # 각 파일 데이터 저장 리스트
+                results.append(('name', os.path.basename(file_path))) # 파일명 열 추가
+                print(results)
 
-                    box_size, box_type = struct.unpack(">I4s", box_header) # size 4Bytes, type 4Bytes 추출
-                    box_type = box_type.decode("utf-8")
+                # 파일 내 Box 파싱
+                def parse_box(f, end_position, depth=0, max_depth=100):
+                    if depth > max_depth:
+                        print("최대 재귀 깊이 도달 에러")
+                        return
 
-                    if box_size == 0: # 파일의 끝까지 Box가 확장됨을 의미
-                        break
-                    elif box_size == 1: # 실제 크기는 다음 8Bytes에 저장됨
-                        large_size = f.read(8)
-                        box_size = struct.unpack(">Q", large_size)[0]
+                    while f.tell() < end_position:
+                        box_header = f.read(8) # 첫 8Bytes Box 헤더
+                        if len(box_header) < 8:
+                            break
 
-                    # 현재 Box의 끝 위치 계산 = 현재 포인터 위치 + (사이즈 - 헤더 8Bytes)
-                    box_end_position = f.tell() + (box_size - 8)
+                        box_size, box_type = struct.unpack(">I4s", box_header) # size 4Bytes, type 4Bytes 추출
+                        box_type = box_type.decode("utf-8")
 
-                    # 컨테이너 Box 처리
-                    if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl'):
-                        parse_box(f, box_end_position) # 재귀 처리로 하위 Box 파싱
-                    else: # 컨테이너가 아닌 Box 처리
-                        box_data = f.read(box_size - 8)
-                        box_data_hex = box_data.hex() # hex
+                        if box_size == 0: # 파일의 끝까지 Box가 확장됨을 의미
+                            break
+                        elif box_size == 1: # 실제 크기는 다음 8Bytes에 저장됨
+                            large_size = f.read(8)
+                            box_size = struct.unpack(">Q", large_size)[0]
 
-                        print(f"Box Type: {box_type}, Box Size: {box_size}")
-                        results.append((box_type, box_data_hex))
+                        # 현재 Box의 끝 위치 계산 = 현재 포인터 위치 + (사이즈 - 헤더 8Bytes)
+                        box_end_position = f.tell() + (box_size - 8)
 
-                    # 다음 Box로 이동
-                    f.seek(box_end_position)
+                        # 컨테이너 Box 처리
+                        if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl'):
+                            parse_box(f, box_end_position, depth + 1, max_depth)  # 재귀 처리로 하위 Box 파싱
+                        else: # 컨테이너가 아닌 Box 처리
+                            box_data = f.read(box_size - 8)
+                            box_data_hex = box_data.hex() # hex
 
-            with open(file_paths, 'rb') as f:
-                file_size = f.seek(0, 2)  # 파일 끝으로 커서 옮겨서 파일 크기 계산
-                f.seek(0)  # 커서를 파일 시작 위치로 이동
-                parse_box(f, file_size)
+                            print(f"Box Type: {box_type}, Box Size: {box_size}")
+                            results.append((box_type, box_data_hex))
 
-            # 결과를 CSV로 저장
-            self.save_to_csv(results)
+                        # 다음 Box로 이동
+                        f.seek(box_end_position)
 
-        def save_to_csv(self, data):  # 기연 추가 - 결과를 CSV로 저장
+                with open(file_path, 'rb') as f:
+                    file_size = f.seek(0, 2)  # 파일 끝으로 커서 옮겨서 파일 크기 계산
+                    f.seek(0)  # 커서를 파일 시작 위치로 이동
+                    parse_box(f, file_size) # 재귀
+
+                all_results.append(results)  # 각 파일의 결과를 전체 리스트에 추가
+
+            print(all_results) # 확인
+            self.save_to_csv(all_results)
+
+        # 기연 추가 - 결과를 CSV로 저장
+        def save_to_csv(self, all_data):
             csv_file = 'box_features.csv'
+
+            # 첫 번째 데이터에서 필드명을 추출하여 순서 유지
+            if not all_data:
+                return
+
+            # 첫 번째 데이터셋에서 필드명(헤더)를 가져오고 순서 유지 .. test1에서만
+            first_data = all_data[0]
+            print(first_data) # [('name', 'testVideo1.mp4'), ('ftyp', '6d703432000002006d70343269736f6d'), ('mv
+            fieldnames = [row[0] for row in first_data]
+            print(fieldnames) # ['name', 'ftyp', 'mvhd', 'tkhd', 'edts', 'mdhd',
+
+            # 다른 데이터셋에 있는 추가적인 필드명도 추출
+            for data in all_data:
+                for row in data:
+                    if row[0] not in fieldnames:
+                        fieldnames.append(row[0])
+
             with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
-                fieldnames = [row[0] for row in data]  # 모든 Box Type을 필드로 사용
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
                 writer.writeheader()
-                row_data = {row[0]: row[1] for row in data}
-                writer.writerow(row_data)
+                for data in all_data:
+                    row_data = {row[0]: row[1] for row in data}
+                    writer.writerow(row_data)
 
             print(f"Results saved to {csv_file}")
-
 
         def main(self):
             self.ngrams = []
 
             while True:
-
                 choice = self.choice
 
                 folder_path = os.getcwd()  # 폴더 경로
@@ -757,8 +781,6 @@ with tf.device('/GPU:0'):
                     print("1클릭")
                     self.extension = (self.file_paths[0].split('.'))[1]
 
-
-
                     #헤더딕셔너리(기존딕셔너리에 없으면 추가하기 위함)
                     """header = self.extract_value_tocsv(choice) # 헤더 추출해서 문자열로 반환
                     headersave = header.replace('name,', '') # header에서 name 문자열 제거한 결과 저장
@@ -766,16 +788,16 @@ with tf.device('/GPU:0'):
                     self.add_string_if_not_exists(filename, headersave)
                     messagebox.showinfo("Notification", "Learning data extraction has been completed")"""
 
-
                     break
 
                 elif choice == 2:
-                    print("2클릭")
+                    print("2클릭", )
+                    print("선택한 파일", self.file_paths)
 
                     self.extension = (self.file_paths[0].split('.'))[1]
 
                     # 파일 경로 전달해줘서, 추출하는 메소드 위에 작성 (기연 추가)
-                    self.extract_box_feature(self.file_paths[0])
+                    self.extract_box_feature(self.file_paths)
 
                     break
 
