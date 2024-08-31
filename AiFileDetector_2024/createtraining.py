@@ -19,7 +19,7 @@ from simhash import Simhash
 device_lib.list_local_devices()
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-form_class = uic.loadUiType("UI_Design\\AiDetector2.ui")[0]
+form_class = uic.loadUiType("UI_Design\\new.ui")[0]
 
 with tf.device('/GPU:0'):
     class ProgressWindow(QDialog):
@@ -28,7 +28,7 @@ with tf.device('/GPU:0'):
             self.setWindowTitle("파일 처리 진행 상황")
 
             self.progress_bar = QProgressBar(self)
-            self.progress_bar.setGeometry(80, 50, 250, 20)
+            self.progress_bar.setGeometry(100, 50, 300, 20)
 
             self.label = QLabel("파일 처리 중...", self)
 
@@ -55,8 +55,6 @@ with tf.device('/GPU:0'):
             self.comboBox.addItems(self.extension_list)
             self.comboBox.currentIndexChanged.connect(self.filter_files_by_extension)
 
-            self.progress_bar = QProgressBar(self)
-            self.progress_bar.setGeometry(170, 30, 250, 20)
 
             # self.progress_bar2 = QProgressBar(self)
             # self.progress_bar2.setGeometry(50, 50, 250, 20)
@@ -733,38 +731,41 @@ with tf.device('/GPU:0'):
 
                 all_results.append(results)  # 각 파일의 결과를 전체 리스트에 추가
 
-            print(all_results) # 확인
+            #print(all_results) # 확인
             self.save_to_csv(all_results)
 
         # 기연 추가 - 결과를 CSV로 저장
         def save_to_csv(self, all_data):
-            csv_file = 'box_features.csv'
+            try:
+                csv_file = 'box_features.csv'
 
-            # 첫 번째 데이터에서 필드명을 추출하여 순서 유지
-            if not all_data:
-                return
+                # 첫 번째 데이터에서 필드명을 추출하여 순서 유지
+                if not all_data:
+                    return
 
-            # 첫 번째 데이터셋에서 필드명(헤더)를 가져오고 순서 유지 .. test1에서만
-            first_data = all_data[0]
-            print(first_data) # [('name', 'testVideo1.mp4'), ('ftyp', '6d703432000002006d70343269736f6d'), ('mv
-            fieldnames = [row[0] for row in first_data]
-            print(fieldnames) # ['name', 'ftyp', 'mvhd', 'tkhd', 'edts', 'mdhd',
+                # 첫 번째 데이터셋에서 필드명(헤더)를 가져오고 순서 유지 .. test1에서만
+                first_data = all_data[0]
+                #print(first_data) # [('name', 'testVideo1.mp4'), ('ftyp', '6d703432000002006d70343269736f6d'), ('mv
+                fieldnames = [row[0] for row in first_data]
+                #print(fieldnames) # ['name', 'ftyp', 'mvhd', 'tkhd', 'edts', 'mdhd',
 
-            # 다른 데이터셋에 있는 추가적인 필드명도 추출
-            for data in all_data:
-                for row in data:
-                    if row[0] not in fieldnames:
-                        fieldnames.append(row[0])
-
-            with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
-                writer.writeheader()
+                # 다른 데이터셋에 있는 추가적인 필드명도 추출
                 for data in all_data:
-                    row_data = {row[0]: row[1] for row in data}
-                    writer.writerow(row_data)
+                    for row in data:
+                        if row[0] not in fieldnames:
+                            fieldnames.append(row[0])
 
-            print(f"Results saved to {csv_file}")
+                with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+                    writer.writeheader()
+                    for data in all_data:
+                        row_data = {row[0]: row[1] for row in data}
+                        writer.writerow(row_data)
+
+                print(f"Results saved to {csv_file}")
+            except Exception as e :
+                print(e)
 
         def main(self):
             self.ngrams = []
