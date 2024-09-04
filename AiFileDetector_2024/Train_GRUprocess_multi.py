@@ -49,10 +49,10 @@ with tf.device('/GPU:0'):
 '''
 
 
-class ForensicsDataPreprocessing(QMainWindow, form_class):  # QMainWindow, form_class
+class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
 
     def __init__(self):
-        super(ForensicsDataPreprocessing, self).__init__()
+        super(TrainClass, self).__init__()
         self.choice = 0
         self.file_paths = []
         self.dpath = 'E:\\'
@@ -157,7 +157,7 @@ class ForensicsDataPreprocessing(QMainWindow, form_class):  # QMainWindow, form_
 
         # 훈련 데이터 전처리
         #df_train = df_test.drop(columns='label')
-        df_train_processed = data_preprocessor.apply_simhash(df_train)
+        df_train_processed = self.apply_simhash(df_train)
         print("전처리한 훈련 데이터:")
         print(df_train_processed)
 
@@ -171,7 +171,7 @@ class ForensicsDataPreprocessing(QMainWindow, form_class):  # QMainWindow, form_
         self.original_df_test = df_test
         df_test = df_test.drop(columns='label')
         # 테스트 데이터 전처리
-        df_test_processed = data_preprocessor.apply_simhash(df_test)
+        df_test_processed = self.apply_simhash(df_test)
 
         # 모델 로드 및 테스트 데이터 예측
         #self.load_model2()
@@ -628,7 +628,7 @@ class ForensicsDataPreprocessing(QMainWindow, form_class):  # QMainWindow, form_
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    data_preprocessor = ForensicsDataPreprocessing()
+    data_preprocessor = TrainClass()
 
 
 

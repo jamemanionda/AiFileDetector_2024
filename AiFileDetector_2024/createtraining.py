@@ -11,10 +11,12 @@ import pandas as pd
 import tensorflow as tf
 from PyQt5.QtCore import QDir
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QProgressBar, QDialog, QLabel, \
-    QVBoxLayout
+    QVBoxLayout, QTableWidgetItem
 from PyQt5 import uic, QtWidgets
 from tensorflow.python.client import device_lib
 from simhash import Simhash
+from clustering1 import trainClustering
+from Train_GRUprocess_multi import TrainClass
 
 device_lib.list_local_devices()
 
@@ -42,6 +44,8 @@ with tf.device('/GPU:0'):
 
         def set_label_text(self, text):
             self.label.setText(text)
+
+
     class createtrainclass(QMainWindow, form_class):
         def __init__(self):
             super(createtrainclass, self).__init__()
@@ -49,12 +53,14 @@ with tf.device('/GPU:0'):
             self.file_paths = []
 
             self.setupUi(self) # UI 요소 초기화
-
+            self.clustering = trainClustering()
+            self.trainclass = TrainClass()
             # 확장자 필터
-            self.extension_list = [".mp4", ".png", ".jpg", ".pdf", ".m4a"]
+            self.extension_list = ["확장자", ".mp4", ".png", ".jpg", ".pdf", ".m4a"]
             self.comboBox.addItems(self.extension_list)
-            self.comboBox.currentIndexChanged.connect(self.filter_files_by_extension)
 
+            self.comboBox.currentIndexChanged.connect(
+                lambda index: self.filter_files_by_extension(self.comboBox.itemText(index)))
 
             # self.progress_bar2 = QProgressBar(self)
             # self.progress_bar2.setGeometry(50, 50, 250, 20)
@@ -71,10 +77,28 @@ with tf.device('/GPU:0'):
             self.create_value2.clicked.connect(lambda: setattr(self, 'choice', 2))
             self.create_sequence3.clicked.connect(lambda: setattr(self, 'choice', 3))
 
-            self.LoadButton.clicked.connect(self.main) # Load 버튼 클릭 시 self.main() 호출
 
+            self.LoadButton.clicked.connect(self.main) # Load 버튼 클릭 시 self.main() 호출
+            self.cluster_train.clicked.connect(self.clustermain)
+            self.class_train.clicked.connect(self.classmain)
             # 파일 목록에서 아이템을 더블 클릭할 때 호출되는 슬롯을 연결합니다.
             self.listWidget.itemDoubleClicked.connect(self.remove_selected_file)
+
+
+            self.model_combo.activated.connect(self.on_combobox_select)
+
+        def on_combobox_select(self, index):
+            self.trainclass.index = index
+
+
+        def clustermain(self):
+
+            self.clustering.gotrain(self.csv_path)
+
+        def classmain(self):
+            self.trainclass.csv_path = self.csv_path
+            self.trainclass.gotrain()
+
 
         def load_directory(self): # 디렉토리 선택
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory")
@@ -83,9 +107,9 @@ with tf.device('/GPU:0'):
                 self.treeView.setRootIndex(self.dirModel.index(directory))
                 self.treeView.clicked.connect(self.file_selected)
 
-        def filter_files_by_extension(self, extension): # 선택된 확장자에 따라 필터링
-            if extension:
-                self.extension = extension[1:]
+        def filter_files_by_extension(self, extension):  # 선택된 확장자에 따라 필터링
+            if extension and extension != "확장자":  # Ensure it's not the placeholder text
+                self.extension = extension  # Directly assign the selected extension
                 self.dirModel.setNameFilters([f"*{extension}"])
                 self.dirModel.setNameFilterDisables(False)
             else:
@@ -102,14 +126,38 @@ with tf.device('/GPU:0'):
                 if file_path not in self.file_paths:
                     self.listWidget.addItem(file_path)
                     self.file_paths.append(file_path)
+                if extension == '.csv':
+                    self.csv_path = file_path
+                    self.open_csv2(file_path)
+
+
+        def display_dataframe(self, df):
+            self.tableWidget.setRowCount(df.shape[0])
+            self.tableWidget.setColumnCount(df.shape[1])
+            self.tableWidget.setHorizontalHeaderLabels(df.columns)
+
+            for i in range(df.shape[0]):
+                for j in range(df.shape[1]):
+                    item = QTableWidgetItem(str(df.iat[i, j]))
+                    self.tableWidget.setItem(i, j, item)
+
+        def open_csv2(self, csvfile):
+            file_name = csvfile
+            if file_name:
+                try:
+                    df = pd.read_csv(file_name, encoding='UTF-8')
+                    self.display_dataframe(df)
+                except Exception as e:
+                    self.show_error_message("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
 
         def select_all_files_in_directory(self, directory_path): # 선택한 디렉토리의 모든 파일을 선택
             for root, _, files in os.walk(directory_path):
                 for file in files:
                     file_path = os.path.join(root, file)
-                    if file_path not in self.file_paths:
-                        self.listWidget.addItem(file_path)
-                        self.file_paths.append(file_path)
+                    if self.extension is None or os.path.splitext(file)[1].lower() in self.extension:
+                        if file_path not in self.file_paths:
+                            self.listWidget.addItem(file_path)
+                            self.file_paths.append(file_path)
 
         def remove_selected_file(self, item): # 선택한 파일을 목록에서 제거
             # 더블 클릭한 파일 아이템을 목록에서 제거합니다.
@@ -742,7 +790,7 @@ with tf.device('/GPU:0'):
                     parse_box(f, file_size)  # 재귀
 
                 all_results.append(results)  # 각 파일의 결과를 전체 리스트에 추가
-                print(all_results)  # csv 파일에 헤더 저장 순서 확인
+                #print(all_results)  # csv 파일에 헤더 저장 순서 확인
 
             self.save_to_csv(all_results)
 
@@ -782,6 +830,8 @@ with tf.device('/GPU:0'):
         def main(self):
             self.ngrams = []
 
+
+
             while True:
                 choice = self.choice
 
@@ -807,7 +857,6 @@ with tf.device('/GPU:0'):
                     print("2클릭", )
                     print("선택한 파일", self.file_paths)
 
-                    self.extension = (self.file_paths[0].split('.'))[1]
 
                     # 파일 경로 전달해줘서, 추출하는 메소드 위에 작성 (기연 추가)
                     self.extract_box_feature(self.file_paths)
