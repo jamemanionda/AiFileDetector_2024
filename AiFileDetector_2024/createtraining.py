@@ -63,7 +63,8 @@ with tf.device('/GPU:0'):
             self.dirModel.setRootPath(QDir.rootPath())
             self.treeView.setModel(self.dirModel)
 
-            self.treeView.setRootIndex(self.dirModel.index(os.getcwd()))
+            #self.treeView.setRootIndex(self.dirModel.index(os.getcwd()))
+            self.treeView.setRootIndex(self.dirModel.index('Y:\\'))
             self.treeView.clicked.connect(self.file_selected)
 
             self.feature_create1.clicked.connect(lambda: setattr(self, 'choice', 1))
@@ -679,13 +680,12 @@ with tf.device('/GPU:0'):
 
             return combined_data
 
-        def extract_box_feature(self, file_paths):  # 기연 추가
-
-            all_results = [] # 모든 파일 데이터 저장할 리스트
+        def extract_box_feature(self, file_paths):  # mdat 사이즈 오류 수정
+            all_results = []  # 모든 파일 데이터 저장할 리스트
 
             for file_path in file_paths:
-                results = [] # 각 파일 데이터 저장 리스트
-                results.append(('name', os.path.basename(file_path))) # 파일명 열 추가
+                results = []  # 각 파일 데이터 저장 리스트
+                results.append(('name', os.path.basename(file_path)))  # 파일명 열 추가
                 print(results)
 
                 # 파일 내 Box 파싱
@@ -695,28 +695,40 @@ with tf.device('/GPU:0'):
                         return
 
                     while f.tell() < end_position:
-                        box_header = f.read(8) # 첫 8Bytes Box 헤더
+                        box_header = f.read(8)  # 첫 8Bytes Box 헤더
                         if len(box_header) < 8:
                             break
 
-                        box_size, box_type = struct.unpack(">I4s", box_header) # size 4Bytes, type 4Bytes 추출
+                        box_size, box_type = struct.unpack(">I4s", box_header)  # size 4Bytes, type 4Bytes 추출
                         box_type = box_type.decode("utf-8")
 
-                        if box_size == 0: # 파일의 끝까지 Box가 확장됨을 의미
+                        if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
                             break
-                        elif box_size == 1: # 실제 크기는 다음 8Bytes에 저장됨
+                        elif box_size == 1:  # 실제 크기는 다음 8Bytes에 저장됨
+                            # 다음 8바이트를 읽어서 실제 크기를 계산
                             large_size = f.read(8)
-                            box_size = struct.unpack(">Q", large_size)[0]
+                            actual_box_size = struct.unpack(">Q", large_size)[0]
+
+                            # box_size를 8바이트 크기의 1로 변환
+                            box_size_hex = '0000000000000001'
+                            print(
+                                f"Box Type: {box_type}, Box Size: 1 (actual size {actual_box_size} bytes, stored as {box_size_hex})")
+                        else:
+                            box_size_hex = format(box_size, '016x')  # 8바이트로 표현된 box_size (16진수 문자열)
+                            print(f"Box Type: {box_type}, Box Size: {box_size}")
 
                         # 현재 Box의 끝 위치 계산 = 현재 포인터 위치 + (사이즈 - 헤더 8Bytes)
-                        box_end_position = f.tell() + (box_size - 8)
+                        box_end_position = f.tell() + (actual_box_size - 8 if box_size == 1 else box_size - 8)
 
                         # 컨테이너 Box 처리
                         if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl'):
                             parse_box(f, box_end_position, depth + 1, max_depth)  # 재귀 처리로 하위 Box 파싱
-                        else: # 컨테이너가 아닌 Box 처리
-                            box_data = f.read(box_size - 8)
-                            box_data_hex = box_data.hex() # hex
+                        else:  # 컨테이너가 아닌 Box 처리
+                            if box_size == 1:
+                                box_data_hex = '0000000000000001'  # 1을 8바이트로 표현하여 저장
+                            else:
+                                box_data = f.read(box_size - 8)
+                                box_data_hex = box_data.hex()  # hex
 
                             print(f"Box Type: {box_type}, Box Size: {box_size}")
                             results.append((box_type, box_data_hex))
@@ -727,11 +739,11 @@ with tf.device('/GPU:0'):
                 with open(file_path, 'rb') as f:
                     file_size = f.seek(0, 2)  # 파일 끝으로 커서 옮겨서 파일 크기 계산
                     f.seek(0)  # 커서를 파일 시작 위치로 이동
-                    parse_box(f, file_size) # 재귀
+                    parse_box(f, file_size)  # 재귀
 
                 all_results.append(results)  # 각 파일의 결과를 전체 리스트에 추가
+                print(all_results)  # csv 파일에 헤더 저장 순서 확인
 
-            #print(all_results) # 확인
             self.save_to_csv(all_results)
 
         # 기연 추가 - 결과를 CSV로 저장

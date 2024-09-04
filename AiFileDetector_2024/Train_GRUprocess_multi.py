@@ -61,8 +61,8 @@ class ForensicsDataPreprocessing(QMainWindow, form_class):  # QMainWindow, form_
         self.setupUi(self)
 
         self.dirModel = QFileSystemModel()
-        self.dirModel.setRootPath("E:\\AiFileDetectorE")
-        os.chdir("E:\\AiFileDetectorE")
+        #self.dirModel.setRootPath("E:\\AiFileDetectorE")
+        #os.chdir("E:\\AiFileDetectorE")
         self.treeView.setModel(self.dirModel)
 
         self.treeView.setRootIndex(self.dirModel.index(os.getcwd()))
