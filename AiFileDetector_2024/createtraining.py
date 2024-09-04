@@ -779,7 +779,7 @@ with tf.device('/GPU:0'):
                                 box_data_hex = box_data.hex()  # hex
 
                             print(f"Box Type: {box_type}, Box Size: {box_size}")
-                            results.append((box_type, box_data_hex))
+                            results.append((box_type, box_data_hex[0:10000]))
 
                         # 다음 Box로 이동
                         f.seek(box_end_position)
@@ -796,36 +796,61 @@ with tf.device('/GPU:0'):
 
         # 기연 추가 - 결과를 CSV로 저장
         def save_to_csv(self, all_data):
-            try:
-                csv_file = 'box_features.csv'
+            csv_file = 'box_features.csv'
 
-                # 첫 번째 데이터에서 필드명을 추출하여 순서 유지
-                if not all_data:
-                    return
+            # Check if the CSV file already exists
+            if os.path.exists(csv_file):
+                with open(csv_file, 'r', encoding='utf-8') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    existing_fieldnames = reader.fieldnames if reader.fieldnames else []
+            else:
+                existing_fieldnames = []
 
-                # 첫 번째 데이터셋에서 필드명(헤더)를 가져오고 순서 유지 .. test1에서만
-                first_data = all_data[0]
-                #print(first_data) # [('name', 'testVideo1.mp4'), ('ftyp', '6d703432000002006d70343269736f6d'), ('mv
-                fieldnames = [row[0] for row in first_data]
-                #print(fieldnames) # ['name', 'ftyp', 'mvhd', 'tkhd', 'edts', 'mdhd',
+            # If there is no data, return immediately
+            if not all_data:
+                return
 
-                # 다른 데이터셋에 있는 추가적인 필드명도 추출
+            # Extract fieldnames from the new data, maintaining order
+            new_fieldnames = [row[0] for row in all_data[0]]
+
+            # Add additional fieldnames from the rest of the new data
+            for data in all_data:
+                for row in data:
+                    if row[0] not in new_fieldnames:
+                        new_fieldnames.append(row[0])
+
+            # Combine existing and new fieldnames, maintaining order and uniqueness
+            fieldnames = existing_fieldnames[:]
+            for field in new_fieldnames:
+                if field not in fieldnames:
+                    fieldnames.append(field)
+
+            # Read existing rows to preserve the data
+            existing_rows = []
+            if os.path.exists(csv_file):
+                with open(csv_file, 'r', encoding='utf-8') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    for row in reader:
+                        existing_rows.append(row)
+
+            # Write data back to CSV, appending new data
+            with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+                # Write the header with the combined fieldnames
+                writer.writeheader()
+
+                # Write existing rows with the combined fieldnames
+                for row in existing_rows:
+                    writer.writerow(row)
+
+                # Write new data with the combined fieldnames
                 for data in all_data:
-                    for row in data:
-                        if row[0] not in fieldnames:
-                            fieldnames.append(row[0])
+                    row_data = {row[0]: row[1] for row in data}
+                    writer.writerow(row_data)
 
-                with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
-                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            print(f"Results saved to {csv_file}")
 
-                    writer.writeheader()
-                    for data in all_data:
-                        row_data = {row[0]: row[1] for row in data}
-                        writer.writerow(row_data)
-
-                print(f"Results saved to {csv_file}")
-            except Exception as e :
-                print(e)
 
         def main(self):
             self.ngrams = []
