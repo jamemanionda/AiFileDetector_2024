@@ -4,7 +4,7 @@ import json
 import os
 
 # Step 1: Define the folder containing the video files
-video_folder = 'Y:\\version2\\Original\\O_faceswapper'  # Replace with your folder path
+video_folder = 'Y:\\version2\\편집'  # Replace with your folder path
 excel_file = 'sample.csv'  # Path to your CSV file
 
 # Read the Excel file into a DataFrame
@@ -12,7 +12,7 @@ df = pd.read_csv(excel_file)
 
 # Step 2: Iterate through each video file in the folder
 for video_file in os.listdir(video_folder):
-    if video_file.endswith(('.mp4', '.mov', '.avi')):  # Check for specific video file formats
+    if video_file.endswith(('.mp4','.avi', '.MP4')):  # Check for specific video file formats
         input_video = os.path.join(video_folder, video_file)
 
         # Step 3: Extract frame types from the video
@@ -47,6 +47,7 @@ for video_file in os.listdir(video_folder):
                 count = 0  # Reset count after each 'I'
             elif frame_types_string[i] == 'P':
                 count += 1
+
 
         if count > 0:
             p_counts.append(count)  # Add the last count if any
