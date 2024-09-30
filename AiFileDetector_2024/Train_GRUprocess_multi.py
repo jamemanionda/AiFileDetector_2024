@@ -6,17 +6,14 @@ from lightgbm import LGBMClassifier
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, confusion_matrix, classification_report, \
     precision_score, recall_score, f1_score
-from guiqwt import scaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from keras_preprocessing.text import Tokenizer
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder, StandardScaler
 from tensorflow import keras
 import numpy as np
 from keras import Sequential
 from keras.layers import LSTM, Dropout, Dense, Embedding, LeakyReLU, Bidirectional, BatchNormalization
-from tensorflow.keras.models import load_model
+from tensorflow.python.keras.models import load_model
 import pandas as pd
 from keras_tuner.tuners import RandomSearch
 import os
@@ -27,7 +24,6 @@ from simhash import Simhash
 from sklearn.metrics import accuracy_score
 import xgboost as xgb
 import sys
-from PyQt5.QtCore import QDir
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QMessageBox, QFileDialog, \
     QTableWidgetItem
 from PyQt5 import uic, QtWidgets

@@ -13,20 +13,16 @@ from PyQt5.QtCore import QDir
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QMessageBox, QFileDialog, \
     QTableWidgetItem, QLabel, QDialog, QVBoxLayout, QPushButton
 from PyQt5 import uic, QtWidgets
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from tensorflow.python.client import device_lib
 import pickle
 import joblib
 
 from createtraining import createtrainclass
 from tensorflow.keras.models import load_model
-from sklearn.preprocessing import StandardScaler
-from Train_GRUprocess import ForensicsDataPreprocessing
 
 form_class = uic.loadUiType("UI_Design\\Detector.ui")[0]
 
 class DetectorGRU(QMainWindow, form_class):  # QMainWindow, form_class
-
+p
     def __init__(self):
         super(DetectorGRU, self).__init__()
         self.choice = 0

@@ -6,23 +6,15 @@ from lightgbm import LGBMClassifier
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, confusion_matrix, classification_report, \
     precision_score, recall_score, f1_score, silhouette_score, davies_bouldin_score
-from guiqwt import scaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from keras_preprocessing.text import Tokenizer
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder, StandardScaler
 from tensorflow import keras
 import numpy as np
 from keras import Sequential
 from keras.layers import LSTM, Dropout, Dense, Embedding, LeakyReLU, Bidirectional, BatchNormalization
-from tensorflow.keras.models import load_model
+from tensorflow.python.keras.models import load_model
 import pandas as pd
 from keras_tuner.tuners import RandomSearch
 import os
-import numpy
-import tensorflow as tf
-from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV
 from simhash import Simhash
 from sklearn.metrics import accuracy_score
 import xgboost as xgb
@@ -270,10 +262,10 @@ class trainClustering(QMainWindow, form_class):  # QMainWindow, form_class
         self.agglo = AgglomerativeClustering(n_clusters=optimal_n_clusters).fit(scaled_features)
 
         # KMeans 모델 저장
-        self.save_model(self.kmeans, 'kmeans_model.joblib')
+        #self.save_model(self.kmeans, 'kmeans_model.joblib')
 
-        self.save_model(self.dbscan, 'dbscan_model.joblib')
-        self.save_model(self.agglo, 'agglo_model.joblib')
+        #self.save_model(self.dbscan, 'dbscan_model.joblib')
+        #self.save_model(self.agglo, 'agglo_model.joblib')
 
     def evaluate_clustering(self, scaled_features, original_labels, cluster_labels, method):
         """클러스터링 평가"""

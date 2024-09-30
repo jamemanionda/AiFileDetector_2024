@@ -1,6 +1,7 @@
 import pandas as pd
 import subprocess
 import json
+#1. Input_video
 
 input_video = './O_GalaxyZFlip3_852.mp4'
 

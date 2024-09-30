@@ -12,7 +12,7 @@ df = pd.read_csv(excel_file)
 
 # Step 2: Iterate through each video file in the folder
 for video_file in os.listdir(video_folder):
-    if video_file.endswith(('.mp4','.avi', '.MP4')):  # Check for specific video file formats
+    if video_file.endswith(('.mov','.MOV')):  # Check for specific video file formats
         input_video = os.path.join(video_folder, video_file)
 
         # Step 3: Extract frame types from the video
