@@ -1,32 +1,20 @@
-import pickle
+
 import seaborn as sns
-from keras.optimizers import Adam
-from keras.regularizers import l2
-from lightgbm import LGBMClassifier
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, confusion_matrix, classification_report, \
     precision_score, recall_score, f1_score, silhouette_score, davies_bouldin_score
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder, StandardScaler
-from tensorflow import keras
-import numpy as np
-from keras import Sequential
-from keras.layers import LSTM, Dropout, Dense, Embedding, LeakyReLU, Bidirectional, BatchNormalization
 from tensorflow.python.keras.models import load_model
 import pandas as pd
-from keras_tuner.tuners import RandomSearch
 import os
 from simhash import Simhash
 from sklearn.metrics import accuracy_score
-import xgboost as xgb
 import sys
 from PyQt5.QtCore import QDir
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QMessageBox, QFileDialog, \
     QTableWidgetItem
 from PyQt5 import uic, QtWidgets
-from tensorflow.python.client import device_lib
 import joblib
-from sklearn.utils.class_weight import compute_class_weight
-from tensorflow.python.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
 from sklearn.decomposition import PCA
 

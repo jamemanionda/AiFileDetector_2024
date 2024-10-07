@@ -15,10 +15,7 @@ from keras import Sequential
 from keras.layers import LSTM, Dropout, Dense, Embedding, LeakyReLU, Bidirectional, BatchNormalization
 from tensorflow.python.keras.models import load_model
 import pandas as pd
-from keras_tuner.tuners import RandomSearch
 import os
-import numpy
-import tensorflow as tf
 from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSearchCV, StratifiedKFold
 from simhash import Simhash
 from sklearn.metrics import accuracy_score
@@ -27,7 +24,6 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QMessageBox, QFileDialog, \
     QTableWidgetItem
 from PyQt5 import uic, QtWidgets
-from tensorflow.python.client import device_lib
 import joblib
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.python.keras.callbacks import EarlyStopping, ReduceLROnPlateau

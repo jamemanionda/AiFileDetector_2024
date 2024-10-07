@@ -15,7 +15,6 @@ from PyQt5 import uic, QtWidgets
 from simhash import Simhash
 from clustering1 import trainClustering
 from Train_GRUprocess_multi import TrainClass
-import _ssl
 
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -731,8 +730,7 @@ class createtrainclass(QMainWindow, form_class):
 
         return combined_data
 
-    def extract_box_feature(self, file_paths):  # mdat 사이즈 오류 수정
-
+    def extract_box_feature(self, file_paths):
         excel_file = str((self.extension[1:]).lower() + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
         df = pd.read_excel(excel_file)  # 엑셀 파일 읽기
 
@@ -763,40 +761,109 @@ class createtrainclass(QMainWindow, form_class):
                     if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
                         break
                     elif box_size == 1:  # 실제 크기는 다음 8Bytes에 저장됨
-                        # 다음 8바이트를 읽어서 실제 크기를 계산
                         large_size = f.read(8)
                         actual_box_size = struct.unpack(">Q", large_size)[0]
-
-                        # box_size를 8바이트 크기의 1로 변환
-                        box_size_hex = '0000000000000001'
-                        print(
-                            f"Box Type: {box_type}, Box Size: 1 (actual size {actual_box_size} bytes, stored as {box_size_hex})")
                     else:
-                        box_size_hex = format(box_size, '016x')  # 8바이트로 표현된 box_size (16진수 문자열)
-                        print(f"Box Type: {box_type}, Box Size: {box_size}")
+                        actual_box_size = box_size
 
-                    # 현재 Box의 끝 위치 계산 = 현재 포인터 위치 + (사이즈 - 헤더 8Bytes)
                     box_end_position = f.tell() + (actual_box_size - 8 if box_size == 1 else box_size - 8)
 
-                    # 컨테이너 Box 처리
-                    for key, value in self.seqdict.items():
-                        if box_type in self.seqdict.keys():
-                            sequencedem = ", ".join(value)
-
-                    if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl'):
-                        parse_box(f, box_end_position, depth + 1, max_depth)  # 재귀 처리로 하위 Box 파싱
+                    if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl', 'udta', 'edts', 'moof', 'traf'):
+                        # 컨테이너 Box 처리
+                        parse_box(f, box_end_position, depth + 1, max_depth)
                     else:  # 컨테이너가 아닌 Box 처리
-                        if box_size == 1:
-                            box_data_hex = '0000000000000001'  # 1을 8바이트로 표현하여 저장
+                        box_data = f.read(actual_box_size - 8)
+                        box_data_hex = box_data.hex()
+
+                        # 각 Box의 속성을 구체적으로 추출
+                        if box_type == 'ftyp':
+                            major_brand = box_data[0:4].decode("utf-8")
+                            minor_version = struct.unpack(">I", box_data[4:8])[0]
+                            compatible_brands = [box_data[i:i + 4].decode("utf-8") for i in range(8, len(box_data), 4)]
+                            results.append((box_type,
+                                            f"Major Brand: {major_brand}, Minor Version: {minor_version}, Compatible Brands: {', '.join(compatible_brands)}"))
+
+                        elif box_type == 'mvhd':
+                            version = box_data[0]
+                            if version == 0:
+                                create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
+                            else:
+                                create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
+                                timescale, duration = struct.unpack(">II", box_data[20:28])
+                            preferred_rate = struct.unpack(">I", box_data[28:32])[0]
+                            preferred_volume = struct.unpack(">H", box_data[32:34])[0]
+                            box104_108 = box_data[96:100]
+                            next_track_id = struct.unpack(">I", box_data[96:100])[0]
+                            results.append((box_type,
+                                            f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Preferred Rate: {preferred_rate}, Preferred Volume: {preferred_volume}, Next Track ID: {next_track_id}"))
+
+                        elif box_type == 'tkhd':
+                            version = box_data[0]
+                            if version == 0:
+                                create_time, modify_time, track_id, duration = struct.unpack(">IIII", box_data[4:20])
+                            else:
+                                create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
+                                track_id, duration = struct.unpack(">II", box_data[20:28])
+                            width, height = struct.unpack(">II", box_data[76:84])
+                            results.append((box_type,
+                                            f"Track ID: {track_id}, Create Time: {create_time}, Modify Time: {modify_time}, Duration: {duration}, Width: {width}, Height: {height}"))
+
+                        elif box_type == 'mdhd':
+                            version = box_data[0]
+                            if version == 0:
+                                create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
+                            else:
+                                create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
+                                timescale, duration = struct.unpack(">II", box_data[20:28])
+                            language_code = struct.unpack(">H", box_data[20:22])[0]
+                            results.append((box_type,
+                                            f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Language Code: {language_code}"))
+
+                        elif box_type == 'elst':
+                            version = box_data[0]
+                            entry_count = struct.unpack(">I", box_data[4:8])[0]
+                            entries = []
+                            offset = 8
+                            for _ in range(entry_count):
+                                if version == 1:
+                                    segment_duration, media_time, media_rate = struct.unpack(">QqI", box_data[
+                                                                                                     offset:offset + 16])
+                                    entries.append(
+                                        f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
+                                    offset += 16
+                                else:
+                                    segment_duration, media_time, media_rate = struct.unpack(">Iii", box_data[
+                                                                                                     offset:offset + 12])
+                                    entries.append(
+                                        f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
+                                    offset += 12
+                            results.append((box_type, f"Entry Count: {entry_count}, Entries: {entries}"))
+
+                        elif box_type == 'stsd':
+                            version = box_data[0]
+                            entry_count = struct.unpack(">I", box_data[4:8])[0]
+                            results.append((box_type, f"Entry Count: {entry_count}"))
+
+                        elif box_type == 'stts':
+                            version = box_data[0]
+                            entry_count = struct.unpack(">I", box_data[4:8])[0]
+                            results.append((box_type, f"Entry Count: {entry_count}"))
+
+                        elif box_type == 'stsc':
+                            entry_count = struct.unpack(">I", box_data[4:8])[0]
+                            results.append((box_type, f"Entry Count: {entry_count}"))
+
+                        elif box_type == 'stsz':
+                            sample_size = struct.unpack(">I", box_data[4:8])[0]
+                            sample_count = struct.unpack(">I", box_data[8:12])[0]
+                            results.append((box_type, f"Sample Size: {sample_size}, Sample Count: {sample_count}"))
+
+                        elif box_type == 'co64':
+                            entry_count = struct.unpack(">I", box_data[4:8])[0]
+                            results.append((box_type, f"Entry Count: {entry_count}"))
+
                         else:
-                            box_data = f.read(box_size - 8)
-                            box_data_hex = box_data.hex()  # hex
-
-                        print(f"Box Type: {box_type}, Box Size: {box_size}")
-                        sequencedem = self.simhash(sequencedem)
-
-                        results.append((box_type, box_data_hex[0:5000]))
-                        results.append(sequencedem)
+                            results.append((box_type, box_data_hex[:5000]))  # Default for other box types
 
                     # 다음 Box로 이동
                     f.seek(box_end_position)
@@ -807,48 +874,44 @@ class createtrainclass(QMainWindow, form_class):
                 parse_box(f, file_size)  # 재귀
 
             all_results.append(results)  # 각 파일의 결과를 전체 리스트에 추가
-            #print(all_results)  # csv 파일에 헤더 저장 순서 확인
 
         self.save_to_csv(all_results)
-
     # 기연 추가 - 결과를 CSV로 저장
     def save_to_csv(self, all_data):
-        csv_file = 'box_features.csv'
+        csv_file = 'box_features_dynamic_updated.csv'
 
-        # Check if the CSV file already exists
+        # Read existing rows and fieldnames to preserve the data
+        existing_rows = []
         if os.path.exists(csv_file):
             with open(csv_file, 'r', encoding='utf-8') as csvfile:
                 reader = csv.DictReader(csvfile)
                 existing_fieldnames = reader.fieldnames if reader.fieldnames else []
+                for row in reader:
+                    existing_rows.append(row)
         else:
             existing_fieldnames = []
 
-        # If there is no data, return immediately
-        if not all_data:
-            return
-
-        # Extract fieldnames from the new data, maintaining order
-        new_fieldnames = [row[0] for row in all_data[0]]
-
-        # Add additional fieldnames from the rest of the new data
-        for data in all_data:
-            for row in data:
-                if row[0] not in new_fieldnames:
-                    new_fieldnames.append(row[0])
+        # Extract fieldnames from the new data, including sub-attributes
+        new_fieldnames = []
+        for row in all_data[0]:
+            key, value = row
+            if isinstance(value, str) and ":" in value:
+                # Split attributes if it's a detailed description (e.g., "Create Time: 1234, Modify Time: 5678")
+                attributes = [attr.strip() for attr in value.split(",")]
+                for attr in attributes:
+                    if ":" in attr:  # Ensure the attribute has a colon to avoid unpacking errors
+                        attr_name = f"{key}_{attr.split(':')[0].strip()}"
+                        if attr_name not in new_fieldnames:
+                            new_fieldnames.append(attr_name)
+            else:
+                if key not in new_fieldnames:
+                    new_fieldnames.append(key)
 
         # Combine existing and new fieldnames, maintaining order and uniqueness
         fieldnames = existing_fieldnames[:]
         for field in new_fieldnames:
             if field not in fieldnames:
                 fieldnames.append(field)
-
-        # Read existing rows to preserve the data
-        existing_rows = []
-        if os.path.exists(csv_file):
-            with open(csv_file, 'r', encoding='utf-8') as csvfile:
-                reader = csv.DictReader(csvfile)
-                for row in reader:
-                    existing_rows.append(row)
 
         # Write data back to CSV, appending new data
         with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
@@ -859,15 +922,36 @@ class createtrainclass(QMainWindow, form_class):
 
             # Write existing rows with the combined fieldnames
             for row in existing_rows:
-                writer.writerow(row)
+                writer.writerow({key: row.get(key, "") for key in fieldnames})
 
             # Write new data with the combined fieldnames
             for data in all_data:
-                row_data = {row[0]: row[1] for row in data}
-                writer.writerow(row_data)
+                row_data = {}
+                for key, value in data:
+                    if isinstance(value, str):
+                        # Split attributes and add to row data
+                        attributes = [attr.strip() for attr in value.split(",")]
+                        for attr in attributes:
+                            if ":" in attr:  # Ensure the attribute has a colon to avoid unpacking errors
+                                attr_name, attr_value = attr.split(":", 1)
+                                row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                            else:
+                                # Handle the case where the value does not have a colon
+                                row_data[key] = value
+                    else:
+                        # Handle the case where value is not a string (e.g., list)
+                        if isinstance(value, list):
+                            for item in value:
+                                if ":" in item:  # Ensure the item has a colon to avoid unpacking errors
+                                    attr_name, attr_value = item.split(":", 1)
+                                    row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                                else:
+                                    row_data[key] = item
+                        else:
+                            row_data[key] = value
+                writer.writerow({key: row_data.get(key, "") for key in fieldnames})
 
         print(f"Results saved to {csv_file}")
-
 
     def main(self):
         self.ngrams = []
@@ -913,11 +997,14 @@ class createtrainclass(QMainWindow, form_class):
                 self.extension = 'mp4'
 
                 self.sequencedem = []
-                hexlist = str(self.extension + '\\' +  "hexlist.pkl")
-                with open(hexlist, 'rb') as f:
-                    hexvalues = pickle.load(f)
-                for h in range(len(hexvalues)):
-                    self.feature_dictionary(hexvalues[h])
+                '''                hexlist = str(self.extension + '\\' +  "hexlist.pkl")
+                                with open(hexlist, 'rb') as f:
+                                    hexvalues = pickle.load(f)
+                                for h in range(len(hexvalues)):
+                                    self.feature_dictionary(hexvalues[h])'''
+
+
+                self.feature_dictionary()
 
                 filename_to_sequence = {}
                 for path, value in self.sequencedem:
