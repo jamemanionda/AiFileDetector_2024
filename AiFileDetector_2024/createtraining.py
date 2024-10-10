@@ -876,6 +876,7 @@ class createtrainclass(QMainWindow, form_class):
             all_results.append(results)  # 각 파일의 결과를 전체 리스트에 추가
 
         self.save_to_csv(all_results)
+
     # 기연 추가 - 결과를 CSV로 저장
     def save_to_csv(self, all_data):
         csv_file = 'box_features_dynamic_updated.csv'
@@ -896,7 +897,7 @@ class createtrainclass(QMainWindow, form_class):
         for row in all_data[0]:
             key, value = row
             if isinstance(value, str) and ":" in value:
-                # Split attributes if it's a detailed description (e.g., "Create Time: 1234, Modify Time: 5678")
+                # 자식 속성 있는 경우 속성 분할(예: “생성 시간: 1234, 수정 시간: 5678”).
                 attributes = [attr.strip() for attr in value.split(",")]
                 for attr in attributes:
                     if ":" in attr:  # Ensure the attribute has a colon to avoid unpacking errors
@@ -907,13 +908,13 @@ class createtrainclass(QMainWindow, form_class):
                 if key not in new_fieldnames:
                     new_fieldnames.append(key)
 
-        # Combine existing and new fieldnames, maintaining order and uniqueness
+        # 순서와 고유성을 유지하면서 기존 필드명과 새 필드명을 결합
         fieldnames = existing_fieldnames[:]
         for field in new_fieldnames:
             if field not in fieldnames:
                 fieldnames.append(field)
 
-        # Write data back to CSV, appending new data
+        # CSV에 쓰기
         with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
@@ -929,17 +930,17 @@ class createtrainclass(QMainWindow, form_class):
                 row_data = {}
                 for key, value in data:
                     if isinstance(value, str):
-                        # Split attributes and add to row data
+                        # : 있는거 세부 속성 나누기
                         attributes = [attr.strip() for attr in value.split(",")]
                         for attr in attributes:
-                            if ":" in attr:  # Ensure the attribute has a colon to avoid unpacking errors
+                            if ":" in attr:
                                 attr_name, attr_value = attr.split(":", 1)
                                 row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
                             else:
-                                # Handle the case where the value does not have a colon
+                                # : 없는 것들
                                 row_data[key] = value
                     else:
-                        # Handle the case where value is not a string (e.g., list)
+                        # sting 아닌 hex 값으로만 가지는 애들
                         if isinstance(value, list):
                             for item in value:
                                 if ":" in item:  # Ensure the item has a colon to avoid unpacking errors
