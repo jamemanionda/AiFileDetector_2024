@@ -15,7 +15,6 @@ from PyQt5 import uic, QtWidgets
 from simhash import Simhash
 from clustering1 import trainClustering
 from Train_GRUprocess_multi import TrainClass
-from extractframe_single
 
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -744,7 +743,7 @@ class createtrainclass(QMainWindow, form_class):
             results = []  # 각 파일 데이터 저장 리스트
             results.append(('name', os.path.basename(file_path)))  # 파일명 열 추가
             print(results)
-
+            onesequence = []
             # 파일 내 Box 파싱
             def parse_box(f, end_position, depth=0, max_depth=100):
                 if depth > max_depth:
@@ -757,7 +756,10 @@ class createtrainclass(QMainWindow, form_class):
                         break
 
                     box_size, box_type = struct.unpack(">I4s", box_header)  # size 4Bytes, type 4Bytes 추출
-                    box_type = box_type.decode("utf-8")
+                    try:
+                        box_type = box_type.decode("utf-8")
+                    except :
+                        pass
 
                     if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
                         break
@@ -775,6 +777,9 @@ class createtrainclass(QMainWindow, form_class):
                     else:  # 컨테이너가 아닌 Box 처리
                         box_data = f.read(actual_box_size - 8)
                         box_data_hex = box_data.hex()
+
+                        if box_type in self.seqdict :
+                            onesequence.append(str(self.seqdict[box_type]))
 
                         # 각 Box의 속성을 구체적으로 추출
                         if box_type == 'ftyp':
@@ -875,7 +880,11 @@ class createtrainclass(QMainWindow, form_class):
                 f.seek(0)  # 커서를 파일 시작 위치로 이동
                 parse_box(f, file_size)  # 재귀
 
-            all_results.append(results)  # 각 파일의 결과를 전체 리스트에 추가
+            onesequence = Simhash(onesequence).value
+
+            results.append(('sequence', onesequence))
+            all_results.append(results)
+            # 각 파일의 결과를 전체 리스트에 추가
 
         self.save_to_csv(all_results)
 
@@ -930,6 +939,7 @@ class createtrainclass(QMainWindow, form_class):
             # Write new data with the combined fieldnames
             for data in all_data:
                 row_data = {}
+
                 for key, value in data:
                     if isinstance(value, str):
                         # : 있는거 세부 속성 나누기
