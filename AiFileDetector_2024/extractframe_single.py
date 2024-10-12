@@ -3,16 +3,14 @@ import subprocess
 import json
 import os
 
-# Step 1: Define the folder containing the video files
-video_folder = 'Y:\\version2\\편집'  # Replace with your folder path
-excel_file = 'sample.csv'  # Path to your CSV file
+video_folder = 'Y:\\version2\\test'
+excel_file = 'sample.csv'
 
 # Read the Excel file into a DataFrame
 df = pd.read_csv(excel_file)
 
-# Step 2: Iterate through each video file in the folder
 for video_file in os.listdir(video_folder):
-    if video_file.endswith(('.mov','.MOV')):  # Check for specific video file formats
+    if video_file.endswith(('.mp4','.MP4')):
         input_video = os.path.join(video_folder, video_file)
 
         # Step 3: Extract frame types from the video
@@ -48,7 +46,6 @@ for video_file in os.listdir(video_folder):
             elif frame_types_string[i] == 'P':
                 count += 1
 
-
         if count > 0:
             p_counts.append(count)  # Add the last count if any
 
@@ -69,8 +66,8 @@ for video_file in os.listdir(video_folder):
             print(f"*************************************")
         else:
             # Add a new row with the video name and GOP information
-            new_row = {'Name': video_name, 'GOP': frame_types_string}
-            df = df.append(new_row, ignore_index=True)
+            new_row = pd.DataFrame({'Name': [video_name], 'GOP': [frame_types_string]})
+            df = pd.concat([df, new_row], ignore_index=True)
             print(f"Video {video_name} not found in CSV. Added new entry with GOP data.")
 
 # Step 6: Save the updated DataFrame back to the CSV file

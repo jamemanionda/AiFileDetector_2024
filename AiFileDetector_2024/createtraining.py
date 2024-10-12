@@ -15,6 +15,7 @@ from PyQt5 import uic, QtWidgets
 from simhash import Simhash
 from clustering1 import trainClustering
 from Train_GRUprocess_multi import TrainClass
+from extractframe_single
 
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -861,7 +862,8 @@ class createtrainclass(QMainWindow, form_class):
                         elif box_type == 'co64':
                             entry_count = struct.unpack(">I", box_data[4:8])[0]
                             results.append((box_type, f"Entry Count: {entry_count}"))
-
+                        elif box_type == 'mdat':
+                            pass
                         else:
                             results.append((box_type, box_data_hex[:5000]))  # Default for other box types
 

@@ -563,6 +563,60 @@ color: rgb(255, 255, 255);</string>
        <string>Create Dataset</string>
       </property>
      </widget>
+     <widget class="QRadioButton" name="mulButton_2">
+      <property name="geometry">
+       <rect>
+        <x>670</x>
+        <y>10</y>
+        <width>90</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>GOP frame</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="mulButton_3">
+      <property name="geometry">
+       <rect>
+        <x>670</x>
+        <y>30</y>
+        <width>90</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>SPS/PPS</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="mulButton_4">
+      <property name="geometry">
+       <rect>
+        <x>570</x>
+        <y>10</y>
+        <width>90</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>SPS/PPS</string>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>
