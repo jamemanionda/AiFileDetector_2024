@@ -8,6 +8,7 @@ from tkinter import messagebox
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 import pandas as pd
+import pyautogui
 from PyQt5.QtCore import QDir
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QProgressBar, QDialog, QLabel, \
     QVBoxLayout, QTableWidgetItem
@@ -15,6 +16,7 @@ from PyQt5 import uic, QtWidgets
 from simhash import Simhash
 from clustering1 import trainClustering
 from Train_GRUprocess_multi import TrainClass
+from extractframe_single import extractGOP
 
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -63,15 +65,32 @@ class createtrainclass(QMainWindow, form_class):
         # 파일시스템 트리
         self.dirModel = QFileSystemModel()
         self.dirModel.setRootPath(QDir.rootPath())
+
         self.treeView.setModel(self.dirModel)
 
         #self.treeView.setRootIndex(self.dirModel.index(os.getcwd()))
         self.treeView.setRootIndex(self.dirModel.index('Y:\\'))
         self.treeView.clicked.connect(self.file_selected)
-
+        header = self.treeView.header()
+        header.setSectionResizeMode(0, header.Interactive)
+        header.resizeSection(0, 400)
         self.feature_create1.clicked.connect(lambda: setattr(self, 'choice', 1))
         self.create_value2.clicked.connect(lambda: setattr(self, 'choice', 2))
         self.create_sequence3.clicked.connect(lambda: setattr(self, 'choice', 3))
+
+        self.structure_val_state = False
+        self.structure_seq_state = False
+        self.frame_sps_state = False
+        self.frame_gop_state = False
+        self.frame_ratio_state = False
+
+        self.tabWidget.setCurrentIndex(0)
+
+        self.structure_val_but.stateChanged.connect(self.on_structure_val_changed)
+        self.structure_seq_but.stateChanged.connect(self.on_structure_seq_changed)
+        self.frame_sps_but.stateChanged.connect(self.on_frame_sps_changed)
+        self.frame_gop_but.stateChanged.connect(self.on_frame_gop_changed)
+        self.frame_ratio_but.stateChanged.connect(self.on_frame_ratio_changed)
 
 
         self.LoadButton.clicked.connect(self.main) # Load 버튼 클릭 시 self.main() 호출
@@ -113,19 +132,23 @@ class createtrainclass(QMainWindow, form_class):
 
     def file_selected(self, index): # 파일 또는 디렉토리 선택 시 호출
         file_info = self.dirModel.fileInfo(index)
-        if file_info.isDir():  # If a directory is selected
-            self.select_all_files_in_directory(file_info.absoluteFilePath())
-        else:
-            file_path = file_info.absoluteFilePath()
-            extension = os.path.splitext(file_path)[1]
-            self.filter_files_by_extension(extension)
-            if file_path not in self.file_paths:
-                self.listWidget.addItem(file_path)
-                self.file_paths.append(file_path)
-            if extension == '.csv':
-                self.csv_path = file_path
-                self.open_csv2(file_path)
-
+        try:
+            if file_info.isDir():  # If a directory is selected
+                if self.extension :
+                    self.select_all_files_in_directory(file_info.absoluteFilePath())
+            else:
+                file_path = file_info.absoluteFilePath()
+                extension = os.path.splitext(file_path)[1]
+                self.filter_files_by_extension(extension)
+                if file_path not in self.file_paths:
+                    if extension == self.extension.lower():
+                        self.listWidget.addItem(file_path)
+                        self.file_paths.append(file_path)
+                if extension == '.csv':
+                    self.csv_path = file_path
+                    self.open_csv2(file_path)
+        except Exception as e:
+            pyautogui.alert(e)
 
     def display_dataframe(self, df):
         self.tableWidget.setRowCount(df.shape[0])
@@ -146,14 +169,21 @@ class createtrainclass(QMainWindow, form_class):
             except Exception as e:
                 self.show_error_message("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
 
-    def select_all_files_in_directory(self, directory_path): # 선택한 디렉토리의 모든 파일을 선택
-        for root, _, files in os.walk(directory_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                if self.extension is None or os.path.splitext(file)[1].lower() in self.extension:
-                    if file_path not in self.file_paths:
-                        self.listWidget.addItem(file_path)
-                        self.file_paths.append(file_path)
+    def select_all_files_in_directory(self, directory_path):
+        try:
+            for root, _, files in os.walk(directory_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    extension = os.path.splitext(file_path)[1][0:]
+
+                    #같은 확장자만 담아야한다면 조건추가
+                    if extension.lower() == self.extension:
+                        if file_path not in self.file_paths:
+                            self.listWidget.addItem(file_path)
+                            self.file_paths.append(file_path)
+        except Exception as e:
+            pyautogui.alert(e)
+
 
     def remove_selected_file(self, item): # 선택한 파일을 목록에서 제거
         # 더블 클릭한 파일 아이템을 목록에서 제거합니다.
@@ -740,6 +770,10 @@ class createtrainclass(QMainWindow, form_class):
         all_results = []  # 모든 파일 데이터 저장할 리스트
 
         for file_path in file_paths:
+
+
+
+
             results = []  # 각 파일 데이터 저장 리스트
             results.append(('name', os.path.basename(file_path)))  # 파일명 열 추가
             print(results)
@@ -776,10 +810,15 @@ class createtrainclass(QMainWindow, form_class):
                         parse_box(f, box_end_position, depth + 1, max_depth)
                     else:  # 컨테이너가 아닌 Box 처리
                         box_data = f.read(actual_box_size - 8)
+                        if box_type == 'mdat':
+                            continue
+
+
                         box_data_hex = box_data.hex()
 
-                        if box_type in self.seqdict :
-                            onesequence.append(str(self.seqdict[box_type]))
+                        if self.structure_seq_state == True :
+                            if box_type in self.seqdict :
+                                onesequence.append(str(self.seqdict[box_type]))
 
                         # 각 Box의 속성을 구체적으로 추출
                         if box_type == 'ftyp':
@@ -867,8 +906,7 @@ class createtrainclass(QMainWindow, form_class):
                         elif box_type == 'co64':
                             entry_count = struct.unpack(">I", box_data[4:8])[0]
                             results.append((box_type, f"Entry Count: {entry_count}"))
-                        elif box_type == 'mdat':
-                            pass
+
                         else:
                             results.append((box_type, box_data_hex[:5000]))  # Default for other box types
 
@@ -880,17 +918,40 @@ class createtrainclass(QMainWindow, form_class):
                 f.seek(0)  # 커서를 파일 시작 위치로 이동
                 parse_box(f, file_size)  # 재귀
 
-            onesequence = Simhash(onesequence).value
+            if self.frame_gop_state == True:
+                onesequence = extractGOP(file_path)
+                results.append(('GOP', onesequence))
 
-            results.append(('sequence', onesequence))
+            if self.structure_seq_state == True:
+                onesequence = Simhash(onesequence).value
+                results.append(('sequence', onesequence))
+
+
             all_results.append(results)
             # 각 파일의 결과를 전체 리스트에 추가
 
         self.save_to_csv(all_results)
 
+    def on_structure_val_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
+        print('CheckBox is checked')
+        self.structure_val_state = True
+    def on_structure_seq_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
+        print('CheckBox is checked')
+        self.structure_seq_state = True
+    def on_frame_sps_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
+        print('CheckBox is checked')
+        self.frame_sps_state = True
+    def on_frame_gop_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
+        print('CheckBox is checked')
+        self.frame_gop_state = True
+    def on_frame_ratio_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
+        print('CheckBox is checked')
+        self.frame_ratio_state = True
+
     # 기연 추가 - 결과를 CSV로 저장
     def save_to_csv(self, all_data):
-        csv_file = 'box_features_dynamic_updated.csv'
+        csv_file = os.path.join('Y:\\','box_features_dynamic_updated.csv')
+
 
         # Read existing rows and fieldnames to preserve the data
         existing_rows = []
@@ -918,6 +979,23 @@ class createtrainclass(QMainWindow, form_class):
             else:
                 if key not in new_fieldnames:
                     new_fieldnames.append(key)
+
+
+        for onedata in all_data:
+            for row in onedata:
+                key, value = row
+                if key == 'GOP':
+                    if isinstance(value, str) and ":" in value:
+                        # 자식 속성 있는 경우 속성 분할(예: “생성 시간: 1234, 수정 시간: 5678”).
+                        attributes = [attr.strip() for attr in value.split(",")]
+                        for attr in attributes:
+                            if ":" in attr:  # Ensure the attribute has a colon to avoid unpacking errors
+                                attr_name = f"{key}_{attr.split(':')[0].strip()}"
+                                if attr_name not in new_fieldnames:
+                                    new_fieldnames.append(attr_name)
+                    else:
+                        if key not in new_fieldnames:
+                            new_fieldnames.append(key)
 
         # 순서와 고유성을 유지하면서 기존 필드명과 새 필드명을 결합
         fieldnames = existing_fieldnames[:]
@@ -996,9 +1074,10 @@ class createtrainclass(QMainWindow, form_class):
                 print("2클릭", )
                 print("선택한 파일", self.file_paths)
 
+                if self.structure_val_state== True:
+                    self.extract_box_feature(self.file_paths)
 
-                # 파일 경로 전달해줘서, 추출하는 메소드 위에 작성 (기연 추가)
-                self.extract_box_feature(self.file_paths)
+
 
                 break
 
@@ -1038,6 +1117,8 @@ class createtrainclass(QMainWindow, form_class):
             elif choice ==5:
                 print("종료")
                 break
+
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
