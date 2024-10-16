@@ -77,7 +77,7 @@ class createtrainclass(QMainWindow, form_class):
         self.feature_create1.clicked.connect(lambda: setattr(self, 'choice', 1))
         self.create_value2.clicked.connect(lambda: setattr(self, 'choice', 2))
         self.create_sequence3.clicked.connect(lambda: setattr(self, 'choice', 3))
-
+        self.filename = "dataset"
         self.structure_val_state = False
         self.structure_seq_state = False
         self.frame_sps_state = False
@@ -817,98 +817,101 @@ class createtrainclass(QMainWindow, form_class):
                         box_data_hex = box_data.hex()
 
                         if self.structure_seq_state == True :
+                            self.filename += "_seq"
                             if box_type in self.seqdict :
                                 onesequence.append(str(self.seqdict[box_type]))
 
                         # 각 Box의 속성을 구체적으로 추출
-                        if box_type == 'ftyp':
-                            major_brand = box_data[0:4].decode("utf-8")
-                            minor_version = struct.unpack(">I", box_data[4:8])[0]
-                            compatible_brands = [box_data[i:i + 4].decode("utf-8") for i in range(8, len(box_data), 4)]
-                            results.append((box_type,
-                                            f"Major Brand: {major_brand}, Minor Version: {minor_version}, Compatible Brands: {', '.join(compatible_brands)}"))
+                        if self.structure_val_state == True:
+                            self.filename += "_strval"
+                            if box_type == 'ftyp':
+                                major_brand = box_data[0:4].decode("utf-8")
+                                minor_version = struct.unpack(">I", box_data[4:8])[0]
+                                compatible_brands = [box_data[i:i + 4].decode("utf-8") for i in range(8, len(box_data), 4)]
+                                results.append((box_type,
+                                                f"Major Brand: {major_brand}, Minor Version: {minor_version}, Compatible Brands: {', '.join(compatible_brands)}"))
 
-                        elif box_type == 'mvhd':
-                            version = box_data[0]
-                            if version == 0:
-                                create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
-                            else:
-                                create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
-                                timescale, duration = struct.unpack(">II", box_data[20:28])
-                            preferred_rate = struct.unpack(">I", box_data[28:32])[0]
-                            preferred_volume = struct.unpack(">H", box_data[32:34])[0]
-                            box104_108 = box_data[96:100]
-                            next_track_id = struct.unpack(">I", box_data[96:100])[0]
-                            results.append((box_type,
-                                            f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Preferred Rate: {preferred_rate}, Preferred Volume: {preferred_volume}, Next Track ID: {next_track_id}"))
-
-                        elif box_type == 'tkhd':
-                            version = box_data[0]
-                            if version == 0:
-                                create_time, modify_time, track_id, duration = struct.unpack(">IIII", box_data[4:20])
-                            else:
-                                create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
-                                track_id, duration = struct.unpack(">II", box_data[20:28])
-                            width, height = struct.unpack(">II", box_data[76:84])
-                            results.append((box_type,
-                                            f"Track ID: {track_id}, Create Time: {create_time}, Modify Time: {modify_time}, Duration: {duration}, Width: {width}, Height: {height}"))
-
-                        elif box_type == 'mdhd':
-                            version = box_data[0]
-                            if version == 0:
-                                create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
-                            else:
-                                create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
-                                timescale, duration = struct.unpack(">II", box_data[20:28])
-                            language_code = struct.unpack(">H", box_data[20:22])[0]
-                            results.append((box_type,
-                                            f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Language Code: {language_code}"))
-
-                        elif box_type == 'elst':
-                            version = box_data[0]
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            entries = []
-                            offset = 8
-                            for _ in range(entry_count):
-                                if version == 1:
-                                    segment_duration, media_time, media_rate = struct.unpack(">QqI", box_data[
-                                                                                                     offset:offset + 16])
-                                    entries.append(
-                                        f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
-                                    offset += 16
+                            elif box_type == 'mvhd':
+                                version = box_data[0]
+                                if version == 0:
+                                    create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
                                 else:
-                                    segment_duration, media_time, media_rate = struct.unpack(">Iii", box_data[
-                                                                                                     offset:offset + 12])
-                                    entries.append(
-                                        f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
-                                    offset += 12
-                            results.append((box_type, f"Entry Count: {entry_count}, Entries: {entries}"))
+                                    create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
+                                    timescale, duration = struct.unpack(">II", box_data[20:28])
+                                preferred_rate = struct.unpack(">I", box_data[28:32])[0]
+                                preferred_volume = struct.unpack(">H", box_data[32:34])[0]
+                                box104_108 = box_data[96:100]
+                                next_track_id = struct.unpack(">I", box_data[96:100])[0]
+                                results.append((box_type,
+                                                f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Preferred Rate: {preferred_rate}, Preferred Volume: {preferred_volume}, Next Track ID: {next_track_id}"))
 
-                        elif box_type == 'stsd':
-                            version = box_data[0]
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            results.append((box_type, f"Entry Count: {entry_count}"))
+                            elif box_type == 'tkhd':
+                                version = box_data[0]
+                                if version == 0:
+                                    create_time, modify_time, track_id, duration = struct.unpack(">IIII", box_data[4:20])
+                                else:
+                                    create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
+                                    track_id, duration = struct.unpack(">II", box_data[20:28])
+                                width, height = struct.unpack(">II", box_data[76:84])
+                                results.append((box_type,
+                                                f"Track ID: {track_id}, Create Time: {create_time}, Modify Time: {modify_time}, Duration: {duration}, Width: {width}, Height: {height}"))
 
-                        elif box_type == 'stts':
-                            version = box_data[0]
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            results.append((box_type, f"Entry Count: {entry_count}"))
+                            elif box_type == 'mdhd':
+                                version = box_data[0]
+                                if version == 0:
+                                    create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
+                                else:
+                                    create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
+                                    timescale, duration = struct.unpack(">II", box_data[20:28])
+                                language_code = struct.unpack(">H", box_data[20:22])[0]
+                                results.append((box_type,
+                                                f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Language Code: {language_code}"))
 
-                        elif box_type == 'stsc':
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            results.append((box_type, f"Entry Count: {entry_count}"))
+                            elif box_type == 'elst':
+                                version = box_data[0]
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                entries = []
+                                offset = 8
+                                for _ in range(entry_count):
+                                    if version == 1:
+                                        segment_duration, media_time, media_rate = struct.unpack(">QqI", box_data[
+                                                                                                         offset:offset + 16])
+                                        entries.append(
+                                            f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
+                                        offset += 16
+                                    else:
+                                        segment_duration, media_time, media_rate = struct.unpack(">Iii", box_data[
+                                                                                                         offset:offset + 12])
+                                        entries.append(
+                                            f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
+                                        offset += 12
+                                results.append((box_type, f"Entry Count: {entry_count}, Entries: {entries}"))
 
-                        elif box_type == 'stsz':
-                            sample_size = struct.unpack(">I", box_data[4:8])[0]
-                            sample_count = struct.unpack(">I", box_data[8:12])[0]
-                            results.append((box_type, f"Sample Size: {sample_size}, Sample Count: {sample_count}"))
+                            elif box_type == 'stsd':
+                                version = box_data[0]
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                results.append((box_type, f"Entry Count: {entry_count}"))
 
-                        elif box_type == 'co64':
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            results.append((box_type, f"Entry Count: {entry_count}"))
+                            elif box_type == 'stts':
+                                version = box_data[0]
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                results.append((box_type, f"Entry Count: {entry_count}"))
 
-                        else:
-                            results.append((box_type, box_data_hex[:5000]))  # Default for other box types
+                            elif box_type == 'stsc':
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                results.append((box_type, f"Entry Count: {entry_count}"))
+
+                            elif box_type == 'stsz':
+                                sample_size = struct.unpack(">I", box_data[4:8])[0]
+                                sample_count = struct.unpack(">I", box_data[8:12])[0]
+                                results.append((box_type, f"Sample Size: {sample_size}, Sample Count: {sample_count}"))
+
+                            elif box_type == 'co64':
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                results.append((box_type, f"Entry Count: {entry_count}"))
+
+                            else:
+                                results.append((box_type, box_data_hex[:5000]))  # Default for other box types
 
                     # 다음 Box로 이동
                     f.seek(box_end_position)
@@ -919,8 +922,11 @@ class createtrainclass(QMainWindow, form_class):
                 parse_box(f, file_size)  # 재귀
 
             if self.frame_gop_state == True:
+                self.filename += "_gop"
                 onesequence = extractGOP(file_path)
                 results.append(('GOP', onesequence))
+
+
 
             if self.structure_seq_state == True:
                 onesequence = Simhash(onesequence).value
@@ -950,7 +956,7 @@ class createtrainclass(QMainWindow, form_class):
 
     # 기연 추가 - 결과를 CSV로 저장
     def save_to_csv(self, all_data):
-        csv_file = os.path.join('Y:\\','box_features_dynamic_updated.csv')
+        csv_file = os.path.join('Y:\\', self.filename)
 
 
         # Read existing rows and fieldnames to preserve the data
@@ -1074,8 +1080,8 @@ class createtrainclass(QMainWindow, form_class):
                 print("2클릭", )
                 print("선택한 파일", self.file_paths)
 
-                if self.structure_val_state== True:
-                    self.extract_box_feature(self.file_paths)
+
+                self.extract_box_feature(self.file_paths)
 
 
 
