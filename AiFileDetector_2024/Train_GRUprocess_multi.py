@@ -546,10 +546,14 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
 
             self.aimodel = self.comboBox.currentText()
 
-            joblib.dump(self.model, str(self.extension + '\\' +self.aimodel + "model.pkl"))
-            self.scalername = str(self.extension + '\\' +self.aimodel + "scaler.pkl")
+            folder_path = os.getcwd()
+            file_path = os.path.join(folder_path, str(self.aimodel + "model.pkl"))
+            joblib.dump(self.model, file_path)
+
+            self.scalername = os.path.join(folder_path, str(self.aimodel + "scaler.pkl"))
             with open(self.scalername, 'wb') as f:
-                pickle.dump(self.scaler, f)
+                joblib.dump(self.scaler, f)
+                f.close()
 
         elif self.index == 1:
             self.model.save(str(self.extension + '\\' + 'model.h5'))
