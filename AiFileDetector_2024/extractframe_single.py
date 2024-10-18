@@ -10,7 +10,7 @@ excel_file = 'sample.csv'
 
 def extractGOP(video_file):
 
-    if video_file.endswith(('.mp4','.MP4')):
+    if video_file.endswith(('.mp4','.MP4','.mov','.MOV')):
         input_video = os.path.join(video_folder, video_file)
 
         # Step 3: Extract frame types from the video

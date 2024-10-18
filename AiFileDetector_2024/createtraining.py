@@ -54,7 +54,7 @@ class createtrainclass(QMainWindow, form_class):
         self.clustering = trainClustering()
         self.trainclass = TrainClass()
         # 확장자 필터
-        self.extension_list = ["확장자", ".mp4", ".png", ".jpg", ".pdf", ".m4a"]
+        self.extension_list = ["확장자", ".mp4",  ".mov",".png", ".jpg", ".pdf", ".m4a"]
         self.comboBox.addItems(self.extension_list)
 
         self.comboBox.currentIndexChanged.connect(
@@ -141,7 +141,7 @@ class createtrainclass(QMainWindow, form_class):
                 extension = os.path.splitext(file_path)[1]
                 self.filter_files_by_extension(extension)
                 if file_path not in self.file_paths:
-                    if extension == self.extension.lower():
+                    if extension.lower() == self.extension.lower():
                         self.listWidget.addItem(file_path)
                         self.file_paths.append(file_path)
                 if extension == '.csv':
