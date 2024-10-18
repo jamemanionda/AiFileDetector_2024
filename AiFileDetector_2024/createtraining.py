@@ -4,6 +4,7 @@ import pickle
 import re
 import struct
 import sys
+from datetime import datetime
 from tkinter import messagebox
 import tkinter as tk
 from tkinter import simpledialog, messagebox
@@ -56,7 +57,7 @@ class createtrainclass(QMainWindow, form_class):
         # 확장자 필터
         self.extension_list = ["확장자", ".mp4",  ".mov",".png", ".jpg", ".pdf", ".m4a"]
         self.comboBox.addItems(self.extension_list)
-
+        self.csv_file = ''
         self.comboBox.currentIndexChanged.connect(
             lambda index: self.filter_files_by_extension(self.comboBox.itemText(index)))
 
@@ -68,8 +69,14 @@ class createtrainclass(QMainWindow, form_class):
 
         self.treeView.setModel(self.dirModel)
 
+        self.direc = input("데이터셋 폴더경로를 입력하세요: ")
+        if self.direc == None or " ":
+            self.direc = 'Y:\\'
+            print("[nonepath] 설정값을 입력하지 않아 Y:\\로 설정되었습니다. 코드에서 수정을 원할시에 createtraining에서 nonepath를 검색하여 이동해서 수정하세요")
+        print("출력: [",self.direc,"]")
         #self.treeView.setRootIndex(self.dirModel.index(os.getcwd()))
-        self.treeView.setRootIndex(self.dirModel.index('Z:\\'))
+        self.treeView.setRootIndex(self.dirModel.index(self.direc))
+
         self.treeView.clicked.connect(self.file_selected)
         header = self.treeView.header()
         header.setSectionResizeMode(0, header.Interactive)
@@ -761,8 +768,10 @@ class createtrainclass(QMainWindow, form_class):
         return combined_data
 
     def extract_box_feature(self, file_paths):
-        excel_file = str((self.extension[1:]).lower() + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
+        #excel_file = str((self.extension[1:]).lower() + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
+        excel_file = str(('mp4').lower() + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
         df = pd.read_excel(excel_file)  # 엑셀 파일 읽기
+
 
         # 엑셀 데이터를 딕셔너리로 변환 (엑셀 파일의 첫 번째 열을 key로, 두 번째 열을 value로)
         self.seqdict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
@@ -921,8 +930,10 @@ class createtrainclass(QMainWindow, form_class):
             if self.frame_gop_state == True:
                 onesequence = extractGOP(file_path)
                 results.append(('GOP', onesequence))
+                self.csv_file+='_gop'
 
             if self.structure_seq_state == True:
+                self.csv_file+='_seq'
                 onesequence = Simhash(onesequence).value
                 results.append(('sequence', onesequence))
 
@@ -950,9 +961,13 @@ class createtrainclass(QMainWindow, form_class):
 
     # 기연 추가 - 결과를 CSV로 저장
     def save_to_csv(self, all_data):
-        csv_file = os.path.join('Z:\\','box_features_dynamic_updated.csv')
+        csv_file = self.csv_file
+        timestamp = datetime.now().strftime("%y%m%d%H%M%S")
 
+        # 기존 파일 이름과 시간을 조합한 파일 이름 생성
+        csv_file = f"{csv_file}_{timestamp}.csv"
 
+        csv_file = os.path.join(self.direc, csv_file)
         # Read existing rows and fieldnames to preserve the data
         existing_rows = []
         if os.path.exists(csv_file):
@@ -1003,8 +1018,10 @@ class createtrainclass(QMainWindow, form_class):
             if field not in fieldnames:
                 fieldnames.append(field)
 
+
         # CSV에 쓰기
         with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
             # Write the header with the combined fieldnames
