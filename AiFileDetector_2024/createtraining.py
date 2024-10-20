@@ -825,7 +825,7 @@ class createtrainclass(QMainWindow, form_class):
                         try:
                             box_type = box_type.decode("utf-8")
                         except :
-                            pass
+                            f.seek(0,1)
 
                         if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
                             break
@@ -841,9 +841,11 @@ class createtrainclass(QMainWindow, form_class):
                             # 컨테이너 Box 처리
                             parse_box(f, box_end_position, depth + 1, max_depth)
                         else:  # 컨테이너가 아닌 Box 처리
-                            box_data = f.read(actual_box_size - 8)
+
                             if box_type == 'mdat':
+                                f.seek(box_end_position)
                                 continue
+                            box_data = f.read(actual_box_size - 8)
 
                             box_data_hex = box_data.hex()
 
