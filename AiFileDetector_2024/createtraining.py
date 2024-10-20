@@ -843,9 +843,7 @@ class createtrainclass(QMainWindow, form_class):
                         else:  # 컨테이너가 아닌 Box 처리
                             box_data = f.read(actual_box_size - 8)
                             if box_type == 'mdat':
-                                f.seek(actual_box_size - 8, 1)  # 현재 위치에서 mdat 크기만큼 건너뛰기
                                 continue
-
 
                             box_data_hex = box_data.hex()
 
@@ -944,7 +942,7 @@ class createtrainclass(QMainWindow, form_class):
                                 results.append((box_type, box_data_hex[:5000]))  # Default for other box types
 
                         # 다음 Box로 이동
-                        f.seek(box_end_position)
+                            f.seek(box_end_position)
 
                 with open(file_path, 'rb') as f:
                     file_size = f.seek(0, 2)  # 파일 끝으로 커서 옮겨서 파일 크기 계산

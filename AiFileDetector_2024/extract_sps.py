@@ -55,7 +55,7 @@ def extract_sps_pps(data, file_path):
 
 def find_avcc_in_avc1(f, avc1_end_pos, file_path):
     """avc1 박스 내에서 avcC 구조를 탐지하고 크기 및 SPS/PPS 추출"""
-    while f.tell() < avc1_end_pos:
+    while f.tell() < avc1_end_pos+1:
         current_pos = f.tell()
         data = f.read(4)
 
@@ -76,22 +76,33 @@ def find_avcc_in_avc1(f, avc1_end_pos, file_path):
 
     print("avcC를 찾지 못했습니다.")
 
-def parse_box(file_path, f, end_position, depth=0, max_depth=100):
-    """MP4 파일의 모든 박스를 파싱하여 avc1 및 그 내부의 avcC 탐지"""
+
+def parse_box(f, end_position, depth=0, max_depth=100):
+
     if depth > max_depth:
         print("최대 재귀 깊이 도달 에러")
         return
 
     while f.tell() < end_position:
         box_header = f.read(8)  # 첫 8Bytes Box 헤더
+
+
         if len(box_header) < 8:
             break
 
-        box_size, box_type = struct.unpack(">I4s", box_header)  # size 4Bytes, type 4Bytes 추출
+
+
+
         try:
-            box_type = box_type.decode("utf-8")
-        except:
-            pass
+            box_size, box_type1 = struct.unpack(">I4s", box_header)  # size 4Bytes, type 4Bytes 추출
+            box_type = box_type1.decode("utf-8").strip()
+            if not box_type.isprintable() or len(box_type) != 4:
+                raise ValueError(f"잘못된 박스 타입 감지: {box_type}")
+        except Exception as e:
+            print(f"박스 타입 디코딩 오류: {e}, 위치: {f.tell() - 8}")
+            f.seek(0, 1)  # 잘못된 헤더일 경우 8바이트만 건너뛰고 계속
+            continue
+
 
         if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
             break
@@ -103,21 +114,34 @@ def parse_box(file_path, f, end_position, depth=0, max_depth=100):
 
         box_end_position = f.tell() + (actual_box_size - 8 if box_size == 1 else box_size - 8)
 
+        try:
+
+            if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl', 'stsd'):
+                parse_box(f, box_end_position, depth + 1, max_depth)
+        except Exception as e:
+            pass
+
         if box_type == 'avc1':
             print("avc1 박스 발견! 내부에서 avcC 탐색 중...")
-            find_avcc_in_avc1(f, box_end_position, file_path)
-            f.seek(box_end_position)
-            break
-
-        if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl', 'stsd', 'mdat'):
-            if box_type == 'mdat':
-                f.seek(box_size - 8, 1)  # 현재 위치에서 mdat 크기만큼 건너뛰기
-                continue
-            parse_box(file_path, f, box_end_position, depth + 1)  # Corrected line
+            fname = f.name
+            find_avcc_in_avc1(f, box_end_position, f.name)
+            f.seek(end_position)
+            return
 
 
-        else:
-            f.seek(box_end_position)
+
+            # 다음 Box로 이동
+        f.seek(box_end_position)
+
+
+
+
+
+
+
+
+
+
 
         if f.tell() > end_position:
             print(f"경계 초과 오류 - 현재 위치: {f.tell()}, 끝: {end_position}")
@@ -129,4 +153,4 @@ def parse_sps(file_path):
     with open(file_path, 'rb') as f:
         file_size = f.seek(0, 2)  # 파일 끝으로 이동하여 크기 계산
         f.seek(0)  # 파일 시작 위치로 이동
-        parse_box(file_path, f, file_size)  # 파싱 시작
+        parse_box(f, file_size)  # 파싱 시작
