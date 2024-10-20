@@ -4,6 +4,7 @@ import pickle
 import re
 import struct
 import sys
+import threading
 from datetime import datetime
 from tkinter import messagebox
 import tkinter as tk
@@ -18,7 +19,8 @@ from simhash import Simhash
 from clustering1 import trainClustering
 from Train_GRUprocess_multi import TrainClass
 from extractframe_single import extractGOP
-
+from extract_sps import parse_sps
+from pps import analyzesps
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 form_class = uic.loadUiType("UI_Design\\new.ui")[0]
@@ -69,11 +71,25 @@ class createtrainclass(QMainWindow, form_class):
 
         self.treeView.setModel(self.dirModel)
 
-        self.direc = input("데이터셋 폴더경로를 입력하세요: ")
-        if self.direc == None or " ":
-            self.direc = 'Y:\\'
-            print("[nonepath] 설정값을 입력하지 않아 Y:\\로 설정되었습니다. 코드에서 수정을 원할시에 createtraining에서 nonepath를 검색하여 이동해서 수정하세요")
-        print("출력: [",self.direc,"]")
+        input_thread = threading.Thread(target=self.ask_input)
+        input_thread.start()
+        input_thread.join(timeout=10)  # 10초 대기
+        initialcode = 0
+        if initialcode == 0:
+            try:
+                print("출력: [", self.direc, "]")
+                if self.direc == None or " ":
+                    raise ValueError("")
+
+            except:
+
+                self.direc = 'Y:\\'
+                print("[nonepath] 설정값을 입력하지 않아 Y:\\로 설정되었습니다. "
+                      "코드에서 수정을 원할 시에 createtraining에서 nonepath를 검색하여 이동해서 수정하세요")
+            initialcode=1
+
+
+
         #self.treeView.setRootIndex(self.dirModel.index(os.getcwd()))
         self.treeView.setRootIndex(self.dirModel.index(self.direc))
 
@@ -108,6 +124,9 @@ class createtrainclass(QMainWindow, form_class):
 
 
         self.model_combo.activated.connect(self.on_combobox_select)
+
+    def ask_input(self):
+        self.direc = input("데이터셋 폴더경로를 입력하세요: ")
 
     def on_combobox_select(self, index):
         self.trainclass.index = index
@@ -669,6 +688,7 @@ class createtrainclass(QMainWindow, form_class):
         x = self.get_files_value() # 정리된 데이터
         y = x[0]
         second_elements = [tpl[0] for tpl in y] # y에서 각 튜플의 첫 번째 요소 추출한 리스트
+        second_elements = [tpl[0] for tpl in y] # y에서 각 튜플의 첫 번째 요소 추출한 리스트
         header = ','.join(second_elements) # second_elemetns 리스트를 콤마로 연결한 문자열로, csv 파일 헤더로 사용됨
 
         if choice == 1:
@@ -769,6 +789,8 @@ class createtrainclass(QMainWindow, form_class):
 
     def extract_box_feature(self, file_paths):
         #excel_file = str((self.extension[1:]).lower() + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
+        all_results = []  # 모든 파일 데이터 저장할 리스트
+
         excel_file = str(('mp4').lower() + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
         df = pd.read_excel(excel_file)  # 엑셀 파일 읽기
 
@@ -776,161 +798,180 @@ class createtrainclass(QMainWindow, form_class):
         # 엑셀 데이터를 딕셔너리로 변환 (엑셀 파일의 첫 번째 열을 key로, 두 번째 열을 value로)
         self.seqdict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
 
-        all_results = []  # 모든 파일 데이터 저장할 리스트
+        filecount = 0
 
         for file_path in file_paths:
-
-
-
-
-            results = []  # 각 파일 데이터 저장 리스트
+            filecount +=1
+            results = []
             results.append(('name', os.path.basename(file_path)))  # 파일명 열 추가
-            print(results)
-            onesequence = []
-            # 파일 내 Box 파싱
-            def parse_box(f, end_position, depth=0, max_depth=100):
-                if depth > max_depth:
-                    print("최대 재귀 깊이 도달 에러")
-                    return
+            if self.structure_val_state == True or self.structure_seq_state == True:
+                 # 각 파일 데이터 저장 리스트
 
-                while f.tell() < end_position:
-                    box_header = f.read(8)  # 첫 8Bytes Box 헤더
-                    if len(box_header) < 8:
-                        break
+                nameprintformat = f"{filecount}/{len(file_paths)}_{results}"
+                print(nameprintformat)
+                onesequence = []
+                # 파일 내 Box 파싱
+                def parse_box(f, end_position, depth=0, max_depth=100):
+                    if depth > max_depth:
+                        print("최대 재귀 깊이 도달 에러")
+                        return
 
-                    box_size, box_type = struct.unpack(">I4s", box_header)  # size 4Bytes, type 4Bytes 추출
-                    try:
-                        box_type = box_type.decode("utf-8")
-                    except :
-                        pass
+                    while f.tell() < end_position:
+                        box_header = f.read(8)  # 첫 8Bytes Box 헤더
+                        if len(box_header) < 8:
+                            break
 
-                    if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
-                        break
-                    elif box_size == 1:  # 실제 크기는 다음 8Bytes에 저장됨
-                        large_size = f.read(8)
-                        actual_box_size = struct.unpack(">Q", large_size)[0]
-                    else:
-                        actual_box_size = box_size
+                        box_size, box_type = struct.unpack(">I4s", box_header)  # size 4Bytes, type 4Bytes 추출
+                        try:
+                            box_type = box_type.decode("utf-8")
+                        except :
+                            pass
 
-                    box_end_position = f.tell() + (actual_box_size - 8 if box_size == 1 else box_size - 8)
-
-                    if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl', 'udta', 'edts', 'moof', 'traf'):
-                        # 컨테이너 Box 처리
-                        parse_box(f, box_end_position, depth + 1, max_depth)
-                    else:  # 컨테이너가 아닌 Box 처리
-                        box_data = f.read(actual_box_size - 8)
-                        if box_type == 'mdat':
-                            continue
-
-
-                        box_data_hex = box_data.hex()
-
-                        if self.structure_seq_state == True :
-                            if box_type in self.seqdict :
-                                onesequence.append(str(self.seqdict[box_type]))
-
-                        # 각 Box의 속성을 구체적으로 추출
-                        if box_type == 'ftyp':
-                            major_brand = box_data[0:4].decode("utf-8")
-                            minor_version = struct.unpack(">I", box_data[4:8])[0]
-                            compatible_brands = [box_data[i:i + 4].decode("utf-8") for i in range(8, len(box_data), 4)]
-                            results.append((box_type,
-                                            f"Major Brand: {major_brand}, Minor Version: {minor_version}, Compatible Brands: {', '.join(compatible_brands)}"))
-
-                        elif box_type == 'mvhd':
-                            version = box_data[0]
-                            if version == 0:
-                                create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
-                            else:
-                                create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
-                                timescale, duration = struct.unpack(">II", box_data[20:28])
-                            preferred_rate = struct.unpack(">I", box_data[28:32])[0]
-                            preferred_volume = struct.unpack(">H", box_data[32:34])[0]
-                            box104_108 = box_data[96:100]
-                            next_track_id = struct.unpack(">I", box_data[96:100])[0]
-                            results.append((box_type,
-                                            f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Preferred Rate: {preferred_rate}, Preferred Volume: {preferred_volume}, Next Track ID: {next_track_id}"))
-
-                        elif box_type == 'tkhd':
-                            version = box_data[0]
-                            if version == 0:
-                                create_time, modify_time, track_id, duration = struct.unpack(">IIII", box_data[4:20])
-                            else:
-                                create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
-                                track_id, duration = struct.unpack(">II", box_data[20:28])
-                            width, height = struct.unpack(">II", box_data[76:84])
-                            results.append((box_type,
-                                            f"Track ID: {track_id}, Create Time: {create_time}, Modify Time: {modify_time}, Duration: {duration}, Width: {width}, Height: {height}"))
-
-                        elif box_type == 'mdhd':
-                            version = box_data[0]
-                            if version == 0:
-                                create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
-                            else:
-                                create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
-                                timescale, duration = struct.unpack(">II", box_data[20:28])
-                            language_code = struct.unpack(">H", box_data[20:22])[0]
-                            results.append((box_type,
-                                            f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Language Code: {language_code}"))
-
-                        elif box_type == 'elst':
-                            version = box_data[0]
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            entries = []
-                            offset = 8
-                            for _ in range(entry_count):
-                                if version == 1:
-                                    segment_duration, media_time, media_rate = struct.unpack(">QqI", box_data[
-                                                                                                     offset:offset + 16])
-                                    entries.append(
-                                        f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
-                                    offset += 16
-                                else:
-                                    segment_duration, media_time, media_rate = struct.unpack(">Iii", box_data[
-                                                                                                     offset:offset + 12])
-                                    entries.append(
-                                        f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
-                                    offset += 12
-                            results.append((box_type, f"Entry Count: {entry_count}, Entries: {entries}"))
-
-                        elif box_type == 'stsd':
-                            version = box_data[0]
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            results.append((box_type, f"Entry Count: {entry_count}"))
-
-                        elif box_type == 'stts':
-                            version = box_data[0]
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            results.append((box_type, f"Entry Count: {entry_count}"))
-
-                        elif box_type == 'stsc':
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            results.append((box_type, f"Entry Count: {entry_count}"))
-
-                        elif box_type == 'stsz':
-                            sample_size = struct.unpack(">I", box_data[4:8])[0]
-                            sample_count = struct.unpack(">I", box_data[8:12])[0]
-                            results.append((box_type, f"Sample Size: {sample_size}, Sample Count: {sample_count}"))
-
-                        elif box_type == 'co64':
-                            entry_count = struct.unpack(">I", box_data[4:8])[0]
-                            results.append((box_type, f"Entry Count: {entry_count}"))
-
+                        if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
+                            break
+                        elif box_size == 1:  # 실제 크기는 다음 8Bytes에 저장됨
+                            large_size = f.read(8)
+                            actual_box_size = struct.unpack(">Q", large_size)[0]
                         else:
-                            results.append((box_type, box_data_hex[:5000]))  # Default for other box types
+                            actual_box_size = box_size
 
-                    # 다음 Box로 이동
-                    f.seek(box_end_position)
+                        box_end_position = f.tell() + (actual_box_size - 8 if box_size == 1 else box_size - 8)
 
-            with open(file_path, 'rb') as f:
-                file_size = f.seek(0, 2)  # 파일 끝으로 커서 옮겨서 파일 크기 계산
-                f.seek(0)  # 커서를 파일 시작 위치로 이동
-                parse_box(f, file_size)  # 재귀
+                        if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl', 'udta', 'edts', 'moof', 'traf'):
+                            # 컨테이너 Box 처리
+                            parse_box(f, box_end_position, depth + 1, max_depth)
+                        else:  # 컨테이너가 아닌 Box 처리
+                            box_data = f.read(actual_box_size - 8)
+                            if box_type == 'mdat':
+                                f.seek(actual_box_size - 8, 1)  # 현재 위치에서 mdat 크기만큼 건너뛰기
+                                continue
+
+
+                            box_data_hex = box_data.hex()
+
+                            if self.structure_seq_state == True :
+                                if box_type in self.seqdict :
+                                    onesequence.append(str(self.seqdict[box_type]))
+
+                            # 각 Box의 속성을 구체적으로 추출
+                            if box_type == 'ftyp':
+                                major_brand = box_data[0:4].decode("utf-8")
+                                minor_version = struct.unpack(">I", box_data[4:8])[0]
+                                compatible_brands = [box_data[i:i + 4].decode("utf-8") for i in range(8, len(box_data), 4)]
+                                results.append((box_type,
+                                                f"Major Brand: {major_brand}, Minor Version: {minor_version}, Compatible Brands: {', '.join(compatible_brands)}"))
+
+                            elif box_type == 'mvhd':
+                                version = box_data[0]
+                                if version == 0:
+                                    create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
+                                else:
+                                    create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
+                                    timescale, duration = struct.unpack(">II", box_data[20:28])
+                                preferred_rate = struct.unpack(">I", box_data[28:32])[0]
+                                preferred_volume = struct.unpack(">H", box_data[32:34])[0]
+                                box104_108 = box_data[96:100]
+                                next_track_id = struct.unpack(">I", box_data[96:100])[0]
+                                results.append((box_type,
+                                                f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Preferred Rate: {preferred_rate}, Preferred Volume: {preferred_volume}, Next Track ID: {next_track_id}"))
+
+                            elif box_type == 'tkhd':
+                                version = box_data[0]
+                                if version == 0:
+                                    create_time, modify_time, track_id, duration = struct.unpack(">IIII", box_data[4:20])
+                                else:
+                                    create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
+                                    track_id, duration = struct.unpack(">II", box_data[20:28])
+                                width, height = struct.unpack(">II", box_data[76:84])
+                                results.append((box_type,
+                                                f"Track ID: {track_id}, Create Time: {create_time}, Modify Time: {modify_time}, Duration: {duration}, Width: {width}, Height: {height}"))
+
+                            elif box_type == 'mdhd':
+                                version = box_data[0]
+                                if version == 0:
+                                    create_time, modify_time, timescale, duration = struct.unpack(">IIII", box_data[4:20])
+                                else:
+                                    create_time, modify_time = struct.unpack(">QQ", box_data[4:20])
+                                    timescale, duration = struct.unpack(">II", box_data[20:28])
+                                language_code = struct.unpack(">H", box_data[20:22])[0]
+                                results.append((box_type,
+                                                f"Create Time: {create_time}, Modify Time: {modify_time}, Timescale: {timescale}, Duration: {duration}, Language Code: {language_code}"))
+
+                            elif box_type == 'elst':
+                                version = box_data[0]
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                entries = []
+                                offset = 8
+                                for _ in range(entry_count):
+                                    if version == 1:
+                                        segment_duration, media_time, media_rate = struct.unpack(">QqI", box_data[
+                                                                                                         offset:offset + 16])
+                                        entries.append(
+                                            f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
+                                        offset += 16
+                                    else:
+                                        segment_duration, media_time, media_rate = struct.unpack(">Iii", box_data[
+                                                                                                         offset:offset + 12])
+                                        entries.append(
+                                            f"Duration: {segment_duration}, Media Time: {media_time}, Rate: {media_rate}")
+                                        offset += 12
+                                results.append((box_type, f"Entry Count: {entry_count}, Entries: {entries}"))
+
+                            elif box_type == 'stsd':
+                                version = box_data[0]
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                results.append((box_type, f"Entry Count: {entry_count}"))
+
+                            elif box_type == 'stts':
+                                version = box_data[0]
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                results.append((box_type, f"Entry Count: {entry_count}"))
+
+                            elif box_type == 'stsc':
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                results.append((box_type, f"Entry Count: {entry_count}"))
+
+                            elif box_type == 'stsz':
+                                sample_size = struct.unpack(">I", box_data[4:8])[0]
+                                sample_count = struct.unpack(">I", box_data[8:12])[0]
+                                results.append((box_type, f"Sample Size: {sample_size}, Sample Count: {sample_count}"))
+
+                            elif box_type == 'co64':
+                                entry_count = struct.unpack(">I", box_data[4:8])[0]
+                                results.append((box_type, f"Entry Count: {entry_count}"))
+
+                            else:
+                                results.append((box_type, box_data_hex[:5000]))  # Default for other box types
+
+                        # 다음 Box로 이동
+                        f.seek(box_end_position)
+
+                with open(file_path, 'rb') as f:
+                    file_size = f.seek(0, 2)  # 파일 끝으로 커서 옮겨서 파일 크기 계산
+                    f.seek(0)  # 커서를 파일 시작 위치로 이동
+                    parse_box(f, file_size)  # 재귀
 
             if self.frame_gop_state == True:
                 onesequence = extractGOP(file_path)
                 results.append(('GOP', onesequence))
                 self.csv_file+='_gop'
+
+            if self.frame_sps_state == True:
+                try :
+                    parse_sps(file_path)
+                    file_name = os.path.basename(file_path)
+                    file_name +=".264"
+                    sps_filepath = file_name
+
+                    spsresult = analyzesps(sps_filepath)
+                    results.append(('SPS', spsresult))
+                finally:
+                    if os.path.exists(sps_filepath):
+                        os.remove(sps_filepath)
+                        print(f"{sps_filepath} 파일이 삭제되었습니다.")
+                    else:
+                        print(f"{sps_filepath} 파일이 존재하지 않습니다.")
+
 
             if self.structure_seq_state == True:
                 self.csv_file+='_seq'
@@ -944,19 +985,19 @@ class createtrainclass(QMainWindow, form_class):
         self.save_to_csv(all_results)
 
     def on_structure_val_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('CheckBox is checked')
+        print('structure_val Box is checked')
         self.structure_val_state = True
     def on_structure_seq_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('CheckBox is checked')
+        print('structure_seq Box is checked')
         self.structure_seq_state = True
     def on_frame_sps_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('CheckBox is checked')
+        print('frame_sps Box is checked')
         self.frame_sps_state = True
     def on_frame_gop_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('CheckBox is checked')
+        print('frame_gop Box is checked')
         self.frame_gop_state = True
     def on_frame_ratio_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('CheckBox is checked')
+        print('frame_ratio Box is checked')
         self.frame_ratio_state = True
 
     # 기연 추가 - 결과를 CSV로 저장
@@ -1091,7 +1132,7 @@ class createtrainclass(QMainWindow, form_class):
                 print("2클릭", )
                 print("선택한 파일", self.file_paths)
 
-                if self.structure_val_state== True:
+                if self.structure_val_state == True or self.frame_sps_state== True:
                     self.extract_box_feature(self.file_paths)
 
 
