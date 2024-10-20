@@ -668,7 +668,7 @@ class createtrainclass(QMainWindow, form_class):
 
     def open_csv(self, file_path):
         # 운영체제별 기본 CSV 뷰어를 사용하여 파일 열기
-        answer = messagebox.askyesno("CSV 생성 완료", f"{csv_file}를 열겠습니까?")
+        answer = messagebox.askyesno("CSV 생성 완료", f"파일을 열겠습니까?")
         if answer:
             os.startfile(self, file_path)
 
@@ -982,6 +982,8 @@ class createtrainclass(QMainWindow, form_class):
             all_results.append(results)
             # 각 파일의 결과를 전체 리스트에 추가
 
+            print(all_results)
+
         self.save_to_csv(all_results)
 
     def on_structure_val_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
@@ -1000,6 +1002,7 @@ class createtrainclass(QMainWindow, form_class):
         print('frame_ratio Box is checked')
         self.frame_ratio_state = True
 
+
     # 기연 추가 - 결과를 CSV로 저장
     def save_to_csv(self, all_data):
         csv_file = self.csv_file
@@ -1007,9 +1010,9 @@ class createtrainclass(QMainWindow, form_class):
 
         # 기존 파일 이름과 시간을 조합한 파일 이름 생성
         csv_file = f"{csv_file}_{timestamp}.csv"
-
         csv_file = os.path.join(self.direc, csv_file)
-        # Read existing rows and fieldnames to preserve the data
+
+        # 기존 파일 존재할 때 existing_rows와 existing_fieldnames로 보존
         existing_rows = []
         if os.path.exists(csv_file):
             with open(csv_file, 'r', encoding='utf-8') as csvfile:
@@ -1020,23 +1023,34 @@ class createtrainclass(QMainWindow, form_class):
         else:
             existing_fieldnames = []
 
-        # Extract fieldnames from the new data, including sub-attributes
+        # 새 필드명 추출 - 자식속성 vs. 단일속성
         new_fieldnames = []
+        key_count = {} # 중복 key 카운트
+
         for row in all_data[0]:
             key, value = row
-            if isinstance(value, str) and ":" in value:
-                # 자식 속성 있는 경우 속성 분할(예: “생성 시간: 1234, 수정 시간: 5678”).
-                attributes = [attr.strip() for attr in value.split(",")]
+
+            if key in key_count: # 중복 처리용
+                key_count[key] += 1
+            else:
+                key_count[key] = 1
+
+            if key_count[key] > 1: # 중복 처리된 키는 'key(숫자)' 형식으로 변경
+                key = f"{key}({key_count[key]})"
+
+            if isinstance(value, str) and ":" in value: # 콜론 존재 경우
+                # 자식 속성 있는 경우 속성 분할(예: 'Create Time: 3806600670', 'Modify Time: 3806600691', 'Timescale: 44100', 'Duration: 2903250').
+                attributes = [attr.strip() for attr in value.split(",")] # 일단 쉼표로 구분하고
                 for attr in attributes:
-                    if ":" in attr:  # Ensure the attribute has a colon to avoid unpacking errors
+                    if ":" in attr:  # ex. 'name', 'mvhd_Create Time', 'mvhd_Modify Time', 'mvhd_Timescale', 'mvhd_Duration'
                         attr_name = f"{key}_{attr.split(':')[0].strip()}"
                         if attr_name not in new_fieldnames:
                             new_fieldnames.append(attr_name)
             else:
                 if key not in new_fieldnames:
-                    new_fieldnames.append(key)
+                    new_fieldnames.append(key) # 단일속성이라 key가 필드
 
-
+        # GOP 처리
         for onedata in all_data:
             for row in onedata:
                 key, value = row
@@ -1059,24 +1073,32 @@ class createtrainclass(QMainWindow, form_class):
             if field not in fieldnames:
                 fieldnames.append(field)
 
+        print('필드명: ', fieldnames)
 
         # CSV에 쓰기
         with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
-
+            # 헤더 작성
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
-            # Write the header with the combined fieldnames
             writer.writeheader()
 
-            # Write existing rows with the combined fieldnames
             for row in existing_rows:
                 writer.writerow({key: row.get(key, "") for key in fieldnames})
 
             # Write new data with the combined fieldnames
             for data in all_data:
                 row_data = {}
+                key_count = {}  # 중복 key 카운트 리셋
 
                 for key, value in data:
+                    if key in key_count:
+                        key_count[key] += 1
+                    else:
+                        key_count[key] = 1
+
+                        # 중복 처리된 키는 'key(숫자)' 형식으로 변경
+                    if key_count[key] > 1:
+                        key = f"{key}({key_count[key]})"
+
                     if isinstance(value, str):
                         # : 있는거 세부 속성 나누기
                         attributes = [attr.strip() for attr in value.split(",")]
@@ -1104,8 +1126,6 @@ class createtrainclass(QMainWindow, form_class):
 
     def main(self):
         self.ngrams = []
-
-
 
         while True:
             choice = self.choice
