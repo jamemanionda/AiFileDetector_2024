@@ -954,7 +954,7 @@ class createtrainclass(QMainWindow, form_class):
             if self.frame_gop_state == True:
                 onesequence = extractGOP(file_path)
                 results.append(('GOP', onesequence))
-                self.csv_file+='_gop'
+
 
             if self.frame_sps_state == True:
                 try :
@@ -974,7 +974,7 @@ class createtrainclass(QMainWindow, form_class):
 
 
             if self.structure_seq_state == True:
-                self.csv_file+='_seq'
+
                 onesequence = Simhash(onesequence).value
                 results.append(('sequence', onesequence))
 
@@ -982,25 +982,30 @@ class createtrainclass(QMainWindow, form_class):
             all_results.append(results)
             # 각 파일의 결과를 전체 리스트에 추가
 
-            print(all_results)
 
         self.save_to_csv(all_results)
 
     def on_structure_val_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
         print('structure_val Box is checked')
         self.structure_val_state = True
+        self.csv_file += '_val'
     def on_structure_seq_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
         print('structure_seq Box is checked')
         self.structure_seq_state = True
+        self.csv_file += '_seq'
     def on_frame_sps_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
         print('frame_sps Box is checked')
         self.frame_sps_state = True
+        self.csv_file += '_sps'
     def on_frame_gop_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
         print('frame_gop Box is checked')
         self.frame_gop_state = True
+        self.csv_file += '_gop'
     def on_frame_ratio_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
         print('frame_ratio Box is checked')
         self.frame_ratio_state = True
+        self.csv_file += '_ratio'
+
 
 
     # 기연 추가 - 결과를 CSV로 저장
