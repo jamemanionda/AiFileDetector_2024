@@ -216,6 +216,22 @@ QHeaderView::section {
        <string>학습데이터 생성 시 영상 파일 선택, 학습 시 csv 파일 선택</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="list_del">
+      <property name="geometry">
+       <rect>
+        <x>680</x>
+        <y>0</y>
+        <width>81</width>
+        <height>24</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>목록 비우기</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="tab2">
      <attribute name="title">

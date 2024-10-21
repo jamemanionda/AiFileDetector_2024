@@ -121,6 +121,7 @@ class createtrainclass(QMainWindow, form_class):
         self.class_train.clicked.connect(self.classmain)
         # 파일 목록에서 아이템을 더블 클릭할 때 호출되는 슬롯을 연결합니다.
         self.listWidget.itemDoubleClicked.connect(self.remove_selected_file)
+        self.list_del.clicked.connect(self.remove_all_file)
 
 
         self.model_combo.activated.connect(self.on_combobox_select)
@@ -216,6 +217,10 @@ class createtrainclass(QMainWindow, form_class):
         file_path = item.text()
         self.listWidget.takeItem(self.listWidget.row(item))
         self.file_paths.remove(file_path)
+
+    def remove_all_file(self):
+        self.listWidget.clear()
+        self.file_paths = []
 
     def load_common(self): # 특정 파일에서 데이터 불러오기
         self.data_list2 = []
