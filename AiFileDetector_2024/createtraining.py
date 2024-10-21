@@ -1,6 +1,8 @@
 import csv
+import json
 import os
 import pickle
+import queue
 import re
 import struct
 import sys
@@ -9,11 +11,13 @@ from datetime import datetime
 from tkinter import messagebox
 import tkinter as tk
 from tkinter import simpledialog, messagebox
+
+import joblib
 import pandas as pd
 import pyautogui
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QProgressBar, QDialog, QLabel, \
-    QVBoxLayout, QTableWidgetItem
+    QVBoxLayout, QTableWidgetItem, QMessageBox
 from PyQt5 import uic, QtWidgets
 from simhash import Simhash
 from clustering1 import trainClustering
@@ -75,13 +79,14 @@ class createtrainclass(QMainWindow, form_class):
         input_thread.start()
         input_thread.join(timeout=10)  # 10초 대기
         initialcode = 0
+
         if initialcode == 0:
             try:
                 print("출력: [", self.direc, "]")
-                if self.direc == None or " ":
+                if self.direc == None or self.direc ==" ":
                     raise ValueError("")
 
-            except:
+            except Exception as e:
 
                 self.direc = 'Y:\\'
                 print("[nonepath] 설정값을 입력하지 않아 Y:\\로 설정되었습니다. "
@@ -119,6 +124,8 @@ class createtrainclass(QMainWindow, form_class):
         self.LoadButton.clicked.connect(self.main) # Load 버튼 클릭 시 self.main() 호출
         self.cluster_train.clicked.connect(self.clustermain)
         self.class_train.clicked.connect(self.classmain)
+
+        self.class_detect.clicked.connect(self.load_file_for_prediction)
         # 파일 목록에서 아이템을 더블 클릭할 때 호출되는 슬롯을 연결합니다.
         self.listWidget.itemDoubleClicked.connect(self.remove_selected_file)
         self.list_del.clicked.connect(self.remove_all_file)
@@ -126,8 +133,6 @@ class createtrainclass(QMainWindow, form_class):
 
         self.model_combo.activated.connect(self.on_combobox_select)
 
-    def ask_input(self):
-        self.direc = input("데이터셋 폴더경로를 입력하세요: ")
 
     def on_combobox_select(self, index):
         self.trainclass.index = index
@@ -141,6 +146,8 @@ class createtrainclass(QMainWindow, form_class):
         self.trainclass.csv_path = self.csv_path
         self.trainclass.gotrain()
 
+    def classdetect(self):
+        self.detectclass.predict(file_path=self.file_paths[0])
 
     def load_directory(self): # 디렉토리 선택
         directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory")
@@ -177,6 +184,10 @@ class createtrainclass(QMainWindow, form_class):
         except Exception as e:
             pyautogui.alert(e)
 
+    def ask_input(self):
+        self.direc = input("데이터셋 폴더경로를 입력하세요: ")
+
+
     def display_dataframe(self, df):
         self.tableWidget.setRowCount(df.shape[0])
         self.tableWidget.setColumnCount(df.shape[1])
@@ -195,6 +206,7 @@ class createtrainclass(QMainWindow, form_class):
                 self.display_dataframe(df)
             except Exception as e:
                 self.show_error_message("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
+
 
     def select_all_files_in_directory(self, directory_path):
         try:
@@ -804,6 +816,8 @@ class createtrainclass(QMainWindow, form_class):
         self.seqdict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
 
         filecount = 0
+        if isinstance(file_paths, str):
+            file_paths = [file_paths]
 
         for file_path in file_paths:
             filecount +=1
@@ -989,6 +1003,7 @@ class createtrainclass(QMainWindow, form_class):
 
 
         self.save_to_csv(all_results)
+        return results
 
     def on_structure_val_changed(self, state):
         if state == Qt.Checked:
@@ -1044,6 +1059,9 @@ class createtrainclass(QMainWindow, form_class):
             print('frame_ratio Box is unchecked')
             self.frame_ratio_state = False
             self.csv_file = self.csv_file.replace('_ratio', '')
+
+
+
 
 
 
@@ -1120,53 +1138,221 @@ class createtrainclass(QMainWindow, form_class):
         print('필드명: ', fieldnames)
 
         # CSV에 쓰기
-        with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
-            # 헤더 작성
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
+        if self.detectmode == False:
+            with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+                # 헤더 작성
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
 
-            for row in existing_rows:
-                writer.writerow({key: row.get(key, "") for key in fieldnames})
+                for row in existing_rows:
+                    writer.writerow({key: row.get(key, "") for key in fieldnames})
 
-            # Write new data with the combined fieldnames
-            for data in all_data:
-                row_data = {}
-                key_count = {}  # 중복 key 카운트 리셋
+                # Write new data with the combined fieldnames
+                for data in all_data:
+                    row_data = {}
+                    key_count = {}  # 중복 key 카운트 리셋
 
-                for key, value in data:
-                    if key in key_count:
-                        key_count[key] += 1
-                    else:
-                        key_count[key] = 1
+                    for key, value in data:
+                        if key in key_count:
+                            key_count[key] += 1
+                        else:
+                            key_count[key] = 1
 
-                        # 중복 처리된 키는 'key(숫자)' 형식으로 변경
-                    if key_count[key] > 1:
-                        key = f"{key}({key_count[key]})"
+                            # 중복 처리된 키는 'key(숫자)' 형식으로 변경
+                        if key_count[key] > 1:
+                            key = f"{key}({key_count[key]})"
 
-                    if isinstance(value, str):
-                        # : 있는거 세부 속성 나누기
-                        attributes = [attr.strip() for attr in value.split(",")]
-                        for attr in attributes:
-                            if ":" in attr:
-                                attr_name, attr_value = attr.split(":", 1)
-                                row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
-                            else:
-                                # : 없는 것들
-                                row_data[key] = value
-                    else:
-                        # sting 아닌 hex 값으로만 가지는 애들
-                        if isinstance(value, list):
-                            for item in value:
-                                if ":" in item:  # Ensure the item has a colon to avoid unpacking errors
-                                    attr_name, attr_value = item.split(":", 1)
+                        if isinstance(value, str):
+                            # : 있는거 세부 속성 나누기
+                            attributes = [attr.strip() for attr in value.split(",")]
+                            for attr in attributes:
+                                if ":" in attr:
+                                    attr_name, attr_value = attr.split(":", 1)
                                     row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
                                 else:
-                                    row_data[key] = item
+                                    # : 없는 것들
+                                    row_data[key] = value
                         else:
-                            row_data[key] = value
-                writer.writerow({key: row_data.get(key, "") for key in fieldnames})
+                            # sting 아닌 hex 값으로만 가지는 애들
+                            if isinstance(value, list):
+                                for item in value:
+                                    if ":" in item:  # Ensure the item has a colon to avoid unpacking errors
+                                        attr_name, attr_value = item.split(":", 1)
+                                        row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                                    else:
+                                        row_data[key] = item
+                            else:
+                                row_data[key] = value
+                    writer.writerow({key: row_data.get(key, "") for key in fieldnames})
 
-        print(f"Results saved to {csv_file}")
+            print(f"Results saved to {csv_file}")
+
+    @staticmethod
+    def calculate_simhash_lib(value):
+        simval = Simhash(str(value)).value
+        return simval
+
+    def apply_simhash(self, df):
+        """Simhash 적용"""
+        df.columns = df.columns.astype(str)
+        columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
+        for column in columns_to_process:
+            df[column] = df[column].apply(self.calculate_simhash_lib)
+        return df
+    def load_file_for_prediction(self):
+        """Open a dialog to select a file for prediction."""
+        self.detectmode = True
+        file_path= self.file_paths[0]
+        if file_path:
+            self.predict_on_file(file_path)
+
+    def predict_on_file(self, file_path):
+        """Predict the label for a new file while handling missing and extra features."""
+        try:
+            # Extract and flatten features from the file
+            feature_data = self.extract_features_from_file(file_path)
+            structured_data = self.flatten_features_for_prediction(feature_data)
+
+            # Load model and scaler
+            self.load_model_and_scaler()
+
+            # Predict and show results
+            predicted_df = self.predict_data(structured_data)
+            print(predicted_df)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Prediction failed: {str(e)}")
+
+
+    def flatten_features_for_prediction(self, data):
+        """Flatten nested feature structures to match training logic."""
+        flattened = {}
+        key_count = {}  # Handle duplicate keys
+
+        for key, value in data:
+            if key in key_count:
+                key_count[key] += 1
+                key = f"{key}({key_count[key]})"
+            else:
+                key_count[key] = 1
+
+            if isinstance(value, str) and ":" in value:
+                attributes = [attr.strip() for attr in value.split(",")]
+                for attr in attributes:
+                    if ":" in attr:
+                        attr_name, attr_value = attr.split(":", 1)
+                        flattened[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                    else:
+                        flattened[key] = value
+            elif isinstance(value, list):
+                for item in value:
+                    if ":" in item:
+                        attr_name, attr_value = item.split(":", 1)
+                        flattened[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                    else:
+                        flattened[key] = item
+            else:
+                flattened[key] = value
+
+        return flattened
+
+
+    def extract_features_from_file(self, file_path):
+        """Extract features from the selected file, using the same state-based logic."""
+        results = []
+
+        if self.structure_val_state:
+            box_features = self.extract_box_feature(file_path)
+            results.extend(box_features)
+
+        if self.frame_gop_state:
+            gop_features = extractGOP(file_path)
+            results.append(('GOP', gop_features))
+
+        if self.frame_sps_state:
+            sps_result = self.extract_sps_features(file_path)
+            results.append(('SPS', sps_result))
+
+        if self.structure_seq_state:
+            sequence_feature = Simhash([f[1] for f in results if f[0] != 'name']).value
+            results.append(('sequence', sequence_feature))
+
+        return results
+
+    def load_model_and_scaler(self):
+        """Load the trained model and scaler from disk."""
+        model_path = "Xgboostmodel.pkl"
+        scaler_path = "Xgboostscaler.pkl"
+        if os.path.exists(model_path) and os.path.exists(scaler_path):
+            self.model = joblib.load(model_path)
+            self.scaler = joblib.load(scaler_path)
+        else:
+            raise FileNotFoundError("Model or scaler file not found.")
+
+    def predict_data(self, structured_data):
+        """Scale the features and predict the label."""
+
+
+        df = pd.DataFrame([structured_data])
+
+        # Align DataFrame with model's features
+        with open('feature.json', 'r') as f:
+            model_features = json.load(f)
+
+        # Add missing features with default value (0) and filter out extra features
+        for feature in model_features:
+            if feature not in df.columns:
+                df[feature] = 0  # Fill missing features with default value
+
+        df = df[model_features]  # Keep only relevant features
+        df = df.drop(columns=[col for col in df.columns if col == 'name'], errors='ignore')
+
+        # Apply Simhash to the relevant features
+        df = self.apply_simhash(df)
+
+        # Scale features and predict label
+        X_new_scaled = self.scaler.transform(df)
+        y_pred = self.model.predict(X_new_scaled)
+
+        # Add predictions to DataFrame
+        df['predicted_label'] = y_pred
+
+        return df
+
+    def show_prediction_results(self, df):
+        """Display prediction results."""
+        results = df.to_string(index=False)
+        QMessageBox.information(self, "Prediction Results", f"Prediction:\n{results}")
+
+    def on_train_button_click(self):
+        """Trigger model training."""
+        self.gotrain()
+
+    def align_features_with_model(self, df):
+        """Align DataFrame columns with the model's feature set."""
+        # Load the feature set used during training (from model or scaler)
+        model_features = self.feature_list
+
+        # Add missing features with a default value (e.g., 0)
+        for feature in model_features:
+            if feature not in df.columns:
+                df[feature] = 0
+
+        # Ensure the DataFrame contains only the required features
+        aligned_df = df[model_features]
+
+        return aligned_df
+    def extract_sps_features(self, file_path):
+        """Extract SPS features."""
+        try:
+            parse_sps(file_path)
+            file_name = os.path.basename(file_path) + ".264"
+            sps_result = analyzesps(file_name)
+            return sps_result
+        finally:
+            if os.path.exists(file_name):
+                os.remove(file_name)
+
 
     def main(self):
         self.ngrams = []

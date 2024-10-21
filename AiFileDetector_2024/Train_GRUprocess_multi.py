@@ -1,3 +1,4 @@
+import json
 import pickle
 import seaborn as sns
 from keras.optimizers import Adam
@@ -164,6 +165,11 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
         df_test = df_test.drop(columns='label')
         # 테스트 데이터 전처리
         df_test_processed = self.apply_simhash(df_test)
+        self.feature_list = df_train.drop(columns=['label']).columns.tolist()
+        #추후 변경 필요 --> 파일이름을 피처 반영되게
+        with open('feature.json', 'w') as f:
+            json.dump(self.feature_list, f)
+
 
         # 모델 로드 및 테스트 데이터 예측
         #self.load_model2()
@@ -279,55 +285,6 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
         # 추가적으로 classification report도 출력
         print("Classification Report:")
         print(classification_report(y_train, y_pred_classes))
-
-    # def ensemble(self, df):
-    #
-    #     X = df.iloc[:, 1:-1]
-    #     y = df['label']
-    #
-    #     y = y.astype("int")
-    #     if self.index < 4:
-    #         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.35, random_state=42)
-    #     else:
-    #         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.35, random_state=42)
-    #     # MinMaxScaler 적용
-    #     self.scaler = MinMaxScaler()
-    #     X_train_scaled = self.scaler.fit_transform(X_train)
-    #     X_test_scaled = self.scaler.transform(X_test)
-    #
-    #     # 모델 구성
-    #     if self.index ==0:
-    #         self.model = xgb.XGBClassifier(metric='binary:logistic', enable_categorical=True)
-    #         #다중분류는 multi:softmax
-    #     elif self.index == 2:
-    #         self.model = RandomForestClassifier(n_estimators=20, max_depth=5, random_state=42)
-    #     elif self.index == 3:
-    #         self.model = LGBMClassifier(objective='binary',max_depth=5,n_estimators=250)
-    #     elif self.index == 4:
-    #         self.model = LinearRegression()
-    #
-    #     self.model.fit(X_train_scaled, y_train)
-    #
-    #     # 성능 평가
-    #     y_pred = self.model.predict(X_test_scaled)
-    #     if not self.index == 4:
-    #         accuracy = accuracy_score(y_test, y_pred)
-    #         self.y_pred = y_pred
-    #
-    #         print("Model accuracy:", accuracy)
-    #         message = "Model accuracy: " + str(accuracy)
-    #
-    #         self.show_message_box(message)
-    #     else :
-    #         mae = mean_absolute_error(y_test, y_pred)  # Mean Absolute Error
-    #         mse = mean_squared_error(y_test, y_pred)  # Mean Squared Error
-    #         rmse = np.sqrt(mse)  # Root Mean Squared Error
-    #         r2 = r2_score(y_test, y_pred)
-    #         print("Model accuracy:", mae)
-    #         message = "Model accuracy: " + str(mae)+","+ str(mse)+ ","+str(rmse)+","+str(r2)
-    #         self.show_message_box(message)
-    #         accuracy = r2
-    #     return self.model, accuracy
 
 
     def ensemble(self, df):
