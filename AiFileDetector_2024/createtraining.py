@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import simpledialog, messagebox
 import pandas as pd
 import pyautogui
-from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QProgressBar, QDialog, QLabel, \
     QVBoxLayout, QTableWidgetItem
 from PyQt5 import uic, QtWidgets
@@ -990,26 +990,60 @@ class createtrainclass(QMainWindow, form_class):
 
         self.save_to_csv(all_results)
 
-    def on_structure_val_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('structure_val Box is checked')
-        self.structure_val_state = True
-        self.csv_file += '_val'
-    def on_structure_seq_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('structure_seq Box is checked')
-        self.structure_seq_state = True
-        self.csv_file += '_seq'
-    def on_frame_sps_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('frame_sps Box is checked')
-        self.frame_sps_state = True
-        self.csv_file += '_sps'
-    def on_frame_gop_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('frame_gop Box is checked')
-        self.frame_gop_state = True
-        self.csv_file += '_gop'
-    def on_frame_ratio_changed(self): # 체크박스가 체크되었을 때 (2는 체크 상태를 의미)
-        print('frame_ratio Box is checked')
-        self.frame_ratio_state = True
-        self.csv_file += '_ratio'
+    def on_structure_val_changed(self, state):
+        if state == Qt.Checked:
+            print('structure_val Box is checked')
+            self.structure_val_state = True
+            if '_val' not in self.csv_file:
+                self.csv_file += '_val'
+        else:
+            print('structure_val Box is unchecked')
+            self.structure_val_state = False
+            self.csv_file = self.csv_file.replace('_val', '')
+
+    def on_structure_seq_changed(self, state):
+        if state == Qt.Checked:
+            print('structure_seq Box is checked')
+            self.structure_seq_state = True
+            if '_seq' not in self.csv_file:
+                self.csv_file += '_seq'
+        else:
+            print('structure_seq Box is unchecked')
+            self.structure_seq_state = False
+            self.csv_file = self.csv_file.replace('_seq', '')
+
+    def on_frame_sps_changed(self, state):
+        if state == Qt.Checked:
+            print('frame_sps Box is checked')
+            self.frame_sps_state = True
+            if '_sps' not in self.csv_file:
+                self.csv_file += '_sps'
+        else:
+            print('frame_sps Box is unchecked')
+            self.frame_sps_state = False
+            self.csv_file = self.csv_file.replace('_sps', '')
+
+    def on_frame_gop_changed(self, state):
+        if state == Qt.Checked:
+            print('frame_gop Box is checked')
+            self.frame_gop_state = True
+            if '_gop' not in self.csv_file:
+                self.csv_file += '_gop'
+        else:
+            print('frame_gop Box is unchecked')
+            self.frame_gop_state = False
+            self.csv_file = self.csv_file.replace('_gop', '')
+
+    def on_frame_ratio_changed(self, state):
+        if state == Qt.Checked:
+            print('frame_ratio Box is checked')
+            self.frame_ratio_state = True
+            if '_ratio' not in self.csv_file:
+                self.csv_file += '_ratio'
+        else:
+            print('frame_ratio Box is unchecked')
+            self.frame_ratio_state = False
+            self.csv_file = self.csv_file.replace('_ratio', '')
 
 
 
