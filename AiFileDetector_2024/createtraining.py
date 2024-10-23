@@ -17,8 +17,10 @@ import pandas as pd
 import pyautogui
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QProgressBar, QDialog, QLabel, \
-    QVBoxLayout, QTableWidgetItem, QMessageBox
+    QVBoxLayout, QTableWidgetItem, QMessageBox, QLineEdit, QPushButton, QTableWidget
 from PyQt5 import uic, QtWidgets
+from openpyxl.reader.excel import load_workbook
+from openpyxl.workbook import Workbook
 from simhash import Simhash
 
 from Train_GRUprocess import twoTrainClass
@@ -63,7 +65,7 @@ class createtrainclass(QMainWindow, form_class):
         self.clustering = trainClustering()
         self.trainclass = twoTrainClass()
         # 확장자 필터
-        self.extension_list = ["확장자", ".mp4",  ".mov",".png", ".jpg", ".pdf", ".m4a"]
+        self.extension_list = ["확장자", ".mp4",  ".mov"]
         self.comboBox.addItems(self.extension_list)
         self.csv_file = ''
         self.comboBox.currentIndexChanged.connect(
@@ -132,9 +134,9 @@ class createtrainclass(QMainWindow, form_class):
         self.listWidget.itemDoubleClicked.connect(self.remove_selected_file)
         self.list_del.clicked.connect(self.remove_all_file)
 
-
-        self.model_combo.activated.connect(self.on_combobox_select)
-
+        self.label_info.clicked.connect(self.open_data_entry_window)
+        self.labelinfofile = "labelinfo.xlsx"
+        self.load_excel_data()
 
     def on_combobox_select(self, index):
         self.trainclass.index = index
@@ -145,9 +147,21 @@ class createtrainclass(QMainWindow, form_class):
         self.clustering.gotrain(self.csv_path)
 
     def classmain(self):
+        binstat = self.binButton_3.isChecked()
+        mulstat = self.mulButton_3.isChecked()
+        if binstat:
+            self.trainclass = twoTrainClass()
+            self.classmode = 'bin_'
+        elif mulstat:
+            self.trainclass = TrainClass()
+            self.classmode = 'mul_'
+        else :
+            messagebox.showerror("에러", "바이너리/멀티 모드를 선")
+
+        self.model_combo.activated.connect(self.on_combobox_select)
         self.trainclass.csv_path = self.csv_path
         self.trainclass.comboBox = self.model_combo_2
-        self.trainclass.gotrain()
+        self.trainclass.gotrain(self.classmode)
 
     def classdetect(self):
         self.detectclass.predict(file_path=self.file_paths[0])
@@ -191,22 +205,22 @@ class createtrainclass(QMainWindow, form_class):
         self.direc = input("데이터셋 폴더경로를 입력하세요: ")
 
 
-    def display_dataframe(self, df):
-        self.tableWidget.setRowCount(df.shape[0])
-        self.tableWidget.setColumnCount(df.shape[1])
-        self.tableWidget.setHorizontalHeaderLabels(df.columns)
+    def display_dataframe(self, df, widgettype):
+        widgettype.setRowCount(df.shape[0])
+        widgettype.setColumnCount(df.shape[1])
+        widgettype.setHorizontalHeaderLabels(df.columns)
 
         for i in range(df.shape[0]):
             for j in range(df.shape[1]):
                 item = QTableWidgetItem(str(df.iat[i, j]))
-                self.tableWidget.setItem(i, j, item)
+                widgettype.setItem(i, j, item)
 
     def open_csv2(self, csvfile):
         file_name = csvfile
         if file_name:
             try:
                 df = pd.read_csv(file_name, encoding='UTF-8')
-                self.display_dataframe(df)
+                self.display_dataframe(df, widgettype=self.tableWidget)
             except Exception as e:
                 self.show_error_message("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
 
@@ -1004,7 +1018,6 @@ class createtrainclass(QMainWindow, form_class):
             all_results.append(results)
             # 각 파일의 결과를 전체 리스트에 추가
 
-        print('필드1 확인: ', all_results)
 
         self.save_to_csv(all_results)
         return results
@@ -1112,6 +1125,7 @@ class createtrainclass(QMainWindow, form_class):
             for key, value in onedata:
                 if key == 'GOP':
                     if isinstance(value, str) and ":" in value:
+                        # 자식 속성 있는 경우 속성 분할(예: “생성 시간: 1234, 수정 시간: 5678”).
                         attributes = [attr.strip() for attr in value.split(",")]
                         for attr in attributes:
                             if ":" in attr:
@@ -1127,6 +1141,7 @@ class createtrainclass(QMainWindow, form_class):
         # CSV에 쓰기
         if self.detectmode == 0:
             with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+                # 헤더 작성
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
 
@@ -1145,6 +1160,7 @@ class createtrainclass(QMainWindow, form_class):
 
                         # 필드 값을 CSV에 저장
                         if isinstance(value, str):
+                            # : 있는거 세부 속성 나누기
                             attributes = [attr.strip() for attr in value.split(",")]
                             for attr in attributes:
                                 if ":" in attr:
@@ -1198,8 +1214,6 @@ class createtrainclass(QMainWindow, form_class):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Prediction failed for {file_path}: {str(e)}")
-
-
 
 
     def flatten_features_for_prediction(self, data):
@@ -1259,11 +1273,22 @@ class createtrainclass(QMainWindow, form_class):
 
     def load_model_and_scaler(self):
         """Load the trained model and scaler from disk."""
-        model_path = "Xgboostmodel.pkl"
-        scaler_path = "Xgboostscaler.pkl"
-        if os.path.exists(model_path) and os.path.exists(scaler_path):
-            self.model = joblib.load(model_path)
-            self.scaler = joblib.load(scaler_path)
+
+        binstat = self.binButton_2.isChecked()
+        mulstat = self.mulButton_2.isChecked()
+        if binstat:
+            self.classmode = 'bin_'
+        elif mulstat:
+            self.classmode = 'mul_'
+        else :
+            messagebox.showerror("에러", "바이너리/멀티 모드를 선")
+        self.aimodel = self.model_combo_2.currentText()
+
+        pklname = str(self.classmode + self.aimodel + "model.pkl")
+        self.scalername = str(self.classmode + self.aimodel + "scaler.pkl")
+        if os.path.exists(pklname) and os.path.exists(self.scalername):
+            self.model = joblib.load(pklname)
+            self.scaler = joblib.load(self.scalername)
         else:
             raise FileNotFoundError("Model or scaler file not found.")
 
@@ -1297,6 +1322,19 @@ class createtrainclass(QMainWindow, form_class):
         # Add predictions to DataFrame
         df['predicted_label'] = y_pred
 
+        labeltransferdf = pd.read_excel(self.labelinfofile)
+
+        temppred = str(y_pred[0])
+        filtered_df = labeltransferdf[temppred]
+
+
+        try :
+            fileaccuracy = "{:.3f}".format(y_pred_probs[0][1] * 100)
+            pyautogui.alert(f"{fileaccuracy}% 확률로 {filtered_df[0]}({y_pred}) 입니다")
+        except:
+            fileaccuracy = "{:.3f}".format(y_pred_probs[0] * 100)
+            pyautogui.alert(f"{fileaccuracy}% 확률로 {y_pred} 입니다")
+
         return df
 
     def show_prediction_results(self, df):
@@ -1306,7 +1344,7 @@ class createtrainclass(QMainWindow, form_class):
 
     def on_train_button_click(self):
         """Trigger model training."""
-        self.gotrain()
+        self.gotrain(self.classmode)
 
     def align_features_with_model(self, df):
         """Align DataFrame columns with the model's feature set."""
@@ -1332,6 +1370,8 @@ class createtrainclass(QMainWindow, form_class):
         finally:
             if os.path.exists(file_name):
                 os.remove(file_name)
+
+
 
 
     def main(self):
@@ -1405,6 +1445,125 @@ class createtrainclass(QMainWindow, form_class):
             elif choice ==5:
                 print("종료")
                 break
+
+
+    def ask_overwrite_labels(self):
+        """덮어쓰기 여부를 묻는 팝업."""
+        reply = QMessageBox.question(
+            self, "Overwrite Labels", "Do you want to overwrite existing labels?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        return reply == QMessageBox.Yes
+
+    def open_data_entry_window(self):
+        """데이터 입력 창 열기."""
+        overwrite_labels = self.ask_overwrite_labels()
+        self.data_entry_window = DataEntryWindow(overwrite_labels)
+        self.data_entry_window.show()
+        self.load_excel_data()
+
+    def load_excel_data(self):
+        """엑셀 데이터를 DataFrame으로 불러와 테이블에 표시."""
+        if not os.path.exists("labelinfo.xlsx"):
+            QMessageBox.warning(self, "Warning", "No Excel file found!")
+            return
+
+        df = pd.read_excel("labelinfo.xlsx")  # 엑셀 파일을 DataFrame으로 로드
+        self.display_dataframe(df, widgettype=self.tableWidget_train)
+        self.display_dataframe(df, widgettype=self.tableWidget_detect)
+
+##################라벨입력
+class DataEntryWindow(QWidget):
+    def __init__(self, overwrite_labels):
+        super().__init__()
+        self.setWindowTitle("Data Entry")
+        self.label_counter = 0
+        self.headers = []
+        self.values = []
+        self.filename = "labelinfo.xlsx"
+        if not overwrite_labels:
+            self.load_existing_labels()
+
+        # UI 구성
+        layout = QVBoxLayout()
+
+        self.header_label = QLabel(f"Current Label: {self.label_counter}")
+        layout.addWidget(self.header_label)
+
+        self.value_input = QLineEdit()
+        self.value_input.setPlaceholderText("Enter value...")
+        layout.addWidget(self.value_input)
+
+        add_value_button = QPushButton("Add Value")
+        add_value_button.clicked.connect(self.add_value)
+        layout.addWidget(add_value_button)
+
+        stop_button = QPushButton("Stop and Save")
+        stop_button.clicked.connect(self.stop_and_save)
+        layout.addWidget(stop_button)
+
+        self.table = QTableWidget()
+        layout.addWidget(self.table)
+
+        self.setLayout(layout)
+        self.update_display()
+
+    def load_existing_labels(self):
+        """기존 엑셀 파일에서 라벨 로드."""
+        if os.path.exists(self.filename):
+            workbook = load_workbook(self.filename)
+            sheet = workbook.active
+            if sheet.max_row > 0:
+                self.headers = [cell.value for cell in sheet[1]]
+                self.label_counter = len(self.headers)
+            workbook.close()
+
+    def add_value(self):
+        """값을 추가하고 다음 라벨로 이동."""
+        value = self.value_input.text()
+        if not value:
+            QMessageBox.critical(self, "Error", "Value cannot be empty!")
+            return
+
+        self.values.append(value)
+        self.headers.append(str(self.label_counter))
+        self.label_counter += 1
+        self.value_input.clear()
+        self.update_display()
+        self.header_label.setText(f"Current Label: {self.label_counter}")
+
+    def update_display(self):
+        """현재까지 입력된 데이터를 테이블에 표시."""
+        self.table.setRowCount(1)
+        self.table.setColumnCount(len(self.headers))
+        self.table.setHorizontalHeaderLabels(self.headers)
+        for col, value in enumerate(self.values):
+            self.table.setItem(0, col, QTableWidgetItem(value))
+
+    def stop_and_save(self):
+        """엑셀에 데이터를 저장하고 창 닫기."""
+        if not self.values:
+            QMessageBox.warning(self, "Warning", "No data to save!")
+            return
+
+        if os.path.exists(self.filename):
+            workbook = load_workbook(self.filename)
+            sheet = workbook.active
+            if sheet.max_row == 0:
+                sheet.append(self.headers)
+        else:
+            workbook = Workbook()
+            sheet = workbook.active
+            sheet.append(self.headers)
+
+        sheet.append(self.values)
+        workbook.save(self.filename)
+        workbook.close()
+
+        QMessageBox.information(self, "Success", "Data saved successfully!")
+        self.close()
+
+
 
 
 

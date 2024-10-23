@@ -59,8 +59,15 @@ class PredictionModule(QMainWindow):
     def load_model_and_scaler(self):
         """Load the model and scaler if available."""
         folder_path = os.getcwd()
-        model_path = os.path.join(folder_path, "Xgboostmodel.pkl")
-        scaler_path = os.path.join(folder_path, "Xgboostscaler.pkl")
+        self.aimodel = self.model_combo_2.currentText()
+
+        pklname = os.path.join(folder_path, str(self.classmode + self.aimodel + "model.pkl"))
+
+        scalername = os.path.join(folder_path, str(self.classmode + self.aimodel + "scaler.pkl"))
+
+
+        model_path = os.path.join(folder_path, pklname)
+        scaler_path = os.path.join(folder_path, scalername)
 
         try:
             if self.index in [0, 2, 3]:  # Ensemble models

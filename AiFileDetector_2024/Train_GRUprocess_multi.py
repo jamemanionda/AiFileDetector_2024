@@ -1,5 +1,7 @@
 import json
 import pickle
+
+import pyautogui
 import seaborn as sns
 from keras.optimizers import Adam
 from keras.regularizers import l2
@@ -139,8 +141,9 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
         results_df = pd.DataFrame(list(results.items()), columns=['name', 'result'])
         return results, success_failure, results_df
 
-    def gotrain(self):
+    def gotrain(self, classmode):
         print("***다중분류 시작***")
+        self.classmode = classmode
         df, _ = self.preprocess_data(self.csv_path, is_train=True)
 
 
@@ -206,6 +209,8 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
         print(f"F1 Score: {f1:.2f}")
 
 
+
+
     def confirmfile(self, makefile):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
@@ -260,11 +265,15 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
         return df
 
     def train_model(self, df):
-        if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
-            self.ensemble(df)
+        try :
+            if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
+                model, accuracy = self.ensemble(df)
+                pyautogui.alert(f"정확도 {accuracy}%로 학습되었습니다.")
 
-        elif self.index == 1:
-            self.lstm(df)
+            elif self.index == 1:
+                self.lstm(df)
+        except :
+            self.index = 0
 
     def confusion_matrix2(self, y_train, y_pred_classes):
         # Confusion matrix 생성
@@ -504,10 +513,10 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
             self.aimodel = self.comboBox.currentText()
 
             folder_path = os.getcwd()
-            file_path = os.path.join(folder_path, str(self.aimodel + "model.pkl"))
-            joblib.dump(self.model, file_path)
+            pklname = os.path.join(folder_path, str(self.classmode + self.aimodel + "model.pkl"))
+            joblib.dump(self.model, pklname)
 
-            self.scalername = os.path.join(folder_path, str(self.aimodel + "scaler.pkl"))
+            self.scalername = os.path.join(folder_path, str(self.classmode + self.aimodel + "scaler.pkl"))
             with open(self.scalername, 'wb') as f:
                 joblib.dump(self.scaler, f)
                 f.close()

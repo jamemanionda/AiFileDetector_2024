@@ -1,5 +1,7 @@
 import json
 import pickle
+
+import pyautogui
 import seaborn as sns
 from keras.optimizers import Adam
 from keras.regularizers import l2
@@ -31,7 +33,8 @@ from tensorflow.python.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 class twoTrainClass():
 
-    def gotrain(self):
+    def gotrain(self, classmode):
+        self.classmode = classmode
         print("***이진분류 시작***")
         df, _ = self.preprocess_data(self.csv_path, is_train=True)
 
@@ -94,12 +97,17 @@ class twoTrainClass():
         print(f"Precision: {precision:.2f}")
         print(f"Recall: {recall:.2f}")
         print(f"F1 Score: {f1:.2f}")
-    def train_model(self, df):
-        if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
-            self.ensemble(df)
 
-        elif self.index == 1:
-            self.lstm(df)
+    def train_model(self, df):
+        try:
+            if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
+                self.ensemble(df)
+
+            elif self.index == 1:
+                self.lstm(df)
+        except :
+            self.index = 0
+            self.ensemble(df)
 
     def analyze_prediction(self, df, original_labels):
         """위변조 판단"""
@@ -213,10 +221,10 @@ class twoTrainClass():
             self.aimodel = self.comboBox.currentText()
 
             folder_path = os.getcwd()
-            file_path = os.path.join(folder_path, str(self.aimodel + "model_bin.pkl"))
-            joblib.dump(self.model, file_path)
+            pklname = os.path.join(folder_path, str(self.classmode + self.aimodel + "model.pkl"))
+            joblib.dump(self.model, pklname)
 
-            self.scalername = os.path.join(folder_path, str(self.aimodel + "scaler_bin.pkl"))
+            self.scalername = os.path.join(folder_path, str(self.classmode + self.aimodel + "scaler.pkl"))
             with open(self.scalername, 'wb') as f:
                 joblib.dump(self.scaler, f)
                 f.close()
@@ -312,6 +320,8 @@ class twoTrainClass():
         # 성능 평가
         y_pred = self.model.predict(X_test_scaled)
         accuracy = accuracy_score(y_test, y_pred)
+
+        pyautogui.alert(f"정확도 {accuracy}%로 학습되었습니다.")
         print(f"Model Accuracy: {accuracy:.2f}")
 
         # Confusion Matrix 시각화
