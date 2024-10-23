@@ -819,6 +819,8 @@ class createtrainclass(QMainWindow, form_class):
         if isinstance(file_paths, str):
             file_paths = [file_paths]
 
+
+
         for file_path in file_paths:
             filecount +=1
             results = []
@@ -1003,6 +1005,7 @@ class createtrainclass(QMainWindow, form_class):
 
 
         self.save_to_csv(all_results)
+
         return results
 
     def on_structure_val_changed(self, state):
@@ -1135,57 +1138,56 @@ class createtrainclass(QMainWindow, form_class):
             if field not in fieldnames:
                 fieldnames.append(field)
 
-        print('필드명: ', fieldnames)
+        print('필드 확인: ', fieldnames)
 
         # CSV에 쓰기
-        if self.detectmode == False:
-            with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
-                # 헤더 작성
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
+        with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+            # 헤더 작성
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
 
-                for row in existing_rows:
-                    writer.writerow({key: row.get(key, "") for key in fieldnames})
+            for row in existing_rows:
+                writer.writerow({key: row.get(key, "") for key in fieldnames})
 
-                # Write new data with the combined fieldnames
-                for data in all_data:
-                    row_data = {}
-                    key_count = {}  # 중복 key 카운트 리셋
+            # Write new data with the combined fieldnames
+            for data in all_data:
+                row_data = {}
+                key_count = {}  # 중복 key 카운트 리셋
 
-                    for key, value in data:
-                        if key in key_count:
-                            key_count[key] += 1
-                        else:
-                            key_count[key] = 1
+                for key, value in data:
+                    if key in key_count:
+                        key_count[key] += 1
+                    else:
+                        key_count[key] = 1
 
-                            # 중복 처리된 키는 'key(숫자)' 형식으로 변경
-                        if key_count[key] > 1:
-                            key = f"{key}({key_count[key]})"
+                        # 중복 처리된 키는 'key(숫자)' 형식으로 변경
+                    if key_count[key] > 1:
+                        key = f"{key}({key_count[key]})"
 
-                        if isinstance(value, str):
-                            # : 있는거 세부 속성 나누기
-                            attributes = [attr.strip() for attr in value.split(",")]
-                            for attr in attributes:
-                                if ":" in attr:
-                                    attr_name, attr_value = attr.split(":", 1)
+                    if isinstance(value, str):
+                        # : 있는거 세부 속성 나누기
+                        attributes = [attr.strip() for attr in value.split(",")]
+                        for attr in attributes:
+                            if ":" in attr:
+                                attr_name, attr_value = attr.split(":", 1)
+                                row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                            else:
+                                # : 없는 것들
+                                row_data[key] = value
+                    else:
+                        # sting 아닌 hex 값으로만 가지는 애들
+                        if isinstance(value, list):
+                            for item in value:
+                                if ":" in item:  # Ensure the item has a colon to avoid unpacking errors
+                                    attr_name, attr_value = item.split(":", 1)
                                     row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
                                 else:
-                                    # : 없는 것들
-                                    row_data[key] = value
+                                    row_data[key] = item
                         else:
-                            # sting 아닌 hex 값으로만 가지는 애들
-                            if isinstance(value, list):
-                                for item in value:
-                                    if ":" in item:  # Ensure the item has a colon to avoid unpacking errors
-                                        attr_name, attr_value = item.split(":", 1)
-                                        row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
-                                    else:
-                                        row_data[key] = item
-                            else:
-                                row_data[key] = value
-                    writer.writerow({key: row_data.get(key, "") for key in fieldnames})
+                            row_data[key] = value
+                writer.writerow({key: row_data.get(key, "") for key in fieldnames})
 
-            print(f"Results saved to {csv_file}")
+        print(f"Results saved to {csv_file}")
 
     @staticmethod
     def calculate_simhash_lib(value):
