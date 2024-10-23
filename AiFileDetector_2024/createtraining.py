@@ -1004,6 +1004,7 @@ class createtrainclass(QMainWindow, form_class):
             all_results.append(results)
             # 각 파일의 결과를 전체 리스트에 추가
 
+        print('필드1 확인: ', all_results)
 
         self.save_to_csv(all_results)
         return results
@@ -1063,129 +1064,101 @@ class createtrainclass(QMainWindow, form_class):
             self.frame_ratio_state = False
             self.csv_file = self.csv_file.replace('_ratio', '')
 
-
-
-
-
-
-    # 기연 추가 - 결과를 CSV로 저장
+    # 결과를 CSV로 저장
     def save_to_csv(self, all_data):
         csv_file = self.csv_file
         timestamp = datetime.now().strftime("%y%m%d%H%M%S")
 
-        # 기존 파일 이름과 시간을 조합한 파일 이름 생성
+        # 파일 이름에 타임스탬프 추가
         csv_file = f"{csv_file}_{timestamp}.csv"
         csv_file = os.path.join(self.direc, csv_file)
 
-        # 기존 파일 존재할 때 existing_rows와 existing_fieldnames로 보존
-        existing_rows = []
-        if os.path.exists(csv_file):
-            with open(csv_file, 'r', encoding='utf-8') as csvfile:
-                reader = csv.DictReader(csvfile)
-                existing_fieldnames = reader.fieldnames if reader.fieldnames else []
-                for row in reader:
-                    existing_rows.append(row)
-        else:
-            existing_fieldnames = []
+        # 필드명 추출 - 모든 파일의 필드를 확인하여 중복 필드 처리
+        fieldnames = []
+        key_count_global = {}  # 전체 파일에서의 중복 key 카운트 딕셔너리
 
-        # 새 필드명 추출 - 자식속성 vs. 단일속성
-        new_fieldnames = []
-        key_count = {} # 중복 key 카운트
+        # 모든 파일의 데이터를 순회하여 필드 추출
+        for file_data in all_data:
+            key_count_local = {}  # 각 파일 내에서의 중복 key 카운트
+            for key, value in file_data:
+                # 중복 필드 처리 (필드 이름 중복 시 숫자를 붙임)
+                if key in key_count_local:
+                    key_count_local[key] += 1
+                    key_with_count = f"{key}({key_count_local[key]})"
+                else:
+                    key_count_local[key] = 1
+                    key_with_count = key
 
-        for row in all_data[0]:
-            key, value = row
+                # 콜론이 있는 경우 자식 속성 분리
+                if isinstance(value, str) and ":" in value:
+                    attributes = [attr.strip() for attr in value.split(",")]
+                    for attr in attributes:
+                        if ":" in attr:
+                            attr_name = f"{key_with_count}_{attr.split(':')[0].strip()}"
+                            attr_value = attr.split(":")[1].strip()
 
-            if key in key_count: # 중복 처리용
-                key_count[key] += 1
-            else:
-                key_count[key] = 1
+                            # 필드가 fieldnames에 없고 값이 있는 경우만 필드를 추가
+                            if attr_name not in fieldnames and attr_value:
+                                fieldnames.append(attr_name)
+                else:
+                    if key_with_count not in fieldnames:
+                        fieldnames.append(key_with_count)
 
-            if key_count[key] > 1: # 중복 처리된 키는 'key(숫자)' 형식으로 변경
-                key = f"{key}({key_count[key]})"
+            print('keycount (local):', key_count_local)
+            print('new_fieldnames:', fieldnames)
 
-            if isinstance(value, str) and ":" in value: # 콜론 존재 경우
-                # 자식 속성 있는 경우 속성 분할(예: 'Create Time: 3806600670', 'Modify Time: 3806600691', 'Timescale: 44100', 'Duration: 2903250').
-                attributes = [attr.strip() for attr in value.split(",")] # 일단 쉼표로 구분하고
-                for attr in attributes:
-                    if ":" in attr:  # ex. 'name', 'mvhd_Create Time', 'mvhd_Modify Time', 'mvhd_Timescale', 'mvhd_Duration'
-                        attr_name = f"{key}_{attr.split(':')[0].strip()}"
-                        if attr_name not in new_fieldnames:
-                            new_fieldnames.append(attr_name)
-            else:
-                if key not in new_fieldnames:
-                    new_fieldnames.append(key) # 단일속성이라 key가 필드
-
-        # GOP 처리
+        # GOP 처리 (중복 처리 방식과 동일)
         for onedata in all_data:
-            for row in onedata:
-                key, value = row
+            for key, value in onedata:
                 if key == 'GOP':
                     if isinstance(value, str) and ":" in value:
-                        # 자식 속성 있는 경우 속성 분할(예: “생성 시간: 1234, 수정 시간: 5678”).
                         attributes = [attr.strip() for attr in value.split(",")]
                         for attr in attributes:
-                            if ":" in attr:  # Ensure the attribute has a colon to avoid unpacking errors
+                            if ":" in attr:
                                 attr_name = f"{key}_{attr.split(':')[0].strip()}"
-                                if attr_name not in new_fieldnames:
-                                    new_fieldnames.append(attr_name)
+                                if attr_name not in fieldnames:
+                                    fieldnames.append(attr_name)
                     else:
-                        if key not in new_fieldnames:
-                            new_fieldnames.append(key)
+                        if key not in fieldnames:
+                            fieldnames.append(key)
 
-        # 순서와 고유성을 유지하면서 기존 필드명과 새 필드명을 결합
-        fieldnames = existing_fieldnames[:]
-        for field in new_fieldnames:
-            if field not in fieldnames:
-                fieldnames.append(field)
-
-        print('필드 확인: ', fieldnames)
+        print('최종 필드명 확인: ', fieldnames)
 
         # CSV에 쓰기
         if self.detectmode == 0:
             with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
-                # 헤더 작성
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
 
-                for row in existing_rows:
-                    writer.writerow({key: row.get(key, "") for key in fieldnames})
-
-                # Write new data with the combined fieldnames
-                for data in all_data:
+                # 새로운 데이터 쓰기
+                for file_data in all_data:
                     row_data = {}
-                    key_count = {}  # 중복 key 카운트 리셋
+                    key_count_local = {}  # 각 파일 내에서의 중복 key 카운트 리셋
 
-                    for key, value in data:
-                        if key in key_count:
-                            key_count[key] += 1
+                    for key, value in file_data:
+                        if key in key_count_local:
+                            key_count_local[key] += 1
+                            key_with_count = f"{key}({key_count_local[key]})"
                         else:
-                            key_count[key] = 1
+                            key_count_local[key] = 1
+                            key_with_count = key
 
-                            # 중복 처리된 키는 'key(숫자)' 형식으로 변경
-                        if key_count[key] > 1:
-                            key = f"{key}({key_count[key]})"
-
+                        # 필드 값을 CSV에 저장
                         if isinstance(value, str):
-                            # : 있는거 세부 속성 나누기
                             attributes = [attr.strip() for attr in value.split(",")]
                             for attr in attributes:
                                 if ":" in attr:
                                     attr_name, attr_value = attr.split(":", 1)
-                                    row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                                    if f"{key_with_count}_{attr_name.strip()}" in fieldnames:
+                                        row_data[f"{key_with_count}_{attr_name.strip()}"] = attr_value.strip()
                                 else:
-                                    # : 없는 것들
-                                    row_data[key] = value
+                                    if key_with_count in fieldnames:
+                                        row_data[key_with_count] = value
                         else:
-                            # sting 아닌 hex 값으로만 가지는 애들
-                            if isinstance(value, list):
-                                for item in value:
-                                    if ":" in item:  # Ensure the item has a colon to avoid unpacking errors
-                                        attr_name, attr_value = item.split(":", 1)
-                                        row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
-                                    else:
-                                        row_data[key] = item
-                            else:
-                                row_data[key] = value
+                            if key_with_count in fieldnames:
+                                row_data[key_with_count] = value
+
+                    # CSV에 기록
                     writer.writerow({key: row_data.get(key, "") for key in fieldnames})
 
             print(f"Results saved to {csv_file}")
