@@ -140,7 +140,7 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
         return results, success_failure, results_df
 
     def gotrain(self):
-
+        print("***다중분류 시작***")
         df, _ = self.preprocess_data(self.csv_path, is_train=True)
 
 

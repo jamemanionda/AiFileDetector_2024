@@ -20,6 +20,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow
     QVBoxLayout, QTableWidgetItem, QMessageBox
 from PyQt5 import uic, QtWidgets
 from simhash import Simhash
+
+from Train_GRUprocess import twoTrainClass
 from clustering1 import trainClustering
 from Train_GRUprocess_multi import TrainClass
 from extractframe_single import extractGOP
@@ -59,7 +61,7 @@ class createtrainclass(QMainWindow, form_class):
 
         self.setupUi(self) # UI 요소 초기화
         self.clustering = trainClustering()
-        self.trainclass = TrainClass()
+        self.trainclass = twoTrainClass()
         # 확장자 필터
         self.extension_list = ["확장자", ".mp4",  ".mov",".png", ".jpg", ".pdf", ".m4a"]
         self.comboBox.addItems(self.extension_list)
@@ -79,7 +81,7 @@ class createtrainclass(QMainWindow, form_class):
         input_thread.start()
         input_thread.join(timeout=10)  # 10초 대기
         initialcode = 0
-
+        self.detectmode = 0
         if initialcode == 0:
             try:
                 print("출력: [", self.direc, "]")
@@ -144,6 +146,7 @@ class createtrainclass(QMainWindow, form_class):
 
     def classmain(self):
         self.trainclass.csv_path = self.csv_path
+        self.trainclass.comboBox = self.model_combo_2
         self.trainclass.gotrain()
 
     def classdetect(self):
@@ -819,8 +822,6 @@ class createtrainclass(QMainWindow, form_class):
         if isinstance(file_paths, str):
             file_paths = [file_paths]
 
-
-
         for file_path in file_paths:
             filecount +=1
             results = []
@@ -1005,7 +1006,6 @@ class createtrainclass(QMainWindow, form_class):
 
 
         self.save_to_csv(all_results)
-
         return results
 
     def on_structure_val_changed(self, state):
@@ -1141,53 +1141,54 @@ class createtrainclass(QMainWindow, form_class):
         print('필드 확인: ', fieldnames)
 
         # CSV에 쓰기
-        with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
-            # 헤더 작성
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
+        if self.detectmode == 0:
+            with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+                # 헤더 작성
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
 
-            for row in existing_rows:
-                writer.writerow({key: row.get(key, "") for key in fieldnames})
+                for row in existing_rows:
+                    writer.writerow({key: row.get(key, "") for key in fieldnames})
 
-            # Write new data with the combined fieldnames
-            for data in all_data:
-                row_data = {}
-                key_count = {}  # 중복 key 카운트 리셋
+                # Write new data with the combined fieldnames
+                for data in all_data:
+                    row_data = {}
+                    key_count = {}  # 중복 key 카운트 리셋
 
-                for key, value in data:
-                    if key in key_count:
-                        key_count[key] += 1
-                    else:
-                        key_count[key] = 1
+                    for key, value in data:
+                        if key in key_count:
+                            key_count[key] += 1
+                        else:
+                            key_count[key] = 1
 
-                        # 중복 처리된 키는 'key(숫자)' 형식으로 변경
-                    if key_count[key] > 1:
-                        key = f"{key}({key_count[key]})"
+                            # 중복 처리된 키는 'key(숫자)' 형식으로 변경
+                        if key_count[key] > 1:
+                            key = f"{key}({key_count[key]})"
 
-                    if isinstance(value, str):
-                        # : 있는거 세부 속성 나누기
-                        attributes = [attr.strip() for attr in value.split(",")]
-                        for attr in attributes:
-                            if ":" in attr:
-                                attr_name, attr_value = attr.split(":", 1)
-                                row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
-                            else:
-                                # : 없는 것들
-                                row_data[key] = value
-                    else:
-                        # sting 아닌 hex 값으로만 가지는 애들
-                        if isinstance(value, list):
-                            for item in value:
-                                if ":" in item:  # Ensure the item has a colon to avoid unpacking errors
-                                    attr_name, attr_value = item.split(":", 1)
+                        if isinstance(value, str):
+                            # : 있는거 세부 속성 나누기
+                            attributes = [attr.strip() for attr in value.split(",")]
+                            for attr in attributes:
+                                if ":" in attr:
+                                    attr_name, attr_value = attr.split(":", 1)
                                     row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
                                 else:
-                                    row_data[key] = item
+                                    # : 없는 것들
+                                    row_data[key] = value
                         else:
-                            row_data[key] = value
-                writer.writerow({key: row_data.get(key, "") for key in fieldnames})
+                            # sting 아닌 hex 값으로만 가지는 애들
+                            if isinstance(value, list):
+                                for item in value:
+                                    if ":" in item:  # Ensure the item has a colon to avoid unpacking errors
+                                        attr_name, attr_value = item.split(":", 1)
+                                        row_data[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                                    else:
+                                        row_data[key] = item
+                            else:
+                                row_data[key] = value
+                    writer.writerow({key: row_data.get(key, "") for key in fieldnames})
 
-        print(f"Results saved to {csv_file}")
+            print(f"Results saved to {csv_file}")
 
     @staticmethod
     def calculate_simhash_lib(value):
@@ -1203,7 +1204,7 @@ class createtrainclass(QMainWindow, form_class):
         return df
     def load_file_for_prediction(self):
         """Open a dialog to select a file for prediction."""
-        self.detectmode = True
+        self.detectmode = 1
         file_path= self.file_paths[0]
         if file_path:
             self.predict_on_file(file_path)
@@ -1223,7 +1224,9 @@ class createtrainclass(QMainWindow, form_class):
             print(predicted_df)
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Prediction failed: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Prediction failed for {file_path}: {str(e)}")
+
+
 
 
     def flatten_features_for_prediction(self, data):
@@ -1315,7 +1318,9 @@ class createtrainclass(QMainWindow, form_class):
         # Scale features and predict label
         X_new_scaled = self.scaler.transform(df)
         y_pred = self.model.predict(X_new_scaled)
+        y_pred_probs = self.model.predict_proba(X_new_scaled)
 
+        print(y_pred_probs,"% 확률")
         # Add predictions to DataFrame
         df['predicted_label'] = y_pred
 
