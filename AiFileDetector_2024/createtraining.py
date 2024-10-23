@@ -859,9 +859,15 @@ class createtrainclass(QMainWindow, form_class):
 
                         box_size, box_type = struct.unpack(">I4s", box_header)  # size 4Bytes, type 4Bytes 추출
                         try:
+                            lenbox_type = len(box_type)
+
                             box_type = box_type.decode("utf-8")
-                        except :
+                            if len(box_type) != 4 or "\\x" in repr(box_type):
+                                raise ValueError(f"잘못된 박스 타입 감지: {box_type}")
+
+                        except Exception as e:
                             f.seek(0,1)
+                            continue
 
                         if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
                             break
