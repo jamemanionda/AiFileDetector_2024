@@ -31,7 +31,6 @@ import joblib
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.python.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
-form_class = uic.loadUiType("UI_Design\\Training.ui")[0]
 
 '''
 device_lib.list_local_devices()
@@ -44,7 +43,7 @@ with tf.device('/GPU:0'):
 '''
 
 
-class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
+class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     def __init__(self):
         super(TrainClass, self).__init__()
@@ -99,6 +98,17 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
                 self.tableWidget.setColumnCount(0)
                 #self.show_error_message("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
 
+    def plot_feature_importance(self, importance_df):
+        plt.figure(figsize=(10, 8))
+        plt.barh(importance_df['Feature'], importance_df['Importance'], align='center')
+        plt.xlabel('Importance')
+        plt.ylabel('Feature')
+        plt.title('Feature Importance')
+        plt.gca().invert_yaxis()  # Flip the order for better visualization
+        plt.show()
+
+
+
     def display_dataframe(self, df):
         self.tableWidget.setRowCount(df.shape[0])
         self.tableWidget.setColumnCount(df.shape[1])
@@ -141,7 +151,8 @@ class TrainClass(QMainWindow, form_class):  # QMainWindow, form_class
         results_df = pd.DataFrame(list(results.items()), columns=['name', 'result'])
         return results, success_failure, results_df
 
-    def gotrain(self, classmode):
+    def gotrain(self, classmode, model):
+        self.model = model
         print("***다중분류 시작***")
         self.classmode = classmode
         df, _ = self.preprocess_data(self.csv_path, is_train=True)

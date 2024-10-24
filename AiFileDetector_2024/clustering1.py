@@ -18,7 +18,6 @@ import joblib
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
 from sklearn.decomposition import PCA
 
-form_class = uic.loadUiType("UI_Design\\Training.ui")[0]
 
 '''
 device_lib.list_local_devices()
@@ -31,7 +30,7 @@ with tf.device('/GPU:0'):
 '''
 
 
-class trainClustering(QMainWindow, form_class):  # QMainWindow, form_class
+class trainClustering(QMainWindow):  # QMainWindow, form_class
 
     def __init__(self):
         super(trainClustering, self).__init__()
@@ -40,24 +39,12 @@ class trainClustering(QMainWindow, form_class):  # QMainWindow, form_class
         # self.dpath = 'E:\\'
         self.model = None
 
-        self.setupUi(self)
 
         self.dirModel = QFileSystemModel()
         self.dirModel.setRootPath(QDir.rootPath())
-        # self.dirModel.setRootPath("E:\\AiFileDetectorE")
-        # os.chdir("E:\\AiFileDetectorE")
-        self.treeView.setModel(self.dirModel)
-
-        self.treeView.setRootIndex(self.dirModel.index(os.getcwd()))
-        self.treeView.clicked.connect(self.file_selected)
-
         self.xlsfileext = '.csv'
         self.filter_files_by_extension(self.xlsfileext)
-        self.comboBox.activated.connect(self.on_combobox_select)
 
-        self.LoadButton.clicked.connect(self.on_train_button_click)
-
-        # self.LoadButton.clicked.connect(self.main)
 
     def filter_files_by_extension(self, xlsext):
         if xlsext:

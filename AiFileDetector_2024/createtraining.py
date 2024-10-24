@@ -161,7 +161,7 @@ class createtrainclass(QMainWindow, form_class):
         self.model_combo.activated.connect(self.on_combobox_select)
         self.trainclass.csv_path = self.csv_path
         self.trainclass.comboBox = self.model_combo_2
-        self.trainclass.gotrain(self.classmode)
+        self.trainclass.gotrain(self.classmode, self.aimodel)
 
     def classdetect(self):
         self.detectclass.predict(file_path=self.file_paths[0])
@@ -1123,8 +1123,8 @@ class createtrainclass(QMainWindow, form_class):
                     if key_with_count not in fieldnames:
                         fieldnames.append(key_with_count)
 
-            print('keycount (local):', key_count_local)
-            print('new_fieldnames:', fieldnames)
+            #print('keycount (local):', key_count_local)
+            #print('new_fieldnames:', fieldnames)
 
         # GOP 처리 (중복 처리 방식과 동일)
         for onedata in all_data:
@@ -1350,7 +1350,7 @@ class createtrainclass(QMainWindow, form_class):
 
     def on_train_button_click(self):
         """Trigger model training."""
-        self.gotrain(self.classmode)
+        self.gotrain(self.classmode, self.aimodel)
 
     def align_features_with_model(self, df):
         """Align DataFrame columns with the model's feature set."""

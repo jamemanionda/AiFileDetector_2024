@@ -33,7 +33,8 @@ from tensorflow.python.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 class twoTrainClass():
 
-    def gotrain(self, classmode):
+    def gotrain(self, classmode, model):
+        self.model = model
         self.classmode = classmode
         print("***이진분류 시작***")
         df, _ = self.preprocess_data(self.csv_path, is_train=True)
@@ -102,10 +103,13 @@ class twoTrainClass():
         try:
             if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
                 self.ensemble(df)
+                self.get_feature_importance()
+                importance_df = self.get_feature_importance()
+                self.plot_feature_importance(importance_df)
 
             elif self.index == 1:
                 self.lstm(df)
-        except :
+        except Exception as e:
             self.index = 0
             self.ensemble(df)
 
@@ -239,6 +243,27 @@ class twoTrainClass():
         for column in columns_to_process:
             df[column] = df[column].apply(self.calculate_simhash_lib)
         return df
+
+    def plot_feature_importance(self, importance_df):
+        plt.figure(figsize=(10, 8))
+        plt.barh(importance_df['Feature'], importance_df['Importance'], align='center')
+        plt.xlabel('Importance')
+        plt.ylabel('Feature')
+        plt.title('Feature Importance')
+        plt.gca().invert_yaxis()  # Flip the order for better visualization
+        plt.show()
+
+    def get_feature_importance(self):
+        if hasattr(self.model, 'feature_importances_'):
+            importance = self.model.feature_importances_
+            importance_df = pd.DataFrame({
+                'Feature': self.feature_list,
+                'Importance': importance
+            }).sort_values(by='Importance', ascending=False)
+            print(importance_df)
+            return importance_df
+        else:
+            print("Model does not support feature importance.")
 
     def lstm(self, df):
         """LSTM 이진분류 훈련"""
