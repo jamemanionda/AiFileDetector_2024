@@ -66,7 +66,7 @@ QTabBar::tab:hover {
 </string>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>0</number>
     </property>
     <property name="iconSize">
      <size>
@@ -240,8 +240,8 @@ QHeaderView::section {
      <widget class="QLabel" name="label_2">
       <property name="geometry">
        <rect>
-        <x>110</x>
-        <y>75</y>
+        <x>60</x>
+        <y>80</y>
         <width>171</width>
         <height>16</height>
        </rect>
@@ -257,8 +257,8 @@ color: rgb(255, 255, 255);</string>
      <widget class="QPushButton" name="feature_create1">
       <property name="geometry">
        <rect>
-        <x>110</x>
-        <y>105</y>
+        <x>60</x>
+        <y>110</y>
         <width>160</width>
         <height>40</height>
        </rect>
@@ -290,8 +290,8 @@ QPushButton:pressed {
      <widget class="QPushButton" name="create_value2">
       <property name="geometry">
        <rect>
-        <x>290</x>
-        <y>105</y>
+        <x>240</x>
+        <y>110</y>
         <width>160</width>
         <height>40</height>
        </rect>
@@ -323,8 +323,8 @@ QPushButton:pressed {
      <widget class="QPushButton" name="create_sequence3">
       <property name="geometry">
        <rect>
-        <x>470</x>
-        <y>105</y>
+        <x>420</x>
+        <y>110</y>
         <width>160</width>
         <height>40</height>
        </rect>
@@ -356,9 +356,9 @@ QPushButton:pressed {
      <widget class="QPushButton" name="LoadButton">
       <property name="geometry">
        <rect>
-        <x>640</x>
-        <y>160</y>
-        <width>101</width>
+        <x>600</x>
+        <y>165</y>
+        <width>111</width>
         <height>31</height>
        </rect>
       </property>
@@ -389,8 +389,8 @@ QPushButton:pressed {
      <widget class="QProgressBar" name="progress_bar">
       <property name="geometry">
        <rect>
-        <x>110</x>
-        <y>165</y>
+        <x>60</x>
+        <y>170</y>
         <width>511</width>
         <height>25</height>
        </rect>
@@ -455,8 +455,8 @@ color: rgb(255, 255, 255);</string>
      <widget class="QWidget" name="verticalLayoutWidget">
       <property name="geometry">
        <rect>
-        <x>110</x>
-        <y>350</y>
+        <x>70</x>
+        <y>265</y>
         <width>243</width>
         <height>81</height>
        </rect>
@@ -491,8 +491,8 @@ color: rgb(255, 255, 255);</string>
      <widget class="QLabel" name="label_4">
       <property name="geometry">
        <rect>
-        <x>110</x>
-        <y>310</y>
+        <x>70</x>
+        <y>225</y>
         <width>241</width>
         <height>21</height>
        </rect>
@@ -508,8 +508,8 @@ font: 700 15pt &quot;Arial&quot;;</string>
      <widget class="QLabel" name="label_9">
       <property name="geometry">
        <rect>
-        <x>450</x>
-        <y>310</y>
+        <x>410</x>
+        <y>225</y>
         <width>241</width>
         <height>21</height>
        </rect>
@@ -525,8 +525,8 @@ font: 700 15pt &quot;Arial&quot;;</string>
      <widget class="QWidget" name="verticalLayoutWidget_3">
       <property name="geometry">
        <rect>
-        <x>450</x>
-        <y>350</y>
+        <x>410</x>
+        <y>265</y>
         <width>243</width>
         <height>81</height>
        </rect>
@@ -569,6 +569,69 @@ color: rgb(255, 255, 255);</string>
         </widget>
        </item>
       </layout>
+     </widget>
+     <widget class="QPushButton" name="label_input_but">
+      <property name="geometry">
+       <rect>
+        <x>600</x>
+        <y>115</y>
+        <width>111</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  
+	background-color: rgb(255, 254, 233);
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Playfair Display&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>Label Input</string>
+      </property>
+     </widget>
+     <widget class="QTableWidget" name="tableWidget_Create">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>365</y>
+        <width>631</width>
+        <height>201</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QTreeView {
+  background-color: rgb(45, 48, 56);
+  color: rgb(255, 255, 255);  /* 글자색을 흰색으로 변경 */
+  border: 1px solid rgb(80, 80, 80);
+  font: 9pt &quot;Playfair Display&quot;;
+}
+
+QTableView::item {
+  color: rgb(255, 255, 255);  /* 표 안의 아이템 글자색을 흰색으로 변경 */
+}
+
+QHeaderView::section {
+  background-color: rgb(58, 60, 69);
+  color: rgb(200, 200, 200);
+  border-bottom: 1px solid rgb(80, 80, 80);
+  padding: 4px;
+}</string>
+      </property>
      </widget>
     </widget>
     <widget class="QWidget" name="tab">
@@ -776,8 +839,8 @@ QPushButton:pressed {
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>250</y>
-        <width>411</width>
+        <y>270</y>
+        <width>511</width>
         <height>231</height>
        </rect>
       </property>
@@ -799,6 +862,23 @@ QHeaderView::section {
   border-bottom: 1px solid rgb(80, 80, 80);
   padding: 4px;
 }</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_7">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>240</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 16pt &quot;Arial&quot;;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>Label list</string>
       </property>
      </widget>
     </widget>
@@ -939,9 +1019,9 @@ color: rgb(255, 255, 255);</string>
      <widget class="QTableWidget" name="tableWidget_detect">
       <property name="geometry">
        <rect>
-        <x>150</x>
-        <y>220</y>
-        <width>411</width>
+        <x>120</x>
+        <y>230</y>
+        <width>511</width>
         <height>231</height>
        </rect>
       </property>
@@ -963,6 +1043,23 @@ QHeaderView::section {
   border-bottom: 1px solid rgb(80, 80, 80);
   padding: 4px;
 }</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_6">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>200</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 16pt &quot;Arial&quot;;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>Label list</string>
       </property>
      </widget>
     </widget>

@@ -3,6 +3,7 @@ import pickle
 
 import pyautogui
 import seaborn as sns
+from PyQt5.QtCore import Qt
 from keras.optimizers import Adam
 from keras.regularizers import l2
 from lightgbm import LGBMClassifier
@@ -25,7 +26,7 @@ from sklearn.metrics import accuracy_score
 import xgboost as xgb
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QMessageBox, QFileDialog, \
-    QTableWidgetItem
+    QTableWidgetItem, QVBoxLayout, QLabel, QPushButton, QDialog
 from PyQt5 import uic, QtWidgets
 import joblib
 from sklearn.utils.class_weight import compute_class_weight
@@ -33,8 +34,10 @@ from tensorflow.python.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 class twoTrainClass():
 
-    def gotrain(self, classmode, model):
-        self.model = model
+    def gotrain(self, classmode, model, index, csv_path):
+        self.index = index
+        self.aimodel = model
+        self.csv_path = csv_path
         self.classmode = classmode
         print("***이진분류 시작***")
         df, _ = self.preprocess_data(self.csv_path, is_train=True)
@@ -48,7 +51,9 @@ class twoTrainClass():
         df_train_processed = self.apply_simhash(df_train)
         print("전처리한 훈련 데이터:")
         print(df_train_processed)
-
+        tempb = len(df_train)
+        self.feature_list = df_train.drop(columns=['label']).columns.tolist()
+        tempb = len(df_train)
         # 모델 훈련
         self.train_model(df_train_processed)
         baseline_model, baseline_accuracy = self.train_baseline_model(df_train_processed)
@@ -60,7 +65,7 @@ class twoTrainClass():
         df_test = df_test.drop(columns='label')
         # 테스트 데이터 전처리
         df_test_processed = self.apply_simhash(df_test)
-        self.feature_list = df_train.drop(columns=['label']).columns.tolist()
+
         # 추후 변경 필요 --> 파일이름을 피처 반영되게
         with open('feature.json', 'w') as f:
             json.dump(self.feature_list, f)
@@ -222,13 +227,12 @@ class twoTrainClass():
         if self.index == 0 or self.index == 2 or self.index == 3:
 
 
-            self.aimodel = self.comboBox.currentText()
 
             folder_path = os.getcwd()
-            pklname = os.path.join(folder_path, str(self.classmode + self.aimodel + "model.pkl"))
+            pklname = os.path.join(folder_path, str(self.csv_path+"_" + self.aimodel + "model.pkl"))
             joblib.dump(self.model, pklname)
 
-            self.scalername = os.path.join(folder_path, str(self.classmode + self.aimodel + "scaler.pkl"))
+            self.scalername = os.path.join(folder_path, str(self.csv_path+"_" + self.aimodel + "scaler.pkl"))
             with open(self.scalername, 'wb') as f:
                 joblib.dump(self.scaler, f)
                 f.close()
@@ -345,12 +349,74 @@ class twoTrainClass():
         # 성능 평가
         y_pred = self.model.predict(X_test_scaled)
         accuracy = accuracy_score(y_test, y_pred)
-
-        pyautogui.alert(f"정확도 {accuracy}%로 학습되었습니다.")
+        message = f"정확도 {accuracy}%로 학습되었습니다."
+        self.show_alert(message)
         print(f"Model Accuracy: {accuracy:.2f}")
 
         # Confusion Matrix 시각화
         self.confusion_matrix2(y_test, y_pred)
+
+    def show_alert(self, message):
+        title = "알림"
+        app = QApplication.instance()  # 이미 실행 중인 QApplication 인스턴스 확인
+        if not app:
+            app = QApplication(sys.argv)
+
+        # QDialog를 사용해 타이틀 없는 커스텀 알림창 생성
+        dialog = QDialog()
+        dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 타이틀 바 제거 및 최상단 설정
+
+        # 다크 모드 스타일 적용
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #2e2e2e;
+                border: 2px solid #444;
+                border-radius: 15px;
+                padding: 20px;
+                font: bold 10pt "Playfair Display";
+            }
+            QLabel {
+                color: #f5f5f5;
+                font-size: 20px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                font: bold 10pt "Playfair Display";
+            }
+            QPushButton {
+                background-color: #444;
+                color: white;
+                border: 1px solid #777;
+                border-radius: 5px;
+                padding: 8px 15px;
+                margin-top: 10px;
+                font: bold 10pt "Playfair Display";
+            }
+            QPushButton:hover {
+                background-color: #555;
+            }
+        """)
+
+        # 레이아웃 생성 및 위젯 추가
+        layout = QVBoxLayout()
+        title_label = QLabel(title)
+        message_label = QLabel(message)
+        layout.addWidget(title_label)
+        layout.addWidget(message_label)
+
+        # 확인 버튼 추가
+        button = QPushButton("확인")
+        button.clicked.connect(dialog.accept)  # 버튼 클릭 시 창 닫기
+        layout.addWidget(button)
+
+        dialog.setLayout(layout)
+
+        # 창 크기 조정 및 화면 중앙 배치
+        dialog.adjustSize()
+        # screen_center = QApplication.primaryScreen().geometry().center()
+        # dialog.move(screen_center - dialog.rect().center())
+
+        # 알림 창 표시
+        dialog.exec_()
 
     @staticmethod
     def calculate_simhash_lib(value):

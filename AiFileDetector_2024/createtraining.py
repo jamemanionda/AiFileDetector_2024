@@ -13,11 +13,12 @@ import tkinter as tk
 from tkinter import simpledialog, messagebox
 
 import joblib
+import numpy as np
 import pandas as pd
 import pyautogui
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QProgressBar, QDialog, QLabel, \
-    QVBoxLayout, QTableWidgetItem, QMessageBox, QLineEdit, QPushButton, QTableWidget
+    QVBoxLayout, QTableWidgetItem, QMessageBox, QLineEdit, QPushButton, QTableWidget, QInputDialog
 from PyQt5 import uic, QtWidgets
 from openpyxl.reader.excel import load_workbook
 from openpyxl.workbook import Workbook
@@ -61,9 +62,11 @@ class createtrainclass(QMainWindow, form_class):
         self.choice = 0
         self.file_paths = []
 
+
         self.setupUi(self) # UI 요소 초기화
         self.clustering = trainClustering()
         self.trainclass = twoTrainClass()
+
         # 확장자 필터
         self.extension_list = ["확장자", ".mp4",  ".mov"]
         self.comboBox.addItems(self.extension_list)
@@ -135,8 +138,14 @@ class createtrainclass(QMainWindow, form_class):
         self.list_del.clicked.connect(self.remove_all_file)
 
         self.label_info.clicked.connect(self.open_data_entry_window)
-        self.labelinfofile = "labelinfo.xlsx"
+        self.labelinfofile = "labeldata_bin.csv"
         self.load_excel_data()
+
+        self.label_input_but.clicked.connect(self.input_label)
+        self.aimodel = self.model_combo_2.currentText()
+        self.trainindex = self.comboBox.currentIndex()
+
+
 
     def on_combobox_select(self, index):
         self.trainclass.index = index
@@ -161,8 +170,9 @@ class createtrainclass(QMainWindow, form_class):
         self.model_combo.activated.connect(self.on_combobox_select)
         self.trainclass.csv_path = self.csv_path
         self.trainclass.comboBox = self.model_combo_2
-        self.trainclass.gotrain(self.classmode, self.aimodel)
-
+        try:
+            self.trainclass.gotrain(self.classmode, self.aimodel, self.trainindex, self.csv_path)
+        except : pass
     def classdetect(self):
         self.detectclass.predict(file_path=self.file_paths[0])
 
@@ -197,9 +207,9 @@ class createtrainclass(QMainWindow, form_class):
                         self.file_paths.append(file_path)
                 if extension == '.csv':
                     self.csv_path = file_path
-                    self.open_csv2(file_path)
+                    self.open_csv2(file_path, self.tableWidget)
         except Exception as e:
-            pyautogui.alert(e)
+            self.show_alert(str(e))
 
     def ask_input(self):
         self.direc = input("데이터셋 폴더경로를 입력하세요: ")
@@ -215,14 +225,16 @@ class createtrainclass(QMainWindow, form_class):
                 item = QTableWidgetItem(str(df.iat[i, j]))
                 widgettype.setItem(i, j, item)
 
-    def open_csv2(self, csvfile):
+    def open_csv2(self, csvfile, widgett):
         file_name = csvfile
         if file_name:
             try:
                 df = pd.read_csv(file_name, encoding='UTF-8')
-                self.display_dataframe(df, widgettype=self.tableWidget)
+                self.display_dataframe(df, widgettype=widgett)
             except Exception as e:
                 self.show_error_message("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
+
+        return
 
 
     def select_all_files_in_directory(self, directory_path):
@@ -238,7 +250,7 @@ class createtrainclass(QMainWindow, form_class):
                             self.listWidget.addItem(file_path)
                             self.file_paths.append(file_path)
         except Exception as e:
-            pyautogui.alert(e)
+            self.show_alert(str(e))
 
 
     def remove_selected_file(self, item): # 선택한 파일을 목록에서 제거
@@ -706,17 +718,6 @@ class createtrainclass(QMainWindow, form_class):
         if answer:
             os.startfile(self, file_path)
 
-    def on_button_click(self):
-        self.label_data = simpledialog.askstring("입력", "라벨 데이터를 입력하세요.")
-        if self.label_data is None:
-            return
-        try:
-            number = float(self.label_data)
-        except ValueError:
-            messagebox.showerror("에러", "유효한 숫자를 입력해주세요.")
-            return
-
-        return
 
     def extract_value_tocsv(self, choice):
         x = self.get_files_value() # 정리된 데이터
@@ -741,6 +742,8 @@ class createtrainclass(QMainWindow, form_class):
                 header += ',label'
                 for i in range(len(x)):
                     x[i].append(('label', self.label_data))
+
+
 
             existing_names = set()
             try:
@@ -1126,6 +1129,11 @@ class createtrainclass(QMainWindow, form_class):
             #print('keycount (local):', key_count_local)
             #print('new_fieldnames:', fieldnames)
 
+        ##1025 레이블 추가
+        if 'label' not in fieldnames:
+            fieldnames.append('label')
+
+
         # GOP 처리 (중복 처리 방식과 동일)
         for onedata in all_data:
             for key, value in onedata:
@@ -1179,11 +1187,24 @@ class createtrainclass(QMainWindow, form_class):
                         else:
                             if key_with_count in fieldnames:
                                 row_data[key_with_count] = value
+                    ##1025 레이블 추가
+
+                    try:
+                        if hasattr(self, 'label_data') and self.label_data:
+                            row_data['label'] = self.label_data
+                        else:
+                            print("Warning: 'label_data' is not set or is empty.")
+                    except Exception as e:
+                        pass
 
                     # CSV에 기록
                     writer.writerow({key: row_data.get(key, "") for key in fieldnames})
 
             print(f"Results saved to {csv_file}")
+            savemassage = f"학습데이터셋이 파일 {csv_file} 에 저장되었습니다."
+
+            self.show_file_alert(csv_file, savemassage, self.tableWidget_Create)
+
 
     @staticmethod
     def calculate_simhash_lib(value):
@@ -1217,6 +1238,7 @@ class createtrainclass(QMainWindow, form_class):
             # Predict and show results
             predicted_df = self.predict_data(structured_data)
             print(predicted_df)
+            self.detectmode = 0
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Prediction failed for {file_path}: {str(e)}")
@@ -1288,10 +1310,11 @@ class createtrainclass(QMainWindow, form_class):
             self.classmode = 'mul_'
         else :
             messagebox.showerror("에러", "바이너리/멀티 모드를 선")
-        self.aimodel = self.model_combo_2.currentText()
-
-        pklname = str(self.classmode + self.aimodel + "model.pkl")
-        self.scalername = str(self.classmode + self.aimodel + "scaler.pkl")
+        #self.csv_path = "__1_val_241022214050_binary.csv"
+        self.csv_path = '__2_galaxy_original_edit_binary.csv'
+        #self.csv_path = '__3_Edit_Application.csv'
+        pklname = os.path.join('Y:\\', str(self.csv_path+"_" + self.aimodel + "model.pkl"))
+        self.scalername = os.path.join('Y:\\', str(self.csv_path+"_" + self.aimodel + "scaler.pkl"))
         if os.path.exists(pklname) and os.path.exists(self.scalername):
             self.model = joblib.load(pklname)
             self.scaler = joblib.load(self.scalername)
@@ -1323,25 +1346,168 @@ class createtrainclass(QMainWindow, form_class):
         X_new_scaled = self.scaler.transform(df)
         y_pred = self.model.predict(X_new_scaled)
         y_pred_probs = self.model.predict_proba(X_new_scaled)
+        predicted_class_probs = y_pred_probs[np.arange(len(y_pred)), y_pred]
 
-        print(y_pred_probs,"% 확률")
+        print(predicted_class_probs,"% 확률")
         # Add predictions to DataFrame
         df['predicted_label'] = y_pred
 
-        labeltransferdf = pd.read_excel(self.labelinfofile)
+        labeltransferdf = pd.read_excel("labelinfo.xlsx")
 
-        temppred = str(y_pred[0])
-        filtered_df = labeltransferdf[temppred]
+        try:
+            # y_pred[0] 값을 정수로 변환
+            temppred = int(y_pred[0])  # 예측 값이 정수라고 가정
+            # labeltransferdf의 컬럼명도 정수로 사용될 수 있도록 확인
+            labeltransferdf.columns = [int(col) for col in labeltransferdf.columns]
 
+            # 해당 예측 값에 해당하는 컬럼 필터링
+            filtered_df = labeltransferdf[temppred]
+        except KeyError as e:
+            message = f"해당 라벨({temppred})이 존재하지 않습니다. 라벨을 업데이트하세요."
+            self.show_alert(message)
+        except Exception as e:
+            self.show_alert(str(e))
 
         try :
-            fileaccuracy = "{:.3f}".format(y_pred_probs[0][1] * 100)
-            pyautogui.alert(f"{fileaccuracy}% 확률로 {filtered_df[0]}({y_pred}) 입니다")
-        except:
-            fileaccuracy = "{:.3f}".format(y_pred_probs[0] * 100)
-            pyautogui.alert(f"{fileaccuracy}% 확률로 {y_pred} 입니다")
-
+            fileaccuracy = "{:.3f}".format(predicted_class_probs[0][1] * 100)
+            message = f"{fileaccuracy}% 확률로 {filtered_df[0]}({y_pred}) 입니다"
+            self.show_alert(message)
+        except Exception as e:
+            fileaccuracy = "{:.3f}".format(predicted_class_probs[0] * 100)
+            message = f"{fileaccuracy}% 확률로  {filtered_df[0]}({y_pred}) 입니다"
+            self.show_alert(message)
         return df
+
+    def show_file_alert(self, file_path, messagea, widgett):
+        """파일 경로를 받아 사용자에게 알림을 표시하고 파일을 여는 함수."""
+        app = QApplication.instance()  # 이미 실행 중인 QApplication 인스턴스 확인
+        if not app:
+            app = QApplication(sys.argv)
+
+        # QDialog를 사용해 타이틀 없는 커스텀 알림창 생성
+        dialog = QDialog()
+        dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 타이틀 바 제거 및 최상단 설정
+
+        # 다크 모드 스타일 적용
+        dialog.setStyleSheet("""
+                    QDialog {
+                        background-color: #2e2e2e;
+                        border: 2px solid #444;
+                        border-radius: 15px;
+                        padding: 20px;
+                        font: bold 10pt "Playfair Display";
+                    }
+                    QLabel {
+                        color: #f5f5f5;
+                        font-size: 20px;
+                        font-weight: bold;
+                        margin-bottom: 10px;
+                        font: bold 10pt "Playfair Display";
+                    }
+                    QPushButton {
+                        background-color: #444;
+                        color: white;
+                        border: 1px solid #777;
+                        border-radius: 5px;
+                        padding: 8px 15px;
+                        margin-top: 10px;
+                        font: bold 10pt "Playfair Display";
+                    }
+                    QPushButton:hover {
+                        background-color: #555;
+                    }
+                """)
+
+        # 레이아웃 생성 및 위젯 추가
+        layout = QVBoxLayout()
+        messages = messagea + "바로 확인하시겠습니까?"
+        message_label = QLabel(messages)
+        message_label.setWordWrap(True)
+        layout.addWidget(message_label)
+
+        # '확인' 버튼 추가
+        open_button = QPushButton("확인")
+        open_button.clicked.connect(lambda: self.open_csv2(file_path, widgett))  # 파일 열기 함수 호출
+        open_button.clicked.connect(dialog.accept)
+        layout.addWidget(open_button)
+
+        # '취소' 버튼 추가
+        cancel_button = QPushButton("취소")
+        cancel_button.clicked.connect(dialog.reject)  # 창 닫기
+        layout.addWidget(cancel_button)
+        dialog.setFixedSize(400, 200)
+        dialog.setLayout(layout)
+
+        # 창 크기 조정 및 화면 중앙 배치
+        dialog.adjustSize()
+
+
+        # 알림 창 표시
+        dialog.exec_()
+        return
+
+
+    def show_alert(self, message):
+        title = "알림"
+        app = QApplication.instance()  # 이미 실행 중인 QApplication 인스턴스 확인
+        if not app:
+            app = QApplication(sys.argv)
+
+        # QDialog를 사용해 타이틀 없는 커스텀 알림창 생성
+        dialog = QDialog()
+        dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 타이틀 바 제거 및 최상단 설정
+
+        # 다크 모드 스타일 적용
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #2e2e2e;
+                border: 2px solid #444;
+                border-radius: 15px;
+                padding: 20px;
+                font: bold 10pt "Playfair Display";
+            }
+            QLabel {
+                color: #f5f5f5;
+                font-size: 20px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                font: bold 10pt "Playfair Display";
+            }
+            QPushButton {
+                background-color: #444;
+                color: white;
+                border: 1px solid #777;
+                border-radius: 5px;
+                padding: 8px 15px;
+                margin-top: 10px;
+                font: bold 10pt "Playfair Display";
+            }
+            QPushButton:hover {
+                background-color: #555;
+            }
+        """)
+
+        # 레이아웃 생성 및 위젯 추가
+        layout = QVBoxLayout()
+        title_label = QLabel(title)
+        message_label = QLabel(message)
+        layout.addWidget(title_label)
+        layout.addWidget(message_label)
+
+        # 확인 버튼 추가
+        button = QPushButton("확인")
+        button.clicked.connect(dialog.accept)  # 버튼 클릭 시 창 닫기
+        layout.addWidget(button)
+
+        dialog.setLayout(layout)
+
+        # 창 크기 조정 및 화면 중앙 배치
+        dialog.adjustSize()
+        # screen_center = QApplication.primaryScreen().geometry().center()
+        # dialog.move(screen_center - dialog.rect().center())
+
+        # 알림 창 표시
+        dialog.exec_()
 
     def show_prediction_results(self, df):
         """Display prediction results."""
@@ -1350,7 +1516,7 @@ class createtrainclass(QMainWindow, form_class):
 
     def on_train_button_click(self):
         """Trigger model training."""
-        self.gotrain(self.classmode, self.aimodel)
+        self.gotrain(self.classmode, self.aimodel, self.trainindex, self.csv_path)
 
     def align_features_with_model(self, df):
         """Align DataFrame columns with the model's feature set."""
@@ -1475,8 +1641,139 @@ class createtrainclass(QMainWindow, form_class):
             return
 
         df = pd.read_excel("labelinfo.xlsx")  # 엑셀 파일을 DataFrame으로 로드
+        df.columns = [str(col) for col in df.columns]
+
         self.display_dataframe(df, widgettype=self.tableWidget_train)
         self.display_dataframe(df, widgettype=self.tableWidget_detect)
+
+    def show_input_dialog(self, title, label):
+        """커스텀 입력창을 표시하고 입력된 텍스트를 반환하는 함수."""
+        app = QApplication.instance()  # 이미 실행 중인 QApplication 인스턴스 확인
+        if not app:
+            app = QApplication([])
+
+        # QDialog 생성 및 스타일 설정
+        dialog = QDialog()
+        dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 타이틀 바 제거 및 최상단 설정
+
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #2e2e2e;
+                border: 2px solid #444;
+                border-radius: 10px;
+                padding: 20px;
+            }
+            QLabel {
+                color: #f5f5f5;
+                font-size: 16px;
+            }
+            QLineEdit {
+                background-color: #444;
+                color: #f5f5f5;
+                border: 1px solid #777;
+                border-radius: 5px;
+                padding: 8px;
+                margin-top: 10px;
+            }
+            QPushButton {
+                background-color: #555;
+                color: white;
+                border-radius: 5px;
+                padding: 8px 15px;
+                margin-top: 10px;
+            }
+            QPushButton:hover {
+                background-color: #666;
+            }
+        """)
+
+        # 레이아웃 생성
+        layout = QVBoxLayout()
+
+        # 라벨 추가
+        message_label = QLabel(label)
+        layout.addWidget(message_label)
+
+        # 입력 필드 추가
+        line_edit = QLineEdit()
+        layout.addWidget(line_edit)
+
+        # 버튼 생성 및 추가
+        button_layout = QVBoxLayout()
+
+        ok_button = QPushButton("확인")
+        ok_button.clicked.connect(dialog.accept)  # 확인 클릭 시 다이얼로그 닫기
+        layout.addWidget(ok_button)
+
+        cancel_button = QPushButton("취소")
+        cancel_button.clicked.connect(dialog.reject)  # 취소 클릭 시 다이얼로그 닫기
+        layout.addWidget(cancel_button)
+
+        # 다이얼로그에 레이아웃 설정
+        dialog.setLayout(layout)
+
+        # 다이얼로그 실행 및 결과 처리
+        if dialog.exec_() == QDialog.Accepted:
+            return line_edit.text(), True
+        return "", False
+
+    ##############라벨입력
+    def input_label(self):
+        if self.binButton.isChecked():
+            self.label_datacsv = 'labeldata_bin.csv'
+        elif self.mulButton.isChecked():
+            self.label_datacsv = 'labeldata_mul.csv'
+
+        # 라벨 데이터 입력 받기
+        self.label_data, ok = self.show_input_dialog("입력", "라벨 데이터를 입력하세요.")
+        if not ok or not self.label_data:
+            return
+
+        try:
+            number = float(self.label_data)  # 숫자 입력 여부 확인
+        except ValueError:
+            self.show_alert("에러", "유효한 숫자를 입력해주세요.")
+            return
+
+        # CSV에서 해당 라벨 데이터를 찾기
+        try:
+            aaa = self.fetch_name_from_csv(self.label_data)
+        except Exception as e:
+            self.show_alert("binary/multi class 모드를 선택하세요")
+            return
+
+        if aaa is None:  # 해당 데이터가 없을 경우 새로 입력
+            name, ok = self.show_input_dialog("입력", "매핑되는 속성을 입력하세요.")
+            if not ok or not name:
+                return
+
+            # 파일이 없으면 생성
+            if not os.path.exists(self.label_datacsv):
+                with open(self.label_datacsv, mode='w', newline='', encoding='utf-8') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(["Label", "Name"])  # 헤더 작성
+
+            # CSV 파일에 새 데이터 추가
+            with open(self.label_datacsv, mode='a', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow([self.label_data, name])
+        else :
+            self.show_alert("해당 라벨이 이미 존재합니다!")
+
+    def fetch_name_from_csv(self, max_key):
+        filename = self.label_datacsv
+
+        # 파일이 없을 경우 None 반환
+        if not os.path.exists(filename):
+            return None
+
+        # 파일에서 해당 키에 해당하는 값을 찾기
+        with open(filename, mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[0] == max_key:
+                    return row[1]
+        return None
 
 ##################라벨입력
 class DataEntryWindow(QWidget):
@@ -1568,6 +1865,10 @@ class DataEntryWindow(QWidget):
 
         QMessageBox.information(self, "Success", "Data saved successfully!")
         self.close()
+
+
+
+
 
 
 

@@ -15,8 +15,6 @@ def analyzesps(file_path):
     try:
         result = subprocess.run(
             [H264_ANALYZE_PATH, INPUT_FILE],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
             capture_output=True,
             text=True
         )

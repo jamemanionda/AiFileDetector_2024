@@ -25,7 +25,7 @@ from sklearn.metrics import accuracy_score
 import xgboost as xgb
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QMessageBox, QFileDialog, \
-    QTableWidgetItem
+    QTableWidgetItem, QPushButton, QVBoxLayout, QLabel, QDialog
 from PyQt5 import uic, QtWidgets
 import joblib
 from sklearn.utils.class_weight import compute_class_weight
@@ -52,21 +52,9 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         self.dpath = 'E:\\'
         self.model = None
 
-        self.setupUi(self)
-
-        self.dirModel = QFileSystemModel()
         #self.dirModel.setRootPath("E:\\AiFileDetectorE")
         #os.chdir("E:\\AiFileDetectorE")
-        self.treeView.setModel(self.dirModel)
 
-        self.treeView.setRootIndex(self.dirModel.index(os.getcwd()))
-        self.treeView.clicked.connect(self.file_selected)
-
-        self.xlsfileext = '.csv'
-        self.filter_files_by_extension(self.xlsfileext)
-        self.comboBox.activated.connect(self.on_combobox_select)
-
-        self.LoadButton.clicked.connect(self.on_train_button_click)
 
     def filter_files_by_extension(self, xlsext):
         if xlsext:
@@ -151,10 +139,13 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         results_df = pd.DataFrame(list(results.items()), columns=['name', 'result'])
         return results, success_failure, results_df
 
-    def gotrain(self, classmode, model):
+    def gotrain(self, classmode, model, trainindex, csv_path):
         self.model = model
         print("***다중분류 시작***")
+        self.csv_path = csv_path
         self.classmode = classmode
+        self.index = trainindex
+        self.aimodel = model
         df, _ = self.preprocess_data(self.csv_path, is_train=True)
 
 
@@ -274,13 +265,74 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         for column in columns_to_process:
             df[column] = df[column].apply(self.calculate_simhash_lib)
         return df
+    def show_alert(self, message):
+        title = "알림"
+        app = QApplication.instance()  # 이미 실행 중인 QApplication 인스턴스 확인
+        if not app:
+            app = QApplication(sys.argv)
+
+        # QDialog를 사용해 타이틀 없는 커스텀 알림창 생성
+        dialog = QDialog()
+        dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 타이틀 바 제거 및 최상단 설정
+
+        # 다크 모드 스타일 적용
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #2e2e2e;
+                border: 2px solid #444;
+                border-radius: 15px;
+                padding: 20px;
+                font: bold 10pt "Playfair Display";
+            }
+            QLabel {
+                color: #f5f5f5;
+                font-size: 20px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                font: bold 10pt "Playfair Display";
+            }
+            QPushButton {
+                background-color: #444;
+                color: white;
+                border: 1px solid #777;
+                border-radius: 5px;
+                padding: 8px 15px;
+                margin-top: 10px;
+                font: bold 10pt "Playfair Display";
+            }
+            QPushButton:hover {
+                background-color: #555;
+            }
+        """)
+
+        # 레이아웃 생성 및 위젯 추가
+        layout = QVBoxLayout()
+        title_label = QLabel(title)
+        message_label = QLabel(message)
+        layout.addWidget(title_label)
+        layout.addWidget(message_label)
+
+        # 확인 버튼 추가
+        button = QPushButton("확인")
+        button.clicked.connect(dialog.accept)  # 버튼 클릭 시 창 닫기
+        layout.addWidget(button)
+
+        dialog.setLayout(layout)
+
+        # 창 크기 조정 및 화면 중앙 배치
+        dialog.adjustSize()
+        # screen_center = QApplication.primaryScreen().geometry().center()
+        # dialog.move(screen_center - dialog.rect().center())
+
+        # 알림 창 표시
+        dialog.exec_()
 
     def train_model(self, df):
         try :
             if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
                 model, accuracy = self.ensemble(df)
-                pyautogui.alert(f"정확도 {accuracy}%로 학습되었습니다.")
-
+                message = f"정확도 {accuracy}%로 학습되었습니다."
+                self.show_alert(message)
             elif self.index == 1:
                 self.lstm(df)
         except :
@@ -521,13 +573,12 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         if self.index == 0 or self.index == 2 or self.index == 3:
 
 
-            self.aimodel = self.comboBox.currentText()
 
             folder_path = os.getcwd()
-            pklname = os.path.join(folder_path, str(self.classmode + self.aimodel + "model.pkl"))
+            pklname = os.path.join(folder_path, str(self.csv_path+"_" + self.aimodel + "model.pkl"))
             joblib.dump(self.model, pklname)
 
-            self.scalername = os.path.join(folder_path, str(self.classmode + self.aimodel + "scaler.pkl"))
+            self.scalername = os.path.join(folder_path, str(self.csv_path+"_" + self.aimodel + "scaler.pkl"))
             with open(self.scalername, 'wb') as f:
                 joblib.dump(self.scaler, f)
                 f.close()
