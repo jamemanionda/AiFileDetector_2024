@@ -843,11 +843,12 @@ class createtrainclass(QMainWindow, form_class):
             filecount +=1
             results = []
             results.append(('name', os.path.basename(file_path)))  # 파일명 열 추가
+            nameprintformat = f"{filecount}/{len(file_paths)}_{results}"
+            print(nameprintformat)
             if self.structure_val_state == True or self.structure_seq_state == True:
                  # 각 파일 데이터 저장 리스트
 
-                nameprintformat = f"{filecount}/{len(file_paths)}_{results}"
-                print(nameprintformat)
+
                 onesequence = []
                 # 파일 내 Box 파싱
                 def parse_box(f, end_position, depth=0, max_depth=100):
