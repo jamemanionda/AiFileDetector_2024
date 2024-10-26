@@ -414,20 +414,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             self.model.fit(X_train_scaled, y_train)  # LinearRegression에는 RandomizedSearchCV 적용 불필요
 
 
-
-        # # 모델 구성
-        # if self.index ==0:
-        #     self.model = xgb.XGBClassifier(metric='binary:logistic', enable_categorical=True)
-        #     #다중분류는 multi:softmax
-        # elif self.index == 2:
-        #     self.model = RandomForestClassifier(n_estimators=20, max_depth=5, random_state=42)
-        # elif self.index == 3:
-        #     self.model = LGBMClassifier(objective='binary',max_depth=5,n_estimators=250)
-        # elif self.index == 4:
-        #     self.model = LinearRegression()
-        #
-        # self.model.fit(X_train_scaled, y_train)
-
         # 성능 평가
         y_pred = self.model.predict(X_test_scaled)
         if not self.index == 5:
@@ -447,6 +433,24 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             message = "Model accuracy: " + str(mae)+","+ str(mse)+ ","+str(rmse)+","+str(r2)
             self.show_message_box(message)
             accuracy = r2
+
+
+        if hasattr(self.model, 'feature_importances_'):
+            feature_importances = self.model.feature_importances_
+            importance_df = pd.DataFrame({
+                'Feature': X.columns,
+                'Importance': feature_importances
+            }).sort_values(by='Importance', ascending=False)
+
+            print("Feature Importance:")
+            print(importance_df)
+
+            # 피처 중요도 시각화
+            self.plot_feature_importance(importance_df)
+
+
+
+
         return self.model, accuracy
 
 

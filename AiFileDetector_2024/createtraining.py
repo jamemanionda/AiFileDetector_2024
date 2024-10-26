@@ -139,8 +139,10 @@ class createtrainclass(QMainWindow, form_class):
 
         self.label_info.clicked.connect(self.open_data_entry_window)
         self.labelinfofile = "labeldata_bin.csv"
-        self.load_excel_data()
-
+        try:
+            self.load_excel_data()
+        except:
+            pass
         self.label_input_but.clicked.connect(self.input_label)
         self.aimodel = self.model_combo_2.currentText()
         self.trainindex = self.comboBox.currentIndex()
