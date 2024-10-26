@@ -1578,8 +1578,8 @@ class createtrainclass(QMainWindow, form_class):
                 print("2클릭", )
                 print("선택한 파일", self.file_paths)
 
-                if self.structure_val_state == True or self.frame_sps_state== True:
-                    self.extract_box_feature(self.file_paths)
+
+                self.extract_box_feature(self.file_paths)
 
 
 
