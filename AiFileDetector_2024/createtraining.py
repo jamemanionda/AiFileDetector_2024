@@ -11,7 +11,7 @@ from datetime import datetime
 from tkinter import messagebox
 import tkinter as tk
 from tkinter import simpledialog, messagebox
-
+from frame_compression import process_videos_in_folder
 import joblib
 import numpy as np
 import pandas as pd
@@ -999,6 +999,10 @@ class createtrainclass(QMainWindow, form_class):
             if self.frame_gop_state == True:
                 onesequence = extractGOP(file_path)
                 results.append(('GOP', onesequence))
+
+            if self.frame_ratio_state == True:
+                ratio = process_videos_in_folder(file_path)
+                results.append(('GOP compression', ratio))
 
 
             if self.frame_sps_state == True:
