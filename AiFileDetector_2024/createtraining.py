@@ -18,7 +18,7 @@ import pandas as pd
 import pyautogui
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QProgressBar, QDialog, QLabel, \
-    QVBoxLayout, QTableWidgetItem, QMessageBox, QLineEdit, QPushButton, QTableWidget, QInputDialog
+    QVBoxLayout, QTableWidgetItem, QMessageBox, QLineEdit, QPushButton, QTableWidget, QInputDialog, QFileDialog
 from PyQt5 import uic, QtWidgets
 from openpyxl.reader.excel import load_workbook
 from openpyxl.workbook import Workbook
@@ -32,7 +32,9 @@ from extract_sps import parse_sps
 from pps import analyzesps
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-form_class = uic.loadUiType("UI_Design\\new.ui")[0]
+
+
+
 
 class ProgressWindow(QDialog):
     def __init__(self):
@@ -55,6 +57,17 @@ class ProgressWindow(QDialog):
     def set_label_text(self, text):
         self.label.setText(text)
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+form_path = resource_path("new.ui")
+form_class = uic.loadUiType(form_path)[0]
 
 class createtrainclass(QMainWindow, form_class):
     def __init__(self):
@@ -74,9 +87,6 @@ class createtrainclass(QMainWindow, form_class):
         self.comboBox.currentIndexChanged.connect(
             lambda index: self.filter_files_by_extension(self.comboBox.itemText(index)))
 
-        # self.progress_bar2 = QProgressBar(self)
-        # self.progress_bar2.setGeometry(50, 50, 250, 20)
-        # 파일시스템 트리
         self.dirModel = QFileSystemModel()
         self.dirModel.setRootPath(QDir.rootPath())
 
@@ -100,9 +110,6 @@ class createtrainclass(QMainWindow, form_class):
                       "코드에서 수정을 원할 시에 createtraining에서 nonepath를 검색하여 이동해서 수정하세요")
             initialcode=1
 
-
-
-        #self.treeView.setRootIndex(self.dirModel.index(os.getcwd()))
         self.treeView.setRootIndex(self.dirModel.index(self.direc))
 
         self.treeView.clicked.connect(self.file_selected)
@@ -138,7 +145,12 @@ class createtrainclass(QMainWindow, form_class):
         self.list_del.clicked.connect(self.remove_all_file)
 
         self.label_info.clicked.connect(self.open_data_entry_window)
-        self.labelinfofile = "labeldata_bin.csv"
+        if self.binButton.isChecked():
+            self.label_datacsv = self.resource_path('labeldata_bin.csv')
+        elif self.mulButton.isChecked():
+            self.label_datacsv = self.resource_path('labeldata_mul.csv')
+        self.labelinfofile = ""
+
         try:
             self.load_excel_data()
         except:
@@ -156,6 +168,17 @@ class createtrainclass(QMainWindow, form_class):
     def clustermain(self):
 
         self.clustering.gotrain(self.csv_path)
+
+    def showFileDialog(self):
+        # 파일 다이얼로그를 띄워서 파일 선택
+        self.csv_path, _ = QFileDialog.getOpenFileName(self, '파일 선택', '',
+                                                   '모든 파일 (*);;텍스트 파일 (*.csv)')
+
+        # 선택한 파일 경로를 라벨에 표시
+        if self.csv_path:
+            print(f'선택된 파일 경로: {self.csv_path}')
+        else:
+            print('파일이 선택되지 않았습니다.')
 
     def classmain(self):
         binstat = self.binButton_3.isChecked()
@@ -177,13 +200,6 @@ class createtrainclass(QMainWindow, form_class):
         except : pass
     def classdetect(self):
         self.detectclass.predict(file_path=self.file_paths[0])
-
-    def load_directory(self): # 디렉토리 선택
-        directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory")
-        if directory:
-            self.dirModel.setRootPath(directory)
-            self.treeView.setRootIndex(self.dirModel.index(directory))
-            self.treeView.clicked.connect(self.file_selected)
 
     def filter_files_by_extension(self, extension):  # 선택된 확장자에 따라 필터링
         if extension and extension != "확장자":  # Ensure it's not the placeholder text
@@ -596,6 +612,7 @@ class createtrainclass(QMainWindow, form_class):
 
         # 엑셀 파일에서 데이터 읽어오기 (엑셀 파일 경로를 설정해 주세요)
         excel_file = str(self.extension + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
+        self.resource_path(excel_file)
         df = pd.read_excel(excel_file)  # 엑셀 파일 읽기
 
         # 엑셀 데이터를 딕셔너리로 변환 (엑셀 파일의 첫 번째 열을 key로, 두 번째 열을 value로)
@@ -1034,8 +1051,8 @@ class createtrainclass(QMainWindow, form_class):
             all_results.append(results)
             # 각 파일의 결과를 전체 리스트에 추가
 
-
-        self.save_to_csv(all_results)
+        if self.detectmode == 0:
+            self.save_to_csv(all_results)
         return results
 
     def on_structure_val_changed(self, state):
@@ -1228,6 +1245,7 @@ class createtrainclass(QMainWindow, form_class):
     def load_file_for_prediction(self):
         """Open a dialog to select a file for prediction."""
         self.detectmode = 1
+        self.showFileDialog()
         file_path= self.file_paths[0]
         if file_path:
             self.predict_on_file(file_path)
@@ -1243,7 +1261,7 @@ class createtrainclass(QMainWindow, form_class):
             self.load_model_and_scaler()
 
             # Predict and show results
-            predicted_df = self.predict_data(structured_data)
+            predicted_df = self.predict_data1(structured_data)
             print(predicted_df)
             self.detectmode = 0
 
@@ -1309,6 +1327,7 @@ class createtrainclass(QMainWindow, form_class):
     def load_model_and_scaler(self):
         """Load the trained model and scaler from disk."""
 
+
         binstat = self.binButton_2.isChecked()
         mulstat = self.mulButton_2.isChecked()
         if binstat:
@@ -1316,73 +1335,81 @@ class createtrainclass(QMainWindow, form_class):
         elif mulstat:
             self.classmode = 'mul_'
         else :
-            messagebox.showerror("에러", "바이너리/멀티 모드를 선")
-        #self.csv_path = "__1_val_241022214050_binary.csv"
-        self.csv_path = '__2_galaxy_original_edit_binary.csv'
-        #self.csv_path = '__3_Edit_Application.csv'
-        pklname = os.path.join('Y:\\', str(self.csv_path+"_" + self.aimodel + "model.pkl"))
-        self.scalername = os.path.join('Y:\\', str(self.csv_path+"_" + self.aimodel + "scaler.pkl"))
-        if os.path.exists(pklname) and os.path.exists(self.scalername):
-            self.model = joblib.load(pklname)
-            self.scaler = joblib.load(self.scalername)
+            messagebox.showerror("에러", "바이너리/멀티 모드를 선x택하세요")
+
+
+        pklname = str(self.csv_path+"_" + self.aimodel + "model.pkl")
+        self.pklpath = self.resource_path(pklname)
+
+        self.scalername = str(self.csv_path+"_" + self.aimodel + "scaler.pkl")
+        self.scalarpath = self.resource_path(self.scalername)
+        if os.path.exists(pklname) and os.path.exists(self.scalerpath):
+            self.model = joblib.load(self.pklpath)
+            self.scaler = joblib.load(self.scalerpath)
         else:
             raise FileNotFoundError("Model or scaler file not found.")
 
-    def predict_data(self, structured_data):
+    def predict_data1(self, structured_data):
         """Scale the features and predict the label."""
-
-
         df = pd.DataFrame([structured_data])
 
-        # Align DataFrame with model's features
+        # Load model features from feature.json
         with open('feature.json', 'r') as f:
             model_features = json.load(f)
 
-        # Add missing features with default value (0) and filter out extra features
+        # Add missing features with default value 0
         for feature in model_features:
             if feature not in df.columns:
-                df[feature] = 0  # Fill missing features with default value
+                df[feature] = 0  # Add missing features with 0
 
-        df = df[model_features]  # Keep only relevant features
+        # Keep only the relevant features and ensure the order matches
+        df = df[model_features]
+
+        # Drop unnecessary columns, e.g., 'name'
         df = df.drop(columns=[col for col in df.columns if col == 'name'], errors='ignore')
 
-        # Apply Simhash to the relevant features
+        # Apply Simhash transformation (assuming apply_simhash is defined)
         df = self.apply_simhash(df)
 
-        # Scale features and predict label
+        # Scale features and predict
         X_new_scaled = self.scaler.transform(df)
         y_pred = self.model.predict(X_new_scaled)
         y_pred_probs = self.model.predict_proba(X_new_scaled)
         predicted_class_probs = y_pred_probs[np.arange(len(y_pred)), y_pred]
 
-        print(predicted_class_probs,"% 확률")
+        print(f"{predicted_class_probs}% 확률")
+
         # Add predictions to DataFrame
         df['predicted_label'] = y_pred
 
+        # Load label information from Excel
         labeltransferdf = pd.read_excel("labelinfo.xlsx")
 
         try:
-            # y_pred[0] 값을 정수로 변환
-            temppred = int(y_pred[0])  # 예측 값이 정수라고 가정
-            # labeltransferdf의 컬럼명도 정수로 사용될 수 있도록 확인
+            # Convert prediction to integer for column access
+            temppred = int(y_pred[0])
+
+            # Ensure label columns are integers
             labeltransferdf.columns = [int(col) for col in labeltransferdf.columns]
 
-            # 해당 예측 값에 해당하는 컬럼 필터링
+            # Filter the relevant label
             filtered_df = labeltransferdf[temppred]
-        except KeyError as e:
+        except KeyError:
             message = f"해당 라벨({temppred})이 존재하지 않습니다. 라벨을 업데이트하세요."
             self.show_alert(message)
         except Exception as e:
             self.show_alert(str(e))
 
-        try :
+        try:
+            # Format probability and show message
             fileaccuracy = "{:.3f}".format(predicted_class_probs[0][1] * 100)
             message = f"{fileaccuracy}% 확률로 {filtered_df[0]}({y_pred}) 입니다"
             self.show_alert(message)
         except Exception as e:
             fileaccuracy = "{:.3f}".format(predicted_class_probs[0] * 100)
-            message = f"{fileaccuracy}% 확률로  {filtered_df[0]}({y_pred}) 입니다"
+            message = f"{fileaccuracy}% 확률로({y_pred}) 입니다"
             self.show_alert(message)
+
         return df
 
     def show_file_alert(self, file_path, messagea, widgett):
@@ -1645,13 +1672,24 @@ class createtrainclass(QMainWindow, form_class):
         """엑셀 데이터를 DataFrame으로 불러와 테이블에 표시."""
         if not os.path.exists("labelinfo.xlsx"):
             QMessageBox.warning(self, "Warning", "No Excel file found!")
-            return
+            raise ValueError("")
 
-        df = pd.read_excel("labelinfo.xlsx")  # 엑셀 파일을 DataFrame으로 로드
+        xlspath = self.resource_path("labelinfo.xlsx")
+        df = pd.read_excel(xlspath)  # 엑셀 파일을 DataFrame으로 로드
         df.columns = [str(col) for col in df.columns]
 
         self.display_dataframe(df, widgettype=self.tableWidget_train)
         self.display_dataframe(df, widgettype=self.tableWidget_detect)
+
+    def resource_path(self, relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
+
 
     def show_input_dialog(self, title, label):
         """커스텀 입력창을 표시하고 입력된 텍스트를 반환하는 함수."""
@@ -1727,9 +1765,9 @@ class createtrainclass(QMainWindow, form_class):
     ##############라벨입력
     def input_label(self):
         if self.binButton.isChecked():
-            self.label_datacsv = 'labeldata_bin.csv'
+            self.label_datacsv = self.resource_path('labeldata_bin.csv')
         elif self.mulButton.isChecked():
-            self.label_datacsv = 'labeldata_mul.csv'
+            self.label_datacsv = self.resource_path('labeldata_mul.csv')
 
         # 라벨 데이터 입력 받기
         self.label_data, ok = self.show_input_dialog("입력", "라벨 데이터를 입력하세요.")
@@ -1872,13 +1910,6 @@ class DataEntryWindow(QWidget):
 
         QMessageBox.information(self, "Success", "Data saved successfully!")
         self.close()
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
