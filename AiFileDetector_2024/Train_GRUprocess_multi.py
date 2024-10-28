@@ -1,5 +1,6 @@
 import json
 import pickle
+import plotly.express as px
 
 import pyautogui
 import seaborn as sns
@@ -87,13 +88,24 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
                 #self.show_error_message("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
 
     def plot_feature_importance(self, importance_df):
-        plt.figure(figsize=(10, 8))
-        plt.barh(importance_df['Feature'], importance_df['Importance'], align='center')
-        plt.xlabel('Importance')
-        plt.ylabel('Feature')
-        plt.title('Feature Importance')
-        plt.gca().invert_yaxis()  # Flip the order for better visualization
-        plt.show()
+
+        fig = px.bar(
+            importance_df,
+            y='Feature',
+            x='Importance',
+            orientation='h',  # 가로 막대 그래프
+            title='Feature Importance',
+            height=400 + len(importance_df) * 20  # 피처 수에 따른 그래프 높이 조정
+        )
+
+        fig.update_layout(
+            yaxis={'categoryorder': 'total ascending'},  # 중요도 순서로 정렬
+            showlegend=False,  # 범례 비활성화
+            xaxis_title='Importance',
+            yaxis_title='Feature',
+        )
+
+        fig.show()
 
 
 
@@ -170,10 +182,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         df_test = df_test.drop(columns='label')
         # 테스트 데이터 전처리
         df_test_processed = self.apply_simhash(df_test)
-        self.feature_list = df_train.drop(columns=['label']).columns.tolist()
-        #추후 변경 필요 --> 파일이름을 피처 반영되게
-        with open('feature.json', 'w') as f:
-            json.dump(self.feature_list, f)
+
 
 
         # 모델 로드 및 테스트 데이터 예측
@@ -233,8 +242,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
                 print(f"파일 열기 오류: {str(e)}")
 
     def preprocess_data(self, filepath, is_train=True):
-        """데이터 전처리"""
-
         df = pd.read_csv(filepath, header=None ,encoding='CP949')
         column_count = df.shape[1]
         original_labels = None
@@ -243,7 +250,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             features = df.iloc[0, 1:-1].values
             df.columns = ['name'] + list(features) + ['label']
             df = df[1:]
-
 
         else:
             features = df.iloc[0, 1:-1].values
@@ -335,7 +341,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
                 self.show_alert(message)
             elif self.index == 1:
                 self.lstm(df)
-        except :
+        except Exception as e:
             self.index = 0
 
     def confusion_matrix2(self, y_train, y_pred_classes):
@@ -358,13 +364,50 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         print("Classification Report:")
         print(classification_report(y_train, y_pred_classes))
 
+    def remove_highly_correlated_features(self, X, threshold=0.9):
+        """
+        상관관계가 높은 피처 제거 (중복 방지)
+        :param X: 피처 데이터프레임
+        :param threshold: 상관계수 임계값 (기본값 0.9)
+        :return: 상관관계가 높은 피처가 제거된 데이터프레임
+        """
+        # 상관관계 행렬 계산
+        corr_matrix = X.corr().abs()
+
+        # 상삼각행렬에서 임계값을 초과하는 상관관계를 추출
+        upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+
+        # 상관계수가 threshold를 초과하는 피처 찾기
+        to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
+
+        print(f"Removing highly correlated features: {to_drop}")
+
+        # 상관관계가 높은 피처 제거
+        X = X.drop(columns=to_drop)
+
+        return X
 
     def ensemble(self, df):
 
         X = df.iloc[:, 1:-1]
         y = df['label']
-
         y = y.astype("int")
+
+        ######1026 피처 전처리 추가
+        # 2. 상관관계가 높은 피처 제거
+        #X = self.remove_highly_correlated_features(X)
+
+        # 3. 피처 선택 (중요도가 낮은 피처 제거)
+        # feature_selector = RandomForestClassifier(n_estimators=100, random_state=42)
+        # feature_selector.fit(X, y)
+        # feature_importances = pd.Series(feature_selector.feature_importances_, index=X.columns)
+        #
+        # # 임계값 기준으로 피처 선택 (중요도가 0.01 이상인 피처만 사용)
+        # selected_features = feature_importances[feature_importances >= 0.01].index
+        # X = X[selected_features]
+        # self.X = X
+
+
         if self.index < 4:
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
         else:
@@ -448,10 +491,96 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
 
+            file_path = 'feature_importance.csv'
+            importance_df.to_csv(file_path, index=False)
 
+
+        self.feature_list = X.columns.tolist()
+        #추후 변경 필요 --> 파일이름을 피처 반영되게
+        with open('feature.json', 'w') as f:
+            json.dump(self.feature_list, f)
+        print("feature : ", self.feature_list)
 
 
         return self.model, accuracy
+
+    def show_file_alert(self, file_path, messagea):
+        """파일 경로를 받아 사용자에게 알림을 표시하고 파일을 여는 함수."""
+        app = QApplication.instance()  # 이미 실행 중인 QApplication 인스턴스 확인
+        if not app:
+            app = QApplication(sys.argv)
+
+        # QDialog를 사용해 타이틀 없는 커스텀 알림창 생성
+        dialog = QDialog()
+        dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 타이틀 바 제거 및 최상단 설정
+
+        # 다크 모드 스타일 적용
+        dialog.setStyleSheet("""
+                     QDialog {
+                         background-color: #2e2e2e;
+                         border: 2px solid #444;
+                         border-radius: 15px;
+                         padding: 20px;
+                         font: bold 10pt "Playfair Display";
+                     }
+                     QLabel {
+                         color: #f5f5f5;
+                         font-size: 20px;
+                         font-weight: bold;
+                         margin-bottom: 10px;
+                         font: bold 10pt "Playfair Display";
+                     }
+                     QPushButton {
+                         background-color: #444;
+                         color: white;
+                         border: 1px solid #777;
+                         border-radius: 5px;
+                         padding: 8px 15px;
+                         margin-top: 10px;
+                         font: bold 10pt "Playfair Display";
+                     }
+                     QPushButton:hover {
+                         background-color: #555;
+                     }
+                 """)
+
+        # 레이아웃 생성 및 위젯 추가
+        layout = QVBoxLayout()
+        messages = messagea + "바로 확인하시겠습니까?"
+        message_label = QLabel(messages)
+        message_label.setWordWrap(True)
+        layout.addWidget(message_label)
+
+        # '확인' 버튼 추가
+        open_button = QPushButton("확인")
+        open_button.clicked.connect(lambda: self.open_csv2(file_path))  # 파일 열기 함수 호출
+        open_button.clicked.connect(dialog.accept)
+        layout.addWidget(open_button)
+
+        # '취소' 버튼 추가
+        cancel_button = QPushButton("취소")
+        cancel_button.clicked.connect(dialog.reject)  # 창 닫기
+        layout.addWidget(cancel_button)
+        dialog.setFixedSize(400, 200)
+        dialog.setLayout(layout)
+
+        # 창 크기 조정 및 화면 중앙 배치
+        dialog.adjustSize()
+
+        # 알림 창 표시
+        dialog.exec_()
+        return
+
+    def open_csv2(self, file_path, widgett):
+        """CSV 파일을 기본 프로그램으로 엽니다."""
+        try:
+
+            os.startfile(file_path)  # 윈도우에서는 기본 프로그램으로 파일 열기
+
+        except Exception as e:
+            print(f"Error opening file: {str(e)}")
+            self.show_alert(f"파일을 열 수 없습니다: {str(e)}")
+
 
 
     def show_message_box(self, message):

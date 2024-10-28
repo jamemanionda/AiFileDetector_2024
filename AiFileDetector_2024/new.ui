@@ -1,0 +1,1088 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>955</width>
+    <height>737</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgb(35, 37, 42), stop:1 rgb(58, 60, 69));</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>800</width>
+      <height>650</height>
+     </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>800</width>
+      <height>650</height>
+     </size>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">
+QTabWidget::pane {
+  border: 1px solid rgb(80, 80, 80);
+  background-color: rgb(45, 48, 56);
+  padding: 10px;
+
+}
+
+QTabBar::tab {
+  background: rgb(58, 60, 69);
+  width:100px;
+  color: rgb(200, 200, 200);
+  font: 11pt &quot;Arial&quot;;
+  padding-left: 25px;
+  padding-right: 25px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+
+QTabBar::tab:selected {
+  background: rgb(35, 37, 42);
+  color: rgb(230, 230, 230);
+  border-bottom: 2px solid rgb(200, 200, 200);
+}
+
+QTabBar::tab:hover {
+  background: rgb(48, 50, 58);
+}
+</string>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>16</width>
+      <height>16</height>
+     </size>
+    </property>
+    <widget class="QWidget" name="tab1">
+     <attribute name="title">
+      <string>Data View</string>
+     </attribute>
+     <widget class="QTreeView" name="treeView">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>40</y>
+        <width>421</width>
+        <height>251</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QTreeView {
+  background-color: rgb(45, 48, 56);
+  color: rgb(230, 230, 230);
+  border: 1px solid rgb(80, 80, 80);
+  font: 9pt &quot;Playfair Display&quot;;
+}
+
+QHeaderView::section {
+  background-color: rgb(58, 60, 69);
+  color: rgb(200, 200, 200);
+  border-bottom: 1px solid rgb(80, 80, 80);
+  padding: 4px;
+}
+</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton">
+      <property name="geometry">
+       <rect>
+        <x>450</x>
+        <y>150</y>
+        <width>50</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(127, 140, 141);
+  color: rgb(230, 230, 230);
+  font: 10pt &quot;Playfair Display&quot;;
+  border-radius: 20px;
+  padding: 8px;
+}
+
+QPushButton:hover {
+  background-color: rgb(149, 165, 166);
+}
+
+QPushButton:pressed {
+  background-color: rgb(127, 140, 141);
+  border: 1px solid rgb(100, 100, 100);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>&gt;&gt;</string>
+      </property>
+     </widget>
+     <widget class="QListWidget" name="listWidget">
+      <property name="geometry">
+       <rect>
+        <x>520</x>
+        <y>40</y>
+        <width>251</width>
+        <height>250</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QListWidget {
+  background-color: rgb(45, 48, 56);
+  color: rgb(230, 230, 230);
+  border: 1px solid rgb(80, 80, 80);
+  font: 9pt &quot;Playfair Display&quot;;
+}
+</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="comboBox">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>131</width>
+        <height>22</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(236, 229, 225);</string>
+      </property>
+     </widget>
+     <widget class="QTableWidget" name="tableWidget">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>310</y>
+        <width>761</width>
+        <height>231</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QTreeView {
+  background-color: rgb(45, 48, 56);
+  color: rgb(255, 255, 255);  /* 글자색을 흰색으로 변경 */
+  border: 1px solid rgb(80, 80, 80);
+  font: 9pt &quot;Playfair Display&quot;;
+}
+
+QTableView::item {
+  color: rgb(255, 255, 255);  /* 표 안의 아이템 글자색을 흰색으로 변경 */
+}
+
+QHeaderView::section {
+  background-color: rgb(58, 60, 69);
+  color: rgb(200, 200, 200);
+  border-bottom: 1px solid rgb(80, 80, 80);
+  padding: 4px;
+}</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_3">
+      <property name="geometry">
+       <rect>
+        <x>170</x>
+        <y>10</y>
+        <width>491</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color:rgb(255, 210, 76);</string>
+      </property>
+      <property name="text">
+       <string>학습데이터 생성 시 영상 파일 선택, 학습 시 csv 파일 선택</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="list_del">
+      <property name="geometry">
+       <rect>
+        <x>680</x>
+        <y>0</y>
+        <width>81</width>
+        <height>24</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>목록 비우기</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab2">
+     <attribute name="title">
+      <string>Create</string>
+     </attribute>
+     <widget class="QLabel" name="label_2">
+      <property name="geometry">
+       <rect>
+        <x>60</x>
+        <y>80</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 16pt &quot;Arial&quot;;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>Create Dataset</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="feature_create1">
+      <property name="geometry">
+       <rect>
+        <x>60</x>
+        <y>110</y>
+        <width>160</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(212, 175, 55);  /* Gold color */
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Playfair Display&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>Create Feature</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="create_value2">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>110</y>
+        <width>160</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(212, 175, 55);
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Playfair Display&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>Create Dataset</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="create_sequence3">
+      <property name="geometry">
+       <rect>
+        <x>420</x>
+        <y>110</y>
+        <width>160</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(212, 175, 55);
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Playfair Display&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>Create Sequence</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="LoadButton">
+      <property name="geometry">
+       <rect>
+        <x>600</x>
+        <y>165</y>
+        <width>111</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(212, 175, 55);
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Arial&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>Load...</string>
+      </property>
+     </widget>
+     <widget class="QProgressBar" name="progress_bar">
+      <property name="geometry">
+       <rect>
+        <x>60</x>
+        <y>170</y>
+        <width>511</width>
+        <height>25</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QProgressBar {
+  border: 1px solid rgb(80, 80, 80);
+  border-radius: 5px;
+  text-align: center;
+  font: 10pt &quot;Playfair Display&quot;;
+  background-color: rgb(58, 60, 69);
+  color: rgb(230, 230, 230);
+}
+
+QProgressBar::chunk {
+  background-color: rgb(212, 175, 55);
+  width: 20px;
+}
+</string>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="mulButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>30</y>
+        <width>90</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>multi class</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="binButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>90</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>binary class</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>265</y>
+        <width>243</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QCheckBox" name="structure_val_but">
+         <property name="styleSheet">
+          <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+         </property>
+         <property name="text">
+          <string>Structure value</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="structure_seq_but">
+         <property name="styleSheet">
+          <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+         </property>
+         <property name="text">
+          <string>Structure Sequence</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QLabel" name="label_4">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>225</y>
+        <width>241</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(255, 255, 255);
+font: 700 15pt &quot;Arial&quot;;</string>
+      </property>
+      <property name="text">
+       <string>Select Structure Feature</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_9">
+      <property name="geometry">
+       <rect>
+        <x>410</x>
+        <y>225</y>
+        <width>241</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(255, 255, 255);
+font: 700 15pt &quot;Arial&quot;;</string>
+      </property>
+      <property name="text">
+       <string>Select Frame Feature</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget_3">
+      <property name="geometry">
+       <rect>
+        <x>410</x>
+        <y>265</y>
+        <width>243</width>
+        <height>81</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QCheckBox" name="frame_sps_but">
+         <property name="styleSheet">
+          <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+         </property>
+         <property name="text">
+          <string>SPS/PPS</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="frame_gop_but">
+         <property name="styleSheet">
+          <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+         </property>
+         <property name="text">
+          <string>GOP frame</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="frame_ratio_but">
+         <property name="styleSheet">
+          <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+         </property>
+         <property name="text">
+          <string>Encode ratio</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QPushButton" name="label_input_but">
+      <property name="geometry">
+       <rect>
+        <x>600</x>
+        <y>115</y>
+        <width>111</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  
+	background-color: rgb(255, 254, 233);
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Playfair Display&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>Label Input</string>
+      </property>
+     </widget>
+     <widget class="QTableWidget" name="tableWidget_Create">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>365</y>
+        <width>631</width>
+        <height>201</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QTreeView {
+  background-color: rgb(45, 48, 56);
+  color: rgb(255, 255, 255);  /* 글자색을 흰색으로 변경 */
+  border: 1px solid rgb(80, 80, 80);
+  font: 9pt &quot;Playfair Display&quot;;
+}
+
+QTableView::item {
+  color: rgb(255, 255, 255);  /* 표 안의 아이템 글자색을 흰색으로 변경 */
+}
+
+QHeaderView::section {
+  background-color: rgb(58, 60, 69);
+  color: rgb(200, 200, 200);
+  border-bottom: 1px solid rgb(80, 80, 80);
+  padding: 4px;
+}</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>Train</string>
+     </attribute>
+     <widget class="QComboBox" name="model_combo">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>80</y>
+        <width>231</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(255, 255, 255);
+font: 9pt &quot;Helvetica&quot;;</string>
+      </property>
+      <item>
+       <property name="text">
+        <string>Xgboost</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>LSTM</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Random forest</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>LightGBM</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Linear</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>KNN</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QLabel" name="label">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>45</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 16pt &quot;Arial&quot;;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>Training Model</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="class_train">
+      <property name="geometry">
+       <rect>
+        <x>359</x>
+        <y>75</y>
+        <width>271</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(212, 175, 55);  /* Gold color */
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Playfair Display&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>분류모델</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="cluster_train">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>125</y>
+        <width>511</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(212, 175, 55);  /* Gold color */
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Playfair Display&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>클러스터링</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="binButton_3">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>180</y>
+        <width>90</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>binary class</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="mulButton_3">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>200</y>
+        <width>90</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>multi class</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="label_info">
+      <property name="geometry">
+       <rect>
+        <x>670</x>
+        <y>550</y>
+        <width>91</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  
+	background-color: rgb(255, 254, 233);
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Playfair Display&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>Label Info</string>
+      </property>
+     </widget>
+     <widget class="QTableWidget" name="tableWidget_train">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>270</y>
+        <width>511</width>
+        <height>231</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QTreeView {
+  background-color: rgb(45, 48, 56);
+  color: rgb(255, 255, 255);  /* 글자색을 흰색으로 변경 */
+  border: 1px solid rgb(80, 80, 80);
+  font: 9pt &quot;Playfair Display&quot;;
+}
+
+QTableView::item {
+  color: rgb(255, 255, 255);  /* 표 안의 아이템 글자색을 흰색으로 변경 */
+}
+
+QHeaderView::section {
+  background-color: rgb(58, 60, 69);
+  color: rgb(200, 200, 200);
+  border-bottom: 1px solid rgb(80, 80, 80);
+  padding: 4px;
+}</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_7">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>240</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 16pt &quot;Arial&quot;;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>Label list</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_2">
+     <attribute name="title">
+      <string>Detect</string>
+     </attribute>
+     <widget class="QComboBox" name="model_combo_2">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>80</y>
+        <width>231</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(255, 255, 255);
+font: 9pt &quot;Helvetica&quot;;</string>
+      </property>
+      <item>
+       <property name="text">
+        <string>Xgboost</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>LSTM</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Random forest</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>LightGBM</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Linear</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>KNN</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QPushButton" name="class_detect">
+      <property name="geometry">
+       <rect>
+        <x>359</x>
+        <y>75</y>
+        <width>271</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(212, 175, 55);  /* Gold color */
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Playfair Display&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>분류모델</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_5">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>45</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 16pt &quot;Arial&quot;;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>Detect Model</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="binButton_2">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>125</y>
+        <width>90</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>binary class</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="mulButton_2">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>145</y>
+        <width>90</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Helvetica&quot;;
+style: bold;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>multi class</string>
+      </property>
+     </widget>
+     <widget class="QTableWidget" name="tableWidget_detect">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>230</y>
+        <width>511</width>
+        <height>231</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QTreeView {
+  background-color: rgb(45, 48, 56);
+  color: rgb(255, 255, 255);  /* 글자색을 흰색으로 변경 */
+  border: 1px solid rgb(80, 80, 80);
+  font: 9pt &quot;Playfair Display&quot;;
+}
+
+QTableView::item {
+  color: rgb(255, 255, 255);  /* 표 안의 아이템 글자색을 흰색으로 변경 */
+}
+
+QHeaderView::section {
+  background-color: rgb(58, 60, 69);
+  color: rgb(200, 200, 200);
+  border-bottom: 1px solid rgb(80, 80, 80);
+  padding: 4px;
+}</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_6">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>200</y>
+        <width>171</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 16pt &quot;Arial&quot;;
+color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="text">
+       <string>Label list</string>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>955</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+   </widget>
+   <addaction name="menu"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
