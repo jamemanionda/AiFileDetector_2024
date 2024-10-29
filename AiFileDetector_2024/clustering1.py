@@ -156,7 +156,10 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
 
     @staticmethod
     def calculate_simhash_lib(value):
-        simval = Simhash(str(value)).value
+        try:
+            simval = Simhash(str(value)).value
+        except :
+            simval = 0
         return simval
 
     def apply_simhash(self, df):
