@@ -122,8 +122,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
     def on_combobox_select(self, index):
         self.index = index
 
-    def on_train_button_click(self):
-        self.gotrain()
 
     def load_model2(self):
         """학습 모델 로드"""
@@ -468,7 +466,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             print("Model accuracy:", accuracy)
             message = "Model accuracy: " + str(accuracy)
 
-            self.show_message_box(message)
+            self.show_alert(message)
         else :
             mae = mean_absolute_error(y_test, y_pred)  # Mean Absolute Error
             mse = mean_squared_error(y_test, y_pred)  # Mean Squared Error

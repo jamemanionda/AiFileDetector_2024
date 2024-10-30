@@ -129,8 +129,11 @@ class createtrainclass(QMainWindow, form_class):
                 print("[nonepath] 유효하지 않은 경로로 인해 Y:\\로 설정되었습니다.")
 
             print("=====================================")
-            print("케이스 이름: [", self.case_direc, "]")
-            print("데이터셋 경로: [", self.dataset_direc, "]")
+            try:
+                print("케이스 이름: [", self.case_direc, "]")
+                print("데이터셋 경로: [", self.dataset_direc, "]")
+            except:
+                self.ask_input()
             initialcode = 1
 
         self.treeView.setRootIndex(self.dirModel.index(self.dataset_direc))
@@ -183,7 +186,11 @@ class createtrainclass(QMainWindow, form_class):
             self.label_datacsv = self.resource_path('labeldata_mul.csv')
         self.labelinfofile = ""
 
-
+        try :
+            pass
+            self.load_excel_data()
+        except:
+            pass
         self.label_input_but.clicked.connect(self.input_label)
         self.aimodel = self.model_combo_2.currentText()
         self.trainindex = self.comboBox.currentIndex()
@@ -221,6 +228,7 @@ class createtrainclass(QMainWindow, form_class):
         else :
             messagebox.showerror("에러", "바이너리/멀티 모드를 선택")
 
+        self.trainindex = self.model_combo.currentIndex()
         self.model_combo.activated.connect(self.on_combobox_select)
         self.trainclass.csv_path = self.csv_path
         self.trainclass.comboBox = self.model_combo_2
@@ -259,8 +267,14 @@ class createtrainclass(QMainWindow, form_class):
             self.show_alert(str(e))
 
     def ask_input(self):
-        self.case_direc = input("케이스 이름을 입력하세요: ")
-        self.dataset_direc = input("데이터셋 경로를 입력하세요: ")
+        while 1:
+            try:
+                if not self.case_direc:
+                    self.case_direc = input("케이스 이름을 입력하세요: ")
+                if not self.case_direc:
+                    self.dataset_direc = input("데이터셋 경로를 입력하세요: ")
+            except:
+                pass
 
 
     def display_dataframe(self, df, widgettype):
@@ -270,10 +284,10 @@ class createtrainclass(QMainWindow, form_class):
 
         for i in range(df.shape[0]):
             for j in range(df.shape[1]):
-                if j<100:
+                if i<100:
                     item = QTableWidgetItem(str(df.iat[i, j]))
                     widgettype.setItem(i, j, item)
-
+                else : break
     def open_csv2(self, csvfile, widgett):
         file_name = csvfile
         if file_name:
@@ -311,23 +325,6 @@ class createtrainclass(QMainWindow, form_class):
     def remove_all_file(self):
         self.listWidget.clear()
         self.file_paths = []
-
-    def load_common(self): # 특정 파일에서 데이터 불러오기
-        self.data_list2 = []
-        self.newlist2 = []
-
-        # 파일 열기
-        with open('text2.txt', 'r') as file:
-            for line in file:
-                cleaned_line = line.strip('')[1:-1]
-                sub_list = cleaned_line.split(',')
-                self.data_list2.append(sub_list)
-
-        for a in sub_list:
-            b = a.strip('" \'')
-            self.newlist2.append(b)
-
-        print(self.newlist2)
 
     def extract_ngram(self, n, file_paths): # 바이너리 데이터를 n-gram으로 변환하여 n크기 피처 추출
         ngram_sets = []
@@ -1350,6 +1347,8 @@ class createtrainclass(QMainWindow, form_class):
             results.append(('SPS', sps_result))
 
         if self.structure_seq_state:
+            ######1031
+            results = [f[1] for f in results if f and f[0] != 'name']
             sequence_feature = Simhash([f[1] for f in results if f[0] != 'name']).value
             results.append(('sequence', sequence_feature))
 
@@ -1374,7 +1373,7 @@ class createtrainclass(QMainWindow, form_class):
 
         self.scalername = str(self.csv_path+"_" + self.aimodel + "scaler.pkl")
         self.scalarpath = self.resource_path(self.scalername)
-        if os.path.exists(pklname) and os.path.exists(self.scalerpath):
+        if os.path.exists(self.pklpath) and os.path.exists(self.scalerpath):
             self.model = joblib.load(self.pklpath)
             self.scaler = joblib.load(self.scalerpath)
         else:
