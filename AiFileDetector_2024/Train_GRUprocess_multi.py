@@ -186,7 +186,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
 
         # 모델 로드 및 테스트 데이터 예측
-        #self.load_model2()
         predicted_data = self.predict_data(df_test_processed)
         predicted_datalabel = predicted_data['label']
         results, success_failure, results_df = self.analyze_prediction(predicted_data, self.original_df_test[['name', 'label']])

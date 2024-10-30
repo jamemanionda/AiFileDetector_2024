@@ -7,6 +7,7 @@ import re
 import struct
 import sys
 import threading
+import glob
 from datetime import datetime
 from tkinter import messagebox
 import tkinter as tk
@@ -94,25 +95,56 @@ class createtrainclass(QMainWindow, form_class):
 
         input_thread = threading.Thread(target=self.ask_input)
         input_thread.start()
-        input_thread.join(timeout=10)  # 10초 대기
+        input_thread.join(timeout=20)  # 20초 대기
+
         initialcode = 0
         self.detectmode = 0
+
         if initialcode == 0:
+            print("=====================================")
             try:
-                print("출력: [", self.direc, "]")
-                if self.direc == None or self.direc ==" ":
-                    raise ValueError("")
+                # 케이스 이름이 공백 또는 비어 있는 경우
+                if not self.case_direc or self.case_direc.strip() == "":
+                    print("기본 default_case를 생성합니다.")
+                    self.case_direc = 'default_case'
+                    raise ValueError("케이스명이 공백이라 default_case로 설정")
+                else:
+                    # 공백이 아닌 경우
+                    if os.path.exists(self.case_direc):
+                        print(f"{self.case_direc} 케이스가 이미 존재합니다.")
+                    else:
+                        print(f"{self.case_direc} 케이스가 존재하지 않아 생성합니다.")
+                        os.makedirs(self.case_direc) # 경로 생성
+                        raise ValueError("경로가 존재하지 않아 생성")
+
+                # 데이터셋 경로 유효성 검사 (존재하는 경로인지 확인)
+                if not os.path.isdir(self.dataset_direc):
+                    raise ValueError(f"유효하지 않은 데이터셋 경로: {self.dataset_direc}")
+
+                print("유효한 데이터셋 경로와 케이스 경로가 설정되었습니다.")
 
             except Exception as e:
+                # 경로가 유효하지 않으면 기본 경로를 설정
+                self.dataset_direc = 'Y:\\'
+                print("[nonepath] 유효하지 않은 경로로 인해 Y:\\로 설정되었습니다.")
 
-                self.direc = 'Y:\\'
-                print("[nonepath] 설정값을 입력하지 않아 Y:\\로 설정되었습니다. "
-                      "코드에서 수정을 원할 시에 createtraining에서 nonepath를 검색하여 이동해서 수정하세요")
-            initialcode=1
+            print("=====================================")
+            print("케이스 이름: [", self.case_direc, "]")
+            print("데이터셋 경로: [", self.dataset_direc, "]")
+            initialcode = 1
 
-        self.treeView.setRootIndex(self.dirModel.index(self.direc))
-
+        self.treeView.setRootIndex(self.dirModel.index(self.dataset_direc))
         self.treeView.clicked.connect(self.file_selected)
+
+        # 케이스 디렉토리에서 .csv 찾아서 csv_files 리스트로 반환
+        csv_files = glob.glob(os.path.join(self.case_direc, "*.csv"))
+
+        # .csv 파일이 하나 이상 있을 때 일단은 첫 번째 파일을 열기
+        if csv_files:
+            self.csv_path = csv_files[0]  # 첫 번째 CSV 파일 경로 선택
+            self.open_csv2(self.csv_path, self.tableWidget)
+
+        # 헤더 설정
         header = self.treeView.header()
         header.setSectionResizeMode(0, header.Interactive)
         header.resizeSection(0, 400)
@@ -151,10 +183,7 @@ class createtrainclass(QMainWindow, form_class):
             self.label_datacsv = self.resource_path('labeldata_mul.csv')
         self.labelinfofile = ""
 
-        try:
-            self.load_excel_data()
-        except:
-            pass
+
         self.label_input_but.clicked.connect(self.input_label)
         self.aimodel = self.model_combo_2.currentText()
         self.trainindex = self.comboBox.currentIndex()
@@ -190,7 +219,7 @@ class createtrainclass(QMainWindow, form_class):
             self.trainclass = TrainClass()
             self.classmode = 'mul_'
         else :
-            messagebox.showerror("에러", "바이너리/멀티 모드를 선")
+            messagebox.showerror("에러", "바이너리/멀티 모드를 선택")
 
         self.model_combo.activated.connect(self.on_combobox_select)
         self.trainclass.csv_path = self.csv_path
@@ -225,12 +254,13 @@ class createtrainclass(QMainWindow, form_class):
                         self.file_paths.append(file_path)
                 if extension == '.csv':
                     self.csv_path = file_path
-                    self.open_csv2(file_path, self.tableWidget)
+
         except Exception as e:
             self.show_alert(str(e))
 
     def ask_input(self):
-        self.direc = input("데이터셋 폴더경로를 입력하세요: ")
+        self.case_direc = input("케이스 이름을 입력하세요: ")
+        self.dataset_direc = input("데이터셋 경로를 입력하세요: ")
 
 
     def display_dataframe(self, df, widgettype):
@@ -240,8 +270,9 @@ class createtrainclass(QMainWindow, form_class):
 
         for i in range(df.shape[0]):
             for j in range(df.shape[1]):
-                item = QTableWidgetItem(str(df.iat[i, j]))
-                widgettype.setItem(i, j, item)
+                if j<100:
+                    item = QTableWidgetItem(str(df.iat[i, j]))
+                    widgettype.setItem(i, j, item)
 
     def open_csv2(self, csvfile, widgett):
         file_name = csvfile
@@ -1117,7 +1148,7 @@ class createtrainclass(QMainWindow, form_class):
 
         # 파일 이름에 타임스탬프 추가
         csv_file = f"{csv_file}_{timestamp}.csv"
-        csv_file = os.path.join(self.direc, csv_file)
+        csv_file = os.path.join(self.case_direc, csv_file)
 
         # 필드명 추출 - 모든 파일의 필드를 확인하여 중복 필드 처리
         fieldnames = []
@@ -1666,7 +1697,7 @@ class createtrainclass(QMainWindow, form_class):
         overwrite_labels = self.ask_overwrite_labels()
         self.data_entry_window = DataEntryWindow(overwrite_labels)
         self.data_entry_window.show()
-        self.load_excel_data()
+        #self.load_excel_data()
 
     def load_excel_data(self):
         """엑셀 데이터를 DataFrame으로 불러와 테이블에 표시."""
