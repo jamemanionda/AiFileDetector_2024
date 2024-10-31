@@ -51,9 +51,9 @@ class twoTrainClass():
         df_train_processed = self.apply_simhash(df_train)
         print("전처리한 훈련 데이터:")
         print(df_train_processed)
-        tempb = len(df_train)
+
         self.feature_list = df_train.drop(columns=['label']).columns.tolist()
-        tempb = len(df_train)
+
         # 모델 훈련
         self.train_model(df_train_processed)
         baseline_model, baseline_accuracy = self.train_baseline_model(df_train_processed)
@@ -63,11 +63,13 @@ class twoTrainClass():
         self.save_model2()
         self.original_df_test = df_test
         df_test = df_test.drop(columns='label')
+
         # 테스트 데이터 전처리
         df_test_processed = self.apply_simhash(df_test)
 
-        # 추후 변경 필요 --> 파일이름을 피처 반영되게
-        with open('feature.json', 'w') as f:
+        # 추후 변경 필요 --> 파일이름을 피처 반영되게 / csv_path랑 동일 경로에 feature.json저장
+        jsonpath = os.path.join(os.path.dirname(csv_path), "feature.json")
+        with open(jsonpath, 'w') as f:
             json.dump(self.feature_list, f)
 
         # 모델 로드 및 테스트 데이터 예측
@@ -160,13 +162,10 @@ class twoTrainClass():
         accuracy = accuracy_score(y_test, y_pred)
         print("Baseline Model accuracy:", accuracy)
 
-        # cm = confusion_matrix(y_test, y_pred)d
 
-        # sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-        # plt.xlabel('Predicted')
-        # plt.ylabel('True')
-        # plt.title('Baseline Model Confusion Matrix')
-        #plt.show()
+
+
+
 
         print("Classification Report:")
         print(classification_report(y_test, y_pred))
@@ -355,6 +354,24 @@ class twoTrainClass():
 
         # Confusion Matrix 시각화
         self.confusion_matrix2(y_test, y_pred)
+
+        # 다중분류에서 가져온 importance.csv 부분
+        if hasattr(self.model, 'feature_importances_'):
+            feature_importances = self.model.feature_importances_
+            importance_df = pd.DataFrame({
+                'Feature': X.columns,
+                'Importance': feature_importances
+            }).sort_values(by='Importance', ascending=False)
+
+            print("Feature Importance:")
+            print(importance_df)
+
+            # 피처 중요도 시각화
+            self.plot_feature_importance(importance_df)
+
+            file_path = 'feature_importance.csv'
+            importance_df.to_csv(file_path, index=False)
+
 
     def show_alert(self, message):
         title = "알림"

@@ -439,7 +439,7 @@ color: rgb(255, 255, 255);</string>
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>90</width>
+        <width>100</width>
         <height>16</height>
        </rect>
       </property>
@@ -770,7 +770,7 @@ QPushButton:pressed {
        <rect>
         <x>120</x>
         <y>180</y>
-        <width>90</width>
+        <width>100</width>
         <height>16</height>
        </rect>
       </property>
@@ -985,7 +985,7 @@ color: rgb(255, 255, 255);</string>
        <rect>
         <x>120</x>
         <y>125</y>
-        <width>90</width>
+        <width>100</width>
         <height>16</height>
        </rect>
       </property>

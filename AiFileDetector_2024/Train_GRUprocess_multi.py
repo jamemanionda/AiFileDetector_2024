@@ -1,9 +1,9 @@
 import json
 import pickle
 import plotly.express as px
-
 import pyautogui
 import seaborn as sns
+from PyQt5.QtCore import Qt
 from keras.optimizers import Adam
 from keras.regularizers import l2
 from lightgbm import LGBMClassifier
@@ -24,6 +24,7 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV, GridSe
 from simhash import Simhash
 from sklearn.metrics import accuracy_score
 import xgboost as xgb
+from sklearn.preprocessing import LabelEncoder
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QMessageBox, QFileDialog, \
     QTableWidgetItem, QPushButton, QVBoxLayout, QLabel, QDialog
@@ -279,6 +280,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
         # QDialog를 사용해 타이틀 없는 커스텀 알림창 생성
         dialog = QDialog()
+
         dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 타이틀 바 제거 및 최상단 설정
 
         # 다크 모드 스타일 적용
@@ -440,6 +442,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         if self.index == 0:
             self.model = xgb.XGBClassifier(random_state=42)
             grid_search  = GridSearchCV(self.model, params_xgb, cv=3, scoring='accuracy')
+            le = LabelEncoder()
+            y_train = le.fit_transform(y_train)
             grid_search.fit(X_train_scaled, y_train)
             self.model = grid_search.best_estimator_
         elif self.index == 2:
@@ -491,15 +495,16 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
 
-            file_path = 'feature_importance.csv'
+            file_path = os.path.join(os.path.dirname(self.csv_path), "feature_importance.csv")
             importance_df.to_csv(file_path, index=False)
 
-
+        # 추후 변경 필요 --> 파일이름을 피처 반영되게 / self.csv_path랑 동일 경로에 feature.json저장
         self.feature_list = X.columns.tolist()
-        #추후 변경 필요 --> 파일이름을 피처 반영되게
-        with open('feature.json', 'w') as f:
+        jsonpath = os.path.join(os.path.dirname(self.csv_path), "feature.json")
+        with open(jsonpath, 'w') as f:
             json.dump(self.feature_list, f)
-        print("feature : ", self.feature_list)
+
+
 
 
         return self.model, accuracy
@@ -512,6 +517,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
         # QDialog를 사용해 타이틀 없는 커스텀 알림창 생성
         dialog = QDialog()
+
         dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 타이틀 바 제거 및 최상단 설정
 
         # 다크 모드 스타일 적용

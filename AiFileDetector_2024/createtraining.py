@@ -94,6 +94,7 @@ class createtrainclass(QMainWindow, form_class):
         self.treeView.setModel(self.dirModel)
 
         input_thread = threading.Thread(target=self.ask_input)
+
         input_thread.start()
         input_thread.join(timeout=20)  # 20초 대기
 
@@ -126,12 +127,13 @@ class createtrainclass(QMainWindow, form_class):
             except Exception as e:
                 # 경로가 유효하지 않으면 기본 경로를 설정
                 self.dataset_direc = 'Y:\\'
-                print("[nonepath] 유효하지 않은 경로로 인해 Y:\\로 설정되었습니다.")
+                print("데이터셋 경로가 Y:\\로 설정되었습니다.")
 
             print("=====================================")
             try:
                 print("케이스 이름: [", self.case_direc, "]")
                 print("데이터셋 경로: [", self.dataset_direc, "]")
+                print("=====================================")
             except:
                 self.ask_input()
             initialcode = 1
@@ -188,7 +190,7 @@ class createtrainclass(QMainWindow, form_class):
 
         try :
             pass
-            self.load_excel_data()
+            #self.load_excel_data()
         except:
             pass
         self.label_input_but.clicked.connect(self.input_label)
@@ -202,7 +204,6 @@ class createtrainclass(QMainWindow, form_class):
 
 
     def clustermain(self):
-
         self.clustering.gotrain(self.csv_path)
 
     def showFileDialog(self):
@@ -220,21 +221,23 @@ class createtrainclass(QMainWindow, form_class):
         binstat = self.binButton_3.isChecked()
         mulstat = self.mulButton_3.isChecked()
         if binstat:
-            self.trainclass = twoTrainClass()
+            self.trainclass = twoTrainClass() ##### 이진으로 설정
             self.classmode = 'bin_'
         elif mulstat:
-            self.trainclass = TrainClass()
+            self.trainclass = TrainClass() ##### 다중으로 설정
             self.classmode = 'mul_'
         else :
             messagebox.showerror("에러", "바이너리/멀티 모드를 선택")
 
         self.trainindex = self.model_combo.currentIndex()
         self.model_combo.activated.connect(self.on_combobox_select)
-        self.trainclass.csv_path = self.csv_path
+        self.trainclass.csv_path = self.csv_path # 객체 csv 경로 설정
         self.trainclass.comboBox = self.model_combo_2
         try:
             self.trainclass.gotrain(self.classmode, self.aimodel, self.trainindex, self.csv_path)
-        except : pass
+        except Exception as e:
+            pass
+
     def classdetect(self):
         self.detectclass.predict(file_path=self.file_paths[0])
 
@@ -267,12 +270,9 @@ class createtrainclass(QMainWindow, form_class):
             self.show_alert(str(e))
 
     def ask_input(self):
-        while 1:
             try:
-                if not self.case_direc:
-                    self.case_direc = input("케이스 이름을 입력하세요: ")
-                if not self.case_direc:
-                    self.dataset_direc = input("데이터셋 경로를 입력하세요: ")
+                self.case_direc = input("케이스 이름을 입력하세요: ")
+                self.dataset_direc = input("데이터셋 경로를 입력하세요: ")
             except:
                 pass
 
