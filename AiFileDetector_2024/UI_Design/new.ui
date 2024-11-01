@@ -66,7 +66,7 @@ QTabBar::tab:hover {
 </string>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>3</number>
     </property>
     <property name="iconSize">
      <size>
@@ -1109,12 +1109,24 @@ color: rgb(255, 255, 255);</string>
    </property>
    <widget class="QMenu" name="menu">
     <property name="title">
-     <string>Settings</string>
+     <string>File</string>
     </property>
+    <addaction name="actionNew_Case"/>
    </widget>
    <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionNew_Case">
+   <property name="text">
+    <string>New Case</string>
+   </property>
+   <property name="font">
+    <font>
+     <family>ad-icon</family>
+     <pointsize>11</pointsize>
+    </font>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

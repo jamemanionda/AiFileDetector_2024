@@ -19,7 +19,8 @@ import pandas as pd
 import pyautogui
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QProgressBar, QDialog, QLabel, \
-    QVBoxLayout, QTableWidgetItem, QMessageBox, QLineEdit, QPushButton, QTableWidget, QInputDialog, QFileDialog
+    QVBoxLayout, QTableWidgetItem, QMessageBox, QLineEdit, QPushButton, QTableWidget, QInputDialog, QFileDialog, \
+    QListWidget, QAction
 from PyQt5 import uic, QtWidgets
 from openpyxl.reader.excel import load_workbook
 from openpyxl.workbook import Workbook
@@ -71,7 +72,7 @@ form_path = resource_path("new.ui")
 form_class = uic.loadUiType(form_path)[0]
 
 class createtrainclass(QMainWindow, form_class):
-    def __init__(self):
+    def __init__(self, case_direc, dataset_direc):
         super(createtrainclass, self).__init__()
         self.choice = 0
         self.file_paths = []
@@ -99,20 +100,21 @@ class createtrainclass(QMainWindow, form_class):
         #
         # input_thread.start()
         # input_thread.join(timeout=20)  # 20초 대기
-        self.ask_input()
-
-
+        #self.ask_input()
         initialcode = 0
         self.detectmode = 0
 
         if initialcode == 0:
             print("=====================================")
             try:
+                self.case_direc = case_direc
+                self.dataset_direc = dataset_direc
                 # 케이스 이름이 공백 또는 비어 있는 경우
-                if not self.case_direc or self.case_direc.strip() == "":
+                ''' if not self.case_direc or self.case_direc.strip() == "":
                     print("기본 default_case를 생성합니다.")
                     self.case_direc = 'default_case'
                     raise ValueError("케이스명이 공백이라 default_case로 설정")
+                
                 else:
                     # 공백이 아닌 경우
                     if os.path.exists(self.case_direc):
@@ -120,7 +122,7 @@ class createtrainclass(QMainWindow, form_class):
                     else:
                         print(f"{self.case_direc} 케이스가 존재하지 않아 생성합니다.")
                         os.makedirs(self.case_direc) # 경로 생성
-                        raise ValueError("경로가 존재하지 않아 생성")
+                        raise ValueError("경로가 존재하지 않아 생성")'''
 
                 # 데이터셋 경로 유효성 검사 (존재하는 경로인지 확인)
                 if not os.path.isdir(self.dataset_direc):
@@ -276,7 +278,6 @@ class createtrainclass(QMainWindow, form_class):
 
     def ask_input(self):
             try:
-                self.case_direc = input("케이스 이름을 입력하세요: ")
                 self.dataset_direc = input("데이터셋 경로를 입력하세요: ")
             except:
                 pass
@@ -294,7 +295,8 @@ class createtrainclass(QMainWindow, form_class):
                 if i<100:
                     item = QTableWidgetItem(str(df.iat[i, j]))
                     widgettype.setItem(i, j, item)
-                else : break
+                else :
+                    return
 
 
     def open_csv2(self, csvfile, widgett):
@@ -1352,6 +1354,21 @@ class createtrainclass(QMainWindow, form_class):
         labeltransferdf = pd.read_excel(labelpath)
 
         try:
+            # Convert prediction to integer for column access
+            temppred = int(y_pred[0])
+
+            # Ensure label columns are integers
+            labeltransferdf.columns = [int(col) for col in labeltransferdf.columns]
+
+            # Filter the relevant label
+            filtered_df = labeltransferdf[temppred]
+        except KeyError:
+            message = f"해당 라벨({temppred})이 존재하지 않습니다. 라벨을 업데이트하세요."
+            self.show_alert(message)
+        except Exception as e:
+            self.show_alert(str(e))
+
+        try:
             # Format probability and show message
             fileaccuracy = "{:.3f}".format(predicted_class_probs[0][1] * 100)
             message = f"{fileaccuracy}% 확률로 {filtered_df[0]}({y_pred}) 입니다"
@@ -1882,8 +1899,152 @@ class DataEntryWindow(QWidget):
         self.close()
 
 
+class CaseSelectorApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        # Initialize case and dataset directories
+        self.case_direc = None
+        self.dataset_direc = None
+
+        # Set up the main window
+        self.setWindowTitle("Select a Case")
+        self.setFixedSize(500, 400)
+
+        # Set up menu bar
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu("File")
+
+        # Add NewCase action to the menu
+        new_case_action = QAction("NewCase", self)
+        new_case_action.triggered.connect(self.create_new_case)
+        file_menu.addAction(new_case_action)
+
+        # Set up main layout with a dark theme
+        layout = QVBoxLayout()
+
+        # Title label
+        label = QLabel("Select a Case:")
+        label.setStyleSheet("color: #f5f5f5; font-size: 20px; font-weight: bold;")
+        layout.addWidget(label)
+
+        # List widget to display directories
+        self.case_list_widget = QListWidget()
+        self.case_list_widget.setStyleSheet("""
+            QListWidget {
+                background-color: #333;
+                color: #f5f5f5;
+                border: 1px solid #444;
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QListWidget::item {
+                padding: 8px;
+                font-size: 12pt;
+            }
+            QListWidget::item:selected {
+                background-color: #555;
+                color: #f5f5f5;
+            }
+        """)
+        layout.addWidget(self.case_list_widget)
+
+        # Load cases from the 'Cases' directory
+        self.load_cases()
+
+        # Connect selection change signal to the method
+        self.case_list_widget.itemClicked.connect(self.select_case)
+
+        # Confirm button
+        confirm_button = QPushButton("Select Case")
+        confirm_button.setStyleSheet("""
+            QPushButton {
+                background-color: #444;
+                color: white;
+                border: 1px solid #777;
+                border-radius: 5px;
+                padding: 10px 20px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #555;
+            }
+        """)
+        confirm_button.clicked.connect(self.confirm_selection)
+        layout.addWidget(confirm_button)
+
+        # Set up the central widget with dark mode styling
+        container = QWidget()
+        container.setStyleSheet("""
+            QWidget {
+                background-color: #2e2e2e;
+                border: 2px solid #444;
+                border-radius: 15px;
+                padding: 20px;
+            }
+        """)
+        container.setLayout(layout)
+        self.setCentralWidget(container)
+
+    def load_cases(self):
+        """Load directory names from the 'Cases' folder in the current directory."""
+        cases_path = os.path.join(os.getcwd(), "Cases")
+        if os.path.exists(cases_path):
+            case_dirs = [d for d in os.listdir(cases_path) if os.path.isdir(os.path.join(cases_path, d))]
+            self.case_list_widget.addItems(case_dirs)
+        else:
+            print("No 'Cases' directory found in the current path.")
+
+    def select_case(self, item):
+        """Set selected case directory."""
+        cases_path = os.path.join(os.getcwd(), "Cases")
+        self.case_direc = os.path.join(cases_path, item.text())
+        print(f"Selected case directory: {self.case_direc}")
+
+    def confirm_selection(self):
+        """Confirm the selected case, prompt for dataset directory, and start training."""
+        if self.case_direc:
+            print(f"Confirmed selection: {self.case_direc}")
+
+            # Prompt user for dataset directory
+            dataset_direc, ok = QInputDialog.getText(self, "Dataset Directory",
+                                                     "데이터셋 디렉터리를 입력하세요 ex) Y://, Z://")
+            if ok and dataset_direc:
+                self.dataset_direc = dataset_direc
+                print(f"Dataset directory set to: {self.dataset_direc}")
+
+                # Create and show the CreateTrain window
+                self.create_train_window = createtrainclass(self.case_direc, self.dataset_direc)
+                self.create_train_window.show()  # Display the CreateTrain window
+                self.close()  # Close CaseSelectorApp after confirmation
+
+    def create_new_case(self):
+        """Prompt for a new case name and create the case directory."""
+        case_name, ok = QInputDialog.getText(self, "New Case", "Enter the name of the new case:")
+        if ok and case_name:
+            # Create the new case directory
+            cases_path = os.path.join(os.getcwd(), "Cases")
+            new_case_path = os.path.join(cases_path, case_name)
+
+            os.makedirs(cases_path, exist_ok=True)
+
+            # Check if the case already exists to avoid duplicates
+            if not os.path.exists(new_case_path):
+                os.mkdir(new_case_path)
+                print(f"Created new case directory: {new_case_path}")
+
+                # Refresh the case list and select the new case
+                self.case_list_widget.addItem(case_name)
+                self.case_direc = new_case_path
+                self.create_train_window = createtrainclass(self.case_direc, self.dataset_direc)
+                self.create_train_window.show()
+            else:
+                print(f"Case '{case_name}' already exists.")
+
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = createtrainclass()
+    ex = CaseSelectorApp()
     ex.show()
     app.exec_()
