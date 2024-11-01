@@ -85,18 +85,22 @@ class createtrainclass(QMainWindow, form_class):
         self.extension_list = ["확장자", ".mp4",  ".mov"]
         self.comboBox.addItems(self.extension_list)
         self.csv_file = ''
+        self.tempcsv_file = ''
         self.comboBox.currentIndexChanged.connect(
             lambda index: self.filter_files_by_extension(self.comboBox.itemText(index)))
 
         self.dirModel = QFileSystemModel()
         self.dirModel.setRootPath(QDir.rootPath())
 
+        self.exist_csv_but.clicked.connect(self.open_existcsv)
         self.treeView.setModel(self.dirModel)
 
-        input_thread = threading.Thread(target=self.ask_input)
+        # input_thread = threading.Thread(target=self.ask_input)
+        #
+        # input_thread.start()
+        # input_thread.join(timeout=20)  # 20초 대기
+        self.ask_input()
 
-        input_thread.start()
-        input_thread.join(timeout=20)  # 20초 대기
 
         initialcode = 0
         self.detectmode = 0
@@ -142,7 +146,7 @@ class createtrainclass(QMainWindow, form_class):
         self.treeView.clicked.connect(self.file_selected)
 
         # 케이스 디렉토리에서 .csv 찾아서 csv_files 리스트로 반환
-        csv_files = glob.glob(os.path.join(self.case_direc, "*.csv"))
+        csv_files = [file for file in glob.glob(os.path.join(self.case_direc, "*.csv")) if 'feature_importance.csv' not in os.path.basename(file)]
 
         # .csv 파일이 하나 이상 있을 때 일단은 첫 번째 파일을 열기
         if csv_files:
@@ -183,9 +187,9 @@ class createtrainclass(QMainWindow, form_class):
 
         self.label_info.clicked.connect(self.open_data_entry_window)
         if self.binButton.isChecked():
-            self.label_datacsv = self.resource_path('labeldata_bin.csv')
+            self.label_datacsv = 'labeldata_bin.csv'
         elif self.mulButton.isChecked():
-            self.label_datacsv = self.resource_path('labeldata_mul.csv')
+            self.label_datacsv = 'labeldata_mul.csv'
         self.labelinfofile = ""
 
         try :
@@ -204,6 +208,7 @@ class createtrainclass(QMainWindow, form_class):
 
 
     def clustermain(self):
+
         self.clustering.gotrain(self.csv_path)
 
     def showFileDialog(self):
@@ -278,6 +283,8 @@ class createtrainclass(QMainWindow, form_class):
 
 
     def display_dataframe(self, df, widgettype):
+        df = self.move_label_to_second_column(df)
+
         widgettype.setRowCount(df.shape[0])
         widgettype.setColumnCount(df.shape[1])
         widgettype.setHorizontalHeaderLabels(df.columns)
@@ -288,14 +295,24 @@ class createtrainclass(QMainWindow, form_class):
                     item = QTableWidgetItem(str(df.iat[i, j]))
                     widgettype.setItem(i, j, item)
                 else : break
+
+
     def open_csv2(self, csvfile, widgett):
         file_name = csvfile
         if file_name:
             try:
-                df = pd.read_csv(file_name, encoding='UTF-8')
+                sample_df = pd.read_csv(file_name, nrows=1, header=None)
+                tempvalue = sample_df.iloc[0, 0]
+                # 첫 번째 행의 첫 번째 값이 'name'이 아닌 경우 두 번째 행을 헤더로 설정
+                if tempvalue != 'name':
+                    # 첫 번째 행에 컬럼 이름이 없으면 두 번째 행을 헤더로 설정하여 다시 읽어옵니다
+                    df = pd.read_csv(file_name, header=1)
+                else:
+                    # 첫 번째 행이 컬럼 이름이면 기본적으로 읽어옵니다
+                    df = pd.read_csv(file_name)
                 self.display_dataframe(df, widgettype=widgett)
             except Exception as e:
-                self.show_error_message("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
+                self.show_alert("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
 
         return
 
@@ -681,46 +698,6 @@ class createtrainclass(QMainWindow, form_class):
                 return key
         return None  # 해당 값과 일치하는 키가 없을 경우 None을 반환
 
-    # Feature 딕셔너리 업데이트 or 딕셔너리 추가
-    # 기존 딕셔너리 없으면 생성, 있으면 업데이트
-    def save_lists_of_10_to_csv_featuredict(self, data_list): # header가 새로운 피처로 저장
-        data_list = data_list.split(",")
-        data_list.remove('name')
-        data_set = list(dict.fromkeys(data_list).keys())
-        newdict= {}
-
-        try:
-            #기존 딕셔너리 사전 열기
-            dictpkl = str(self.extension + '\\' + "_dict.pkl")
-            with open(dictpkl, "wb") as fw:
-                newdict = pickle.load(fw)
-
-            #값이 기존 딕셔너리 value에 존재하지 않으면 추가
-            if newdict:
-                last_key = max(newdict.keys())
-            else:
-                last_key = 0
-
-            for idata in data_set:
-                if idata not in newdict.values():
-                    new_key = last_key + 1
-                    newdict[new_key] = idata
-
-            dictpkl = str(self.extension + '\\' + "_dict.pkl")
-            with open(dictpkl, "wb") as fw:
-                pickle.dump(newdict, fw)
-
-        except Exception as e:
-
-            for i, item in enumerate(data_set, start=1):
-                newdict[i] = item
-
-            dictpkl = str(self.extension + '\\' + "_dict.pkl")
-            with open(dictpkl, "wb") as fw:
-                pickle.dump(newdict, fw)
-
-        self.makearray(data_list, newdict)
-
     def make_features(self, input_str):
         length = 3
         input_str = input_str.lower()
@@ -758,92 +735,6 @@ class createtrainclass(QMainWindow, form_class):
     def file_exists(self, folder_path, filename):
         file_path = os.path.join(folder_path, filename)
         return os.path.isfile(file_path)
-
-    def open_csv(self, file_path):
-        # 운영체제별 기본 CSV 뷰어를 사용하여 파일 열기
-        answer = messagebox.askyesno("CSV 생성 완료", f"파일을 열겠습니까?")
-        if answer:
-            os.startfile(self, file_path)
-
-
-    def extract_value_tocsv(self, choice):
-        x = self.get_files_value() # 정리된 데이터
-        y = x[0]
-        second_elements = [tpl[0] for tpl in y] # y에서 각 튜플의 첫 번째 요소 추출한 리스트
-        second_elements = [tpl[0] for tpl in y] # y에서 각 튜플의 첫 번째 요소 추출한 리스트
-        header = ','.join(second_elements) # second_elemetns 리스트를 콤마로 연결한 문자열로, csv 파일 헤더로 사용됨
-
-        if choice == 1:
-            extractvalue = str(self.extension + '\\' +  "extractvalues_header.csv") # 헤더추출용
-            commonheader2csv = str(self.extension + '\\' +  "common2_header.csv")
-            self.save_list_of_indivi_to_csv(header, commonheader2csv) # common2_header.csv 저장
-            with open(extractvalue, 'wt', encoding='utf-8') as fp: # extractvalues_header.csv 저장
-                fp.write(header + '\n')
-
-        elif choice == 2:  # 인풋파일들에 대한 value 추출
-            extractvalue = str(self.extension + '\\' +  "extractvalues.csv")
-            #extractvalue = str("test.csv")
-            written_names = set()
-            self.isfilecsv = 0
-            if 'label' not in second_elements:
-                header += ',label'
-                for i in range(len(x)):
-                    x[i].append(('label', self.label_data))
-
-
-
-            existing_names = set()
-            try:
-                #파일이 있다면
-                with open(extractvalue, 'r', newline='', encoding='utf-8') as csvfile:
-                    csv_reader = csv.reader(csvfile)
-
-                    # header 처리
-                    header = next(csv_reader)
-                    name_index = header.index('name') if 'name' in header else None
-
-                    if name_index is not None:
-                        # 기존 데이터에서 name 추출
-                        for row in csv_reader:
-                            if len(row) > name_index:
-                                existing_names.add(row[name_index])
-
-                    header = ','.join(header)
-                    csvfile.close()
-            except Exception as e :
-                self.isfilecsv += 1
-
-
-            with open(extractvalue, 'a', encoding='utf-8') as fp:
-                if self.isfilecsv != 0:
-                    fp.write(header + '\n')
-
-                # 새로운 데이터 중에서 name이 없는 경우에만 추가
-                for data_row in x:
-                    name_value = data_row[0][1]
-
-                    if name_value not in existing_names:
-                        data = ','.join([tpl[1] for tpl in data_row])
-                        fp.writelines(data + '\n')
-                        existing_names.add(name_value)
-                        print(f"새로운 데이터 : {data_row}")
-                    else:
-
-                        print(f"이미 존재함 : {data_row}")
-                # fp.write(header + '\n')
-                # preserve_dict = {}  # 딕셔너리를 사용하여 name_value가 이미 있는 행을 보존
-                # for k in range(len(x)):
-                #     name_value = x[k][0][1]  # Assuming the name is the first tuple's second value
-                #     if name_value in preserve_dict:
-                #         # 이미 있는 경우 해당 행을 가져와서 쓰기
-                #         fp.writelines(preserve_dict[name_value] + '\n')
-                #     else:
-                #         data = ','.join([tpl[1] for tpl in x[k]])
-                #         fp.writelines(data + '\n')
-                #         preserve_dict[name_value] = data  # name_value 행을 딕셔너리에 저장
-
-        self.save_lists_of_10_to_csv_featuredict(header)
-        return header
 
     def center_window(self, root, width=300, height=200):
         screen_width = root.winfo_screenwidth()
@@ -1087,68 +978,80 @@ class createtrainclass(QMainWindow, form_class):
         if state == Qt.Checked:
             print('structure_val Box is checked')
             self.structure_val_state = True
-            if '_val' not in self.csv_file:
-                self.csv_file += '_val'
+            if '_val' not in self.tempcsv_file:
+                self.tempcsv_file += '_val'
         else:
             print('structure_val Box is unchecked')
             self.structure_val_state = False
-            self.csv_file = self.csv_file.replace('_val', '')
+            self.tempcsv_file = self.tempcsv_file.replace('_val', '')
 
     def on_structure_seq_changed(self, state):
         if state == Qt.Checked:
             print('structure_seq Box is checked')
             self.structure_seq_state = True
-            if '_seq' not in self.csv_file:
-                self.csv_file += '_seq'
+            if '_seq' not in self.tempcsv_file:
+                self.tempcsv_file += '_seq'
         else:
             print('structure_seq Box is unchecked')
             self.structure_seq_state = False
-            self.csv_file = self.csv_file.replace('_seq', '')
+            self.tempcsv_file = self.tempcsv_file.replace('_seq', '')
 
     def on_frame_sps_changed(self, state):
         if state == Qt.Checked:
             print('frame_sps Box is checked')
             self.frame_sps_state = True
-            if '_sps' not in self.csv_file:
-                self.csv_file += '_sps'
+            if '_sps' not in self.tempcsv_file:
+                self.tempcsv_file += '_sps'
         else:
             print('frame_sps Box is unchecked')
             self.frame_sps_state = False
-            self.csv_file = self.csv_file.replace('_sps', '')
+            self.tempcsv_file = self.tempcsv_file.replace('_sps', '')
 
     def on_frame_gop_changed(self, state):
         if state == Qt.Checked:
             print('frame_gop Box is checked')
             self.frame_gop_state = True
-            if '_gop' not in self.csv_file:
-                self.csv_file += '_gop'
+            if '_gop' not in self.tempcsv_file:
+                self.tempcsv_file += '_gop'
         else:
             print('frame_gop Box is unchecked')
             self.frame_gop_state = False
-            self.csv_file = self.csv_file.replace('_gop', '')
+            self.tempcsv_file = self.tempcsv_file.replace('_gop', '')
 
     def on_frame_ratio_changed(self, state):
         if state == Qt.Checked:
             print('frame_ratio Box is checked')
             self.frame_ratio_state = True
-            if '_ratio' not in self.csv_file:
-                self.csv_file += '_ratio'
+            if '_ratio' not in self.tempcsv_file:
+                self.tempcsv_file += '_ratio'
         else:
             print('frame_ratio Box is unchecked')
             self.frame_ratio_state = False
-            self.csv_file = self.csv_file.replace('_ratio', '')
+            self.tempcsv_file = self.tempcsv_file.replace('_ratio', '')
 
     # 결과를 CSV로 저장
     def save_to_csv(self, all_data):
-        csv_file = self.csv_file
-        timestamp = datetime.now().strftime("%y%m%d%H%M%S")
+        if self.csv_file == '':
+            csv_file = self.csv_file
+            timestamp = datetime.now().strftime("%y%m%d%H%M%S")
 
-        # 파일 이름에 타임스탬프 추가
-        csv_file = f"{csv_file}_{timestamp}.csv"
-        csv_file = os.path.join(self.case_direc, csv_file)
+            # 파일 이름에 타임스탬프 추가
+            self.csv_file = f"{csv_file}_{timestamp}.csv"
+            self.csv_file = os.path.join(self.case_direc, self.csv_file)
+
+        # 기존 파일에서 데이터와 헤더 불러오기
+        existing_data = []
+        if os.path.exists(self.csv_file):
+            with open(self.csv_file, 'r', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile)
+                existing_fieldnames = reader.fieldnames if reader.fieldnames else []
+                for row in reader:
+                    existing_data.append(row)
+        else:
+            existing_fieldnames = []
 
         # 필드명 추출 - 모든 파일의 필드를 확인하여 중복 필드 처리
-        fieldnames = []
+        fieldnames = existing_fieldnames.copy()
         key_count_global = {}  # 전체 파일에서의 중복 key 카운트 딕셔너리
 
         # 모든 파일의 데이터를 순회하여 필드 추출
@@ -1185,8 +1088,7 @@ class createtrainclass(QMainWindow, form_class):
         if 'label' not in fieldnames:
             fieldnames.append('label')
 
-
-        # GOP 처리 (중복 처리 방식과 동일)
+        # GOP 처리
         for onedata in all_data:
             for key, value in onedata:
                 if key == 'GOP':
@@ -1204,58 +1106,60 @@ class createtrainclass(QMainWindow, form_class):
 
         print('최종 필드명 확인: ', fieldnames)
 
-        # CSV에 쓰기
-        if self.detectmode == 0:
-            with open(csv_file, 'w', newline='', encoding='utf-8') as csvfile:
-                # 헤더 작성
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
+        # CSV에 기존 데이터와 함께 쓰기
 
-                # 새로운 데이터 쓰기
-                for file_data in all_data:
-                    row_data = {}
-                    key_count_local = {}  # 각 파일 내에서의 중복 key 카운트 리셋
 
-                    for key, value in file_data:
-                        if key in key_count_local:
-                            key_count_local[key] += 1
-                            key_with_count = f"{key}({key_count_local[key]})"
-                        else:
-                            key_count_local[key] = 1
-                            key_with_count = key
 
-                        # 필드 값을 CSV에 저장
-                        if isinstance(value, str):
-                            # : 있는거 세부 속성 나누기
-                            attributes = [attr.strip() for attr in value.split(",")]
-                            for attr in attributes:
-                                if ":" in attr:
-                                    attr_name, attr_value = attr.split(":", 1)
-                                    if f"{key_with_count}_{attr_name.strip()}" in fieldnames:
-                                        row_data[f"{key_with_count}_{attr_name.strip()}"] = attr_value.strip()
-                                else:
-                                    if key_with_count in fieldnames:
-                                        row_data[key_with_count] = value
-                        else:
-                            if key_with_count in fieldnames:
-                                row_data[key_with_count] = value
-                    ##1025 레이블 추가
+        all_data = self.move_label_to_second_column(all_data)
 
-                    try:
-                        if hasattr(self, 'label_data') and self.label_data:
-                            row_data['label'] = self.label_data
-                        else:
-                            print("Warning: 'label_data' is not set or is empty.")
-                    except Exception as e:
-                        pass
+        with open(self.csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
 
-                    # CSV에 기록
-                    writer.writerow({key: row_data.get(key, "") for key in fieldnames})
+            # 기존 데이터 쓰기
+            for row in existing_data:
+                writer.writerow(row)
 
-            print(f"Results saved to {csv_file}")
-            savemassage = f"학습데이터셋이 파일 {csv_file} 에 저장되었습니다."
+            # 새로운 데이터 쓰기
+            for file_data in all_data:
+                row_data = {}
+                key_count_local = {}
 
-            self.show_file_alert(csv_file, savemassage, self.tableWidget_Create)
+                for key, value in file_data:
+                    if key in key_count_local:
+                        key_count_local[key] += 1
+                        key_with_count = f"{key}({key_count_local[key]})"
+                    else:
+                        key_count_local[key] = 1
+                        key_with_count = key
+
+                    if isinstance(value, str):
+                        attributes = [attr.strip() for attr in value.split(",")]
+                        for attr in attributes:
+                            if ":" in attr:
+                                attr_name, attr_value = attr.split(":", 1)
+                                if f"{key_with_count}_{attr_name.strip()}" in fieldnames:
+                                    row_data[f"{key_with_count}_{attr_name.strip()}"] = attr_value.strip()
+                            else:
+                                if key_with_count in fieldnames:
+                                    row_data[key_with_count] = value
+                    else:
+                        if key_with_count in fieldnames:
+                            row_data[key_with_count] = value
+
+                try:
+                    if hasattr(self, 'label_data') and self.label_data:
+                        row_data['label'] = self.label_data
+                    else:
+                        print("Warning: 'label_data' is not set or is empty.")
+                except Exception as e:
+                    pass
+
+                writer.writerow({key: row_data.get(key, "") for key in fieldnames})
+
+        print(f"Results saved to {self.csv_file}")
+        savemassage = f"학습데이터셋이 파일 {self.csv_file} 에 저장되었습니다."
+        self.show_file_alert(self.csv_file, savemassage, self.tableWidget_Create)
 
 
     @staticmethod
@@ -1273,10 +1177,18 @@ class createtrainclass(QMainWindow, form_class):
     def load_file_for_prediction(self):
         """Open a dialog to select a file for prediction."""
         self.detectmode = 1
-        self.showFileDialog()
         file_path= self.file_paths[0]
         if file_path:
             self.predict_on_file(file_path)
+
+    def move_label_to_second_column(self, df):
+        # 'label' 컬럼을 분리합니다.
+        label_column = df.pop('label')
+
+        # 'label' 컬럼을 두 번째 위치로 삽입합니다.
+        df.insert(1, 'label', label_column)
+
+        return df
 
     def predict_on_file(self, file_path):
         """Predict the label for a new file while handling missing and extra features."""
@@ -1348,8 +1260,8 @@ class createtrainclass(QMainWindow, form_class):
 
         if self.structure_seq_state:
             ######1031
-            results = [f[1] for f in results if f and f[0] != 'name']
-            sequence_feature = Simhash([f[1] for f in results if f[0] != 'name']).value
+            results = [f[1] for f in results if f and len(f) > 1 and f[0] != 'name']
+            sequence_feature = Simhash(f[1] for f in results if f and len(f) > 1 and f[0] != 'name').value
             results.append(('sequence', sequence_feature))
 
         return results
@@ -1369,10 +1281,13 @@ class createtrainclass(QMainWindow, form_class):
 
 
         pklname = str(self.csv_path+"_" + self.aimodel + "model.pkl")
-        self.pklpath = self.resource_path(pklname)
+
+        self.pklname = os.path.join(self.case_direc, pklname)
+        self.pklpath = self.resource_path(self.pklname)
 
         self.scalername = str(self.csv_path+"_" + self.aimodel + "scaler.pkl")
-        self.scalarpath = self.resource_path(self.scalername)
+        self.scalername = os.path.join(self.case_direc, self.scalername)
+        self.scalerpath = self.resource_path(self.scalername)
         if os.path.exists(self.pklpath) and os.path.exists(self.scalerpath):
             self.model = joblib.load(self.pklpath)
             self.scaler = joblib.load(self.scalerpath)
@@ -1413,7 +1328,10 @@ class createtrainclass(QMainWindow, form_class):
         df['predicted_label'] = y_pred
 
         # Load label information from Excel
-        labeltransferdf = pd.read_excel("labelinfo.xlsx")
+        try:
+            labeltransferdf = pd.read_excel("labelinfo.xlsx")
+        except:
+            print("label 정보가 없습니다")
 
         try:
             # Convert prediction to integer for column access
@@ -1635,6 +1553,8 @@ class createtrainclass(QMainWindow, form_class):
                 break
 
             elif choice == 2:
+
+
                 print("2클릭", )
                 print("선택한 파일", self.file_paths)
 
@@ -1795,9 +1715,9 @@ class createtrainclass(QMainWindow, form_class):
     ##############라벨입력
     def input_label(self):
         if self.binButton.isChecked():
-            self.label_datacsv = self.resource_path('labeldata_bin.csv')
+            self.label_datacsv = 'labeldata_bin.csv'
         elif self.mulButton.isChecked():
-            self.label_datacsv = self.resource_path('labeldata_mul.csv')
+            self.label_datacsv = 'labeldata_mul.csv'
 
         # 라벨 데이터 입력 받기
         self.label_data, ok = self.show_input_dialog("입력", "라벨 데이터를 입력하세요.")
@@ -1810,8 +1730,10 @@ class createtrainclass(QMainWindow, form_class):
             self.show_alert("에러", "유효한 숫자를 입력해주세요.")
             return
 
+
         # CSV에서 해당 라벨 데이터를 찾기
         try:
+            self.label_datacsv = os.path.join(self.case_direc, self.label_datacsv)
             aaa = self.fetch_name_from_csv(self.label_data)
         except Exception as e:
             self.show_alert("binary/multi class 모드를 선택하세요")
@@ -1849,6 +1771,13 @@ class createtrainclass(QMainWindow, form_class):
                 if row[0] == max_key:
                     return row[1]
         return None
+
+
+
+    def open_existcsv(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "파일 선택", "", "All Files (*);;Text Files (*.txt)")
+
+        self.csv_file = file_path
 
 ##################라벨입력
 class DataEntryWindow(QWidget):

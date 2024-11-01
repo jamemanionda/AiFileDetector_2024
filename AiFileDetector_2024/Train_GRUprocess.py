@@ -141,9 +141,10 @@ class twoTrainClass():
 
     def train_baseline_model(self, df):
 
-        X = df.iloc[:, 1:-1]
-        y = df['label']
-        y = y.astype("int")
+        X = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
+
+        # 'label' 컬럼을 출력 변수로 설정
+        y = df['label'].astype("int")
         atemp = len(y.unique())
         # 교차 검증 준비
         skf = StratifiedKFold(n_splits=4, shuffle=True, random_state=42)
@@ -270,9 +271,9 @@ class twoTrainClass():
 
     def lstm(self, df):
         """LSTM 이진분류 훈련"""
-        features = df[df.columns[1:-1]]
+        features = df.iloc[0, 1:-1].values
         labels = df['label']
-        X = df.iloc[:, 1:-1]
+        X = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
 
         y = df['label'].astype("int")  # 레이블을 정수형으로 변환
 
@@ -321,7 +322,7 @@ class twoTrainClass():
 
     def ensemble(self, df):
         """이진분류를 위한 앙상블 모델 구성"""
-        X = df.iloc[:, 1:-1]
+        X = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
         y = df['label'].astype("int")
 
         # 데이터 분할

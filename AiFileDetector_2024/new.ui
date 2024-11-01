@@ -66,7 +66,7 @@ QTabBar::tab:hover {
 </string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <property name="iconSize">
      <size>
@@ -633,6 +633,39 @@ QHeaderView::section {
 }</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="exist_csv_but">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>70</y>
+        <width>161</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(234, 234, 234);
+  color: rgb(35, 37, 42);
+  font: bold 8pt &quot;Arial&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>기존 학습데이터에 추가</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -1071,7 +1104,7 @@ color: rgb(255, 255, 255);</string>
      <x>0</x>
      <y>0</y>
      <width>955</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">

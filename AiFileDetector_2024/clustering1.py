@@ -142,12 +142,16 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
         original_labels = None
 
         if is_train:
-            features = df.iloc[0, 1:-1].values
+            temp_feat = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
+
+            features = temp_feat.values
             df.columns = ['name'] + list(features) + ['label']
             df = df[1:]
             original_labels = df[['name', 'label']]
         else:
-            features = df.iloc[0, 1:-1].values
+            temp_feat = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
+
+            features = temp_feat.values
             df.columns = ['name'] + list(features) + ['label']
             original_labels = df[['name', 'label']]
             df = df[1:]

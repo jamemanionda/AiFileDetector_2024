@@ -172,9 +172,9 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
         # 모델 훈련
         self.train_model(df_train_processed)
-        baseline_model, baseline_accuracy =self.train_baseline_model(df_train_processed)
+        #baseline_model, baseline_accuracy =self.train_baseline_model(df_train_processed)
 
-        print("베이스라인 정확도", baseline_accuracy)
+        #print("베이스라인 정확도", baseline_accuracy)
 
         self.save_model2()
         self.original_df_test = df_test
@@ -240,21 +240,29 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
                 print(f"파일 열기 오류: {str(e)}")
 
     def preprocess_data(self, filepath, is_train=True):
-        df = pd.read_csv(filepath, header=None ,encoding='CP949')
+
+        sample_df = pd.read_csv(filepath, nrows=1, header=None)
+        tempvalue = sample_df.iloc[0, 0]
+        # 첫 번째 행의 첫 번째 값이 'name'이 아닌 경우 두 번째 행을 헤더로 설정
+        if tempvalue != 'name':
+            # 첫 번째 행에 컬럼 이름이 없으면 두 번째 행을 헤더로 설정하여 다시 읽어옵니다
+            df = pd.read_csv(filepath, header=1)
+        else:
+            # 첫 번째 행이 컬럼 이름이면 기본적으로 읽어옵니다
+            df = pd.read_csv(filepath)
+
         column_count = df.shape[1]
         original_labels = None
 
         if is_train:
-            features = df.iloc[0, 1:-1].values
-            df.columns = ['name'] + list(features) + ['label']
+            features = [col for col in df.columns if col not in ['name', 'label']]
             df = df[1:]
 
         else:
-            features = df.iloc[0, 1:-1].values
+            features = df.columns[1:-1]
             df.columns = ['name'] + list(features) + ['label']
             original_labels = df[['name', 'label']]
             df = df[1:]
-
         return df, original_labels
 
     @staticmethod
@@ -391,9 +399,10 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     def ensemble(self, df):
 
-        X = df.iloc[:, 1:-1]
-        y = df['label']
-        y = y.astype("int")
+        X = df.drop(columns=['label', 'name'])
+
+        # 'label' 컬럼을 출력 변수로 설정
+        y = df['label'].astype("int")
 
         ######1026 피처 전처리 추가
         # 2. 상관관계가 높은 피처 제거
@@ -654,9 +663,11 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     def lstm(self, df):
         """훈련"""
-        features = df[df.columns[1:-1]]
+        temp_feat = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
+
+        features = temp_feat.values
         labels = df['label']
-        X = df.iloc[:, 1:-1]
+        X = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
 
         y = df['label']
         y = y.astype("int")
@@ -727,7 +738,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     def train_baseline_model(self, df):
 
-        X = df.iloc[:, 1:-1]
+        X = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
         y = df['label']
         y = y.astype("int")
         atemp = len(y.unique())
