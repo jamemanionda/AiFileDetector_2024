@@ -79,6 +79,7 @@ class createtrainclass(QMainWindow, form_class):
 
 
         self.setupUi(self) # UI 요소 초기화
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
         self.clustering = trainClustering()
         self.trainclass = twoTrainClass()
 
