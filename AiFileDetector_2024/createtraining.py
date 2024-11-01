@@ -194,7 +194,7 @@ class createtrainclass(QMainWindow, form_class):
 
         try :
             pass
-            #self.load_excel_data()
+            self.load_excel_data()
         except:
             pass
         self.label_input_but.clicked.connect(self.input_label)
@@ -1208,38 +1208,59 @@ class createtrainclass(QMainWindow, form_class):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Prediction failed for {file_path}: {str(e)}")
 
-
-    def flatten_features_for_prediction(self, data):
-        """Flatten nested feature structures to match training logic."""
-        flattened = {}
-        key_count = {}  # Handle duplicate keys
-
-        for key, value in data:
-            if key in key_count:
-                key_count[key] += 1
-                key = f"{key}({key_count[key]})"
-            else:
-                key_count[key] = 1
-
-            if isinstance(value, str) and ":" in value:
-                attributes = [attr.strip() for attr in value.split(",")]
+    def list_to_dict(self, data):
+        """Convert a list of strings into a dictionary by identifying 'key: value' pairs."""
+        data_dict = {}
+        for index, item in enumerate(data):
+            # If the item is a string with colon-separated pairs
+            if isinstance(item, str) and ":" in item:
+                attributes = [attr.strip() for attr in item.split(",")]
                 for attr in attributes:
                     if ":" in attr:
-                        attr_name, attr_value = attr.split(":", 1)
-                        flattened[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                        key, value = attr.split(":", 1)
+                        data_dict[key.strip()] = value.strip()
                     else:
-                        flattened[key] = value
-            elif isinstance(value, list):
-                for item in value:
-                    if ":" in item:
-                        attr_name, attr_value = item.split(":", 1)
-                        flattened[f"{key}_{attr_name.strip()}"] = attr_value.strip()
-                    else:
-                        flattened[key] = item
+                        # If parsing fails, add the entire item as a single entry
+                        data_dict[key] = item
             else:
-                flattened[key] = value
+                # Add non-string items or items without ':' as is
+                data_dict[key] = item
+        return data_dict
+
+
+    def flatten_features_for_prediction(self, data):
+ # Handle duplicate keys
+        for file_data in data:
+            flattened = {}
+            key_count = {}
+            for key, value in file_data:
+                if key in key_count:
+                    key_count[key] += 1
+                    key = f"{key}({key_count[key]})"
+                else:
+                    key_count[key] = 1
+
+                if isinstance(value, str) and ":" in value:
+                    attributes = [attr.strip() for attr in value.split(",")]
+                    for attr in attributes:
+                        if ":" in attr:
+                            attr_name, attr_value = attr.split(":", 1)
+                            flattened[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                        else:
+                            flattened[key] = value
+                elif isinstance(value, list):
+                    for item in value:
+                        if ":" in item:
+                            attr_name, attr_value = item.split(":", 1)
+                            flattened[f"{key}_{attr_name.strip()}"] = attr_value.strip()
+                        else:
+                            flattened[key] = item
+                else:
+                    flattened[key] = value
 
         return flattened
+
+
 
 
     def extract_features_from_file(self, file_path):
@@ -1248,20 +1269,17 @@ class createtrainclass(QMainWindow, form_class):
 
         if self.structure_val_state:
             box_features = self.extract_box_feature(file_path)
-            results.extend(box_features)
-
-        if self.frame_gop_state:
+            results.append((box_features))
+        elif self.frame_gop_state:
             gop_features = extractGOP(file_path)
             results.append(('GOP', gop_features))
-
-        if self.frame_sps_state:
+        elif self.frame_sps_state:
             sps_result = self.extract_sps_features(file_path)
             results.append(('SPS', sps_result))
-
-        if self.structure_seq_state:
+        elif self.structure_seq_state:
             ######1031
             results = [f[1] for f in results if f and len(f) > 1 and f[0] != 'name']
-            sequence_feature = Simhash(f[1] for f in results if f and len(f) > 1 and f[0] != 'name').value
+            sequence_feature = Simhash([f for f in results if isinstance(f, str) and 'name' not in f]).value
             results.append(('sequence', sequence_feature))
 
         return results
@@ -1280,13 +1298,11 @@ class createtrainclass(QMainWindow, form_class):
             messagebox.showerror("에러", "바이너리/멀티 모드를 선x택하세요")
 
 
-        pklname = str(self.csv_path+"_" + self.aimodel + "model.pkl")
+        self.pklname = str(self.csv_path+"_" + self.aimodel + "model.pkl")
 
-        self.pklname = os.path.join(self.case_direc, pklname)
         self.pklpath = self.resource_path(self.pklname)
 
         self.scalername = str(self.csv_path+"_" + self.aimodel + "scaler.pkl")
-        self.scalername = os.path.join(self.case_direc, self.scalername)
         self.scalerpath = self.resource_path(self.scalername)
         if os.path.exists(self.pklpath) and os.path.exists(self.scalerpath):
             self.model = joblib.load(self.pklpath)
@@ -1297,6 +1313,7 @@ class createtrainclass(QMainWindow, form_class):
     def predict_data1(self, structured_data):
         """Scale the features and predict the label."""
         df = pd.DataFrame([structured_data])
+  # Drop the first row and reset the index
 
         # Load model features from feature.json
         with open('feature.json', 'r') as f:
@@ -1316,37 +1333,23 @@ class createtrainclass(QMainWindow, form_class):
         # Apply Simhash transformation (assuming apply_simhash is defined)
         df = self.apply_simhash(df)
 
+        # Align df with the scaler's features by reordering
+        scaler_features = self.scaler.feature_names_in_
+        df = df.reindex(columns=scaler_features, fill_value=0)  # Fill missing features with 0
+
         # Scale features and predict
         X_new_scaled = self.scaler.transform(df)
         y_pred = self.model.predict(X_new_scaled)
         y_pred_probs = self.model.predict_proba(X_new_scaled)
         predicted_class_probs = y_pred_probs[np.arange(len(y_pred)), y_pred]
 
-        print(f"{predicted_class_probs}% 확률")
-
         # Add predictions to DataFrame
         df['predicted_label'] = y_pred
 
         # Load label information from Excel
-        try:
-            labeltransferdf = pd.read_excel("labelinfo.xlsx")
-        except:
-            print("label 정보가 없습니다")
-
-        try:
-            # Convert prediction to integer for column access
-            temppred = int(y_pred[0])
-
-            # Ensure label columns are integers
-            labeltransferdf.columns = [int(col) for col in labeltransferdf.columns]
-
-            # Filter the relevant label
-            filtered_df = labeltransferdf[temppred]
-        except KeyError:
-            message = f"해당 라벨({temppred})이 존재하지 않습니다. 라벨을 업데이트하세요."
-            self.show_alert(message)
-        except Exception as e:
-            self.show_alert(str(e))
+        labelpath = "labelinfo.xlsx"
+        labelpath = self.resource_path(labelpath)
+        labeltransferdf = pd.read_excel(labelpath)
 
         try:
             # Format probability and show message
@@ -1359,6 +1362,8 @@ class createtrainclass(QMainWindow, form_class):
             self.show_alert(message)
 
         return df
+
+
 
     def show_file_alert(self, file_path, messagea, widgett):
         """파일 경로를 받아 사용자에게 알림을 표시하고 파일을 여는 함수."""
@@ -1614,22 +1619,24 @@ class createtrainclass(QMainWindow, form_class):
     def open_data_entry_window(self):
         """데이터 입력 창 열기."""
         overwrite_labels = self.ask_overwrite_labels()
-        self.data_entry_window = DataEntryWindow(overwrite_labels)
+        self.data_entry_window = DataEntryWindow(overwrite_labels, self.case_direc)
         self.data_entry_window.show()
-        #self.load_excel_data()
+        self.load_excel_data()
 
     def load_excel_data(self):
         """엑셀 데이터를 DataFrame으로 불러와 테이블에 표시."""
-        if not os.path.exists("labelinfo.xlsx"):
-            QMessageBox.warning(self, "Warning", "No Excel file found!")
-            raise ValueError("")
+        labelname = "labelinfo.xlsx"
+        labelpath = self.resource_path(labelname)
+        if not os.path.exists(labelpath):
+            print(self, "Warning", "No Excel file found!")
 
-        xlspath = self.resource_path("labelinfo.xlsx")
-        df = pd.read_excel(xlspath)  # 엑셀 파일을 DataFrame으로 로드
+        df = pd.read_excel(labelpath)  # 엑셀 파일을 DataFrame으로 로드
         df.columns = [str(col) for col in df.columns]
 
         self.display_dataframe(df, widgettype=self.tableWidget_train)
         self.display_dataframe(df, widgettype=self.tableWidget_detect)
+
+
 
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -1781,13 +1788,17 @@ class createtrainclass(QMainWindow, form_class):
 
 ##################라벨입력
 class DataEntryWindow(QWidget):
-    def __init__(self, overwrite_labels):
+    def __init__(self, overwrite_labels, direc):
         super().__init__()
         self.setWindowTitle("Data Entry")
         self.label_counter = 0
         self.headers = []
         self.values = []
-        self.filename = "labelinfo.xlsx"
+        labelpath = "labelinfo.xlsx"
+        labelpath = os.path.join(direc, labelpath)
+        self.filename = createtrainclass.resource_path(self, labelpath)
+
+
         if not overwrite_labels:
             self.load_existing_labels()
 
