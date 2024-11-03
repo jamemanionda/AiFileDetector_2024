@@ -104,10 +104,10 @@ class twoTrainClass():
         precision = precision_score(actual_labels, predicted_labels, average='weighted')
         recall = recall_score(actual_labels, predicted_labels, average='weighted')
         f1 = f1_score(actual_labels, predicted_labels, average='weighted')
-
-        print(f"Precision: {precision:.2f}")
-        print(f"Recall: {recall:.2f}")
-        print(f"F1 Score: {f1:.2f}")
+        print(f"Accuracy: {self.accuracy:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1 Score: {f1:.4f}")
 
     def train_model(self, df):
         try :
@@ -360,7 +360,7 @@ class twoTrainClass():
         message = f"정확도 {accuracy}%로 학습되었습니다."
         self.show_alert(message)
         print(f"Model Accuracy: {accuracy:.2f}")
-
+        self.accuracy = accuracy
 
         if hasattr(self.model, 'feature_importances_'):
             feature_importances = self.model.feature_importances_
