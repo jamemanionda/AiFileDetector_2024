@@ -1,6 +1,7 @@
 
 import seaborn as sns
 from matplotlib import pyplot as plt
+from pyexpat import features
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, confusion_matrix, classification_report, \
     precision_score, recall_score, f1_score, silhouette_score, davies_bouldin_score
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder, StandardScaler
@@ -139,26 +140,28 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
 
         sample_df = pd.read_csv(filepath, nrows=1, header=None)
         tempvalue = sample_df.iloc[0, 0]
-        # 첫 번째 행의 첫 번째 값이 'name'이 아닌 경우 두 번째 행을 헤더로 설정
+
         if tempvalue != 'name':
-            # 첫 번째 행에 컬럼 이름이 없으면 두 번째 행을 헤더로 설정하여 다시 읽어옵니다
             df = pd.read_csv(filepath, header=1)
         else:
-            # 첫 번째 행이 컬럼 이름이면 기본적으로 읽어옵니다
             df = pd.read_csv(filepath)
 
-        column_count = df.shape[1]
-        original_labels = None
-
-        if is_train:
-            features = [col for col in df.columns if col not in ['name', 'label']]
-            df = df[1:]
-
-        else:
-            features = df.columns[1:-1]
-            df.columns = ['name'] + list(features) + ['label']
+        # 'name'과 'label' 열 분리
+        try:
+            df = df.drop(columns=['md5'])
+        except:
+            pass
+        if 'label' in df.columns:
             original_labels = df[['name', 'label']]
-            df = df[1:]
+            df = df.drop(columns=['label'])
+        else:
+            original_labels = None
+
+        if 'name' in df.columns:
+            df = df.drop(columns=['name'])
+
+
+
         return df, original_labels
 
     @staticmethod
@@ -180,33 +183,43 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
     def optimize_clustering(self, df, original_labels):
         """클러스터링 최적화"""
         # 데이터 스케일링
-        features = df[df.columns[1:]]  # 첫 번째 열은 'name'이므로 제외
-        scaled_features = StandardScaler().fit_transform(features)  # StandardScaler로 변경
+        """클러스터링 최적화"""
+        # 데이터 스케일링
+        try:
+            df = df.drop(columns=['label', 'name', 'md5'])
+        except KeyError as e:
+            print(f"Column missing: {e}")
 
-        # 최적의 클러스터 수 찾기 (엘보우 방법)
+        # 피처 추출 및 스케일링
+        features = df.select_dtypes(include=[np.number])
+        scaled_features = StandardScaler().fit_transform(features)
+
+        # 차원 축소 (PCA)
+        pca = PCA(n_components=0.95)  # 95% 설명 분산 유지
+        scaled_features_pca = pca.fit_transform(scaled_features)
+
+        # 최적의 클러스터 수 찾기 (엘보우 방법 및 실루엣 점수)
         ssd = []
         silhouette_avg = []
-        range_n_clusters = range(2, 11)
+        range_n_clusters = range(2, 21)
         for num_clusters in range_n_clusters:
-            kmeans = KMeans(n_clusters=num_clusters, random_state=42)
-            kmeans.fit(scaled_features)
+            kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=15)
+            kmeans.fit(scaled_features_pca)
             ssd.append(kmeans.inertia_)
 
             # 실루엣 점수 계산
             cluster_labels = kmeans.labels_
-            silhouette_avg.append(silhouette_score(scaled_features, cluster_labels))
+            silhouette_avg.append(silhouette_score(scaled_features_pca, cluster_labels))
 
-        # 엘보우 방법과 실루엣 점수 시각화
+        # 엘보우 및 실루엣 시각화
         plt.figure(figsize=(12, 5))
 
-        # 엘보우 방법
         plt.subplot(1, 2, 1)
         plt.plot(range_n_clusters, ssd, marker='o')
         plt.xlabel('Number of clusters')
         plt.ylabel('Sum of squared distances')
         plt.title('Elbow Method For Optimal k')
 
-        # 실루엣 분석
         plt.subplot(1, 2, 2)
         plt.plot(range_n_clusters, silhouette_avg, marker='o')
         plt.xlabel('Number of clusters')
@@ -214,29 +227,24 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
         plt.title('Silhouette Analysis For Optimal k')
         plt.show()
 
-        # 최적의 클러스터 수 선택 (여기서는 실루엣 점수를 기준으로 선택)
+        # 최적의 클러스터 수 (실루엣 점수를 기준으로 선택)
         optimal_n_clusters = range_n_clusters[silhouette_avg.index(max(silhouette_avg))]
         print(f'Optimal number of clusters (by silhouette score): {optimal_n_clusters}')
 
-        # KMeans 클러스터링
-        self.kmeans = KMeans(n_clusters=optimal_n_clusters, random_state=42, init='k-means++', n_init=10).fit(
-            scaled_features)
-
-        # DBSCAN 클러스터링 (eps와 min_samples 조정)
-        self.dbscan = DBSCAN(eps=1, min_samples=2).fit(scaled_features)
-
-        # AgglomerativeClustering 클러스터링
-        self.agglo = AgglomerativeClustering(n_clusters=optimal_n_clusters).fit(scaled_features)
+        # 최적의 클러스터링 모델
+        self.kmeans = KMeans(n_clusters=optimal_n_clusters, random_state=42, init='k-means++', n_init=15).fit(
+            scaled_features_pca)
+        self.dbscan = DBSCAN(eps=0.5, min_samples=5).fit(scaled_features_pca)
+        self.agglo = AgglomerativeClustering(n_clusters=optimal_n_clusters).fit(scaled_features_pca)
 
         # 클러스터링 결과 비교 및 평가
-        self.evaluate_clustering(scaled_features, original_labels, self.kmeans.labels_, "KMeans")
-        self.evaluate_clustering(scaled_features, original_labels, self.dbscan.labels_, "DBSCAN")
-        self.evaluate_clustering(scaled_features, original_labels, self.agglo.labels_, "AgglomerativeClustering")
+        self.evaluate_clustering(scaled_features_pca, original_labels, self.kmeans.labels_, "KMeans")
+        self.evaluate_clustering(scaled_features_pca, original_labels, self.dbscan.labels_, "DBSCAN")
+        self.evaluate_clustering(scaled_features_pca, original_labels, self.agglo.labels_, "AgglomerativeClustering")
 
-        # KMeans 클러스터링 결과를 사용하여 시각화
+        # 최적 KMeans 클러스터링 결과를 사용하여 레이블 할당
         df['cluster'] = self.kmeans.labels_
         self.compare_clusters_with_labels(df, original_labels)
-
         # PCA 시각화
         self.visualize_pca(df, scaled_features, self.kmeans.labels_)
     def visualize_pca(self, df, scaled_features, cluster_labels):
@@ -265,24 +273,30 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
         """클러스터링 결과와 실제 레이블 비교"""
         cluster_label_map = {}
         for cluster in df['cluster'].unique():
-            cluster_data = df[df['cluster'] == cluster]
-            most_common_label = cluster_data['label'].mode()[0]
+            # 각 클러스터에 대해 원본 레이블의 모드를 계산
+            cluster_data = original_labels[df['cluster'] == cluster]
+            most_common_label = cluster_data['label'].mode()[0]  # 'label' 열을 명시적으로 지정합니다
             cluster_label_map[cluster] = most_common_label
 
+        # 예측된 레이블을 추가합니다.
         df['predicted_label'] = df['cluster'].map(cluster_label_map)
 
         # 평가 지표 계산
-        accuracy = accuracy_score(df['label'], df['predicted_label'])
-        precision = precision_score(df['label'], df['predicted_label'], average='weighted')
-        recall = recall_score(df['label'], df['predicted_label'], average='weighted')
-        f1 = f1_score(df['label'], df['predicted_label'], average='weighted')
+        accuracy = accuracy_score(original_labels['label'], df['predicted_label'])
+        precision = precision_score(original_labels['label'], df['predicted_label'], average='weighted',
+                                    zero_division=1)
+        recall = recall_score(original_labels['label'], df['predicted_label'], average='weighted', zero_division=1)
+        f1 = f1_score(original_labels['label'], df['predicted_label'], average='weighted', zero_division=1)
 
         print(f'Accuracy: {accuracy}')
         print(f'Precision: {precision}')
         print(f'Recall: {recall}')
         print(f'F1 Score: {f1}')
 
-        self.display_cluster_mapping(df)
+        # 'name' 열을 추가하기 위해 original_labels와 병합
+        df_with_names = df.merge(original_labels[['name']], left_index=True, right_index=True)
+        self.display_cluster_mapping(df_with_names)
+
 
     def display_cluster_mapping(self, df):
         """클러스터링 결과 출력"""
