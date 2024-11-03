@@ -1,22 +1,18 @@
 import csv
+import hashlib
 import json
 import os
 import pickle
-import queue
 import re
 import struct
 import sys
-import threading
 import glob
 from datetime import datetime
-from tkinter import messagebox
-import tkinter as tk
 from tkinter import simpledialog, messagebox
 from frame_compression import process_videos_in_folder
 import joblib
 import numpy as np
 import pandas as pd
-import pyautogui
 from PyQt5.QtCore import QDir, Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QFileSystemModel, QMainWindow, QProgressBar, QDialog, QLabel, \
     QVBoxLayout, QTableWidgetItem, QMessageBox, QLineEdit, QPushButton, QTableWidget, QInputDialog, QFileDialog, \
@@ -34,9 +30,6 @@ from extract_sps import parse_sps
 from pps import analyzesps
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-
-
-
 
 class ProgressWindow(QDialog):
     def __init__(self):
@@ -82,7 +75,7 @@ class createtrainclass(QMainWindow, form_class):
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
         self.clustering = trainClustering()
         self.trainclass = twoTrainClass()
-
+        self.existval = 0
         # 확장자 필터
         self.extension_list = ["확장자", ".mp4",  ".mov"]
         self.comboBox.addItems(self.extension_list)
@@ -97,11 +90,6 @@ class createtrainclass(QMainWindow, form_class):
         self.exist_csv_but.clicked.connect(self.open_existcsv)
         self.treeView.setModel(self.dirModel)
 
-        # input_thread = threading.Thread(target=self.ask_input)
-        #
-        # input_thread.start()
-        # input_thread.join(timeout=20)  # 20초 대기
-        #self.ask_input()
         initialcode = 0
         self.detectmode = 0
 
@@ -145,16 +133,28 @@ class createtrainclass(QMainWindow, form_class):
                 self.ask_input()
             initialcode = 1
 
+        self.default_states = {
+            "structure_seq_state": 0,
+            "frame_gop_state": 0,
+            "frame_ratio_state": 0,
+            "frame_sps_state": 0,
+            "structure_val_state": 0
+        }
         self.treeView.setRootIndex(self.dirModel.index(self.dataset_direc))
         self.treeView.clicked.connect(self.file_selected)
-
+        self.load_or_initialize_states()
         # 케이스 디렉토리에서 .csv 찾아서 csv_files 리스트로 반환
         csv_files = [file for file in glob.glob(os.path.join(self.case_direc, "*.csv")) if 'feature_importance.csv' not in os.path.basename(file)]
 
+        self.csv_path = ''
+
         # .csv 파일이 하나 이상 있을 때 일단은 첫 번째 파일을 열기
         if csv_files:
-            self.csv_path = csv_files[0]  # 첫 번째 CSV 파일 경로 선택
-            self.open_csv2(self.csv_path, self.tableWidget)
+            for csv_file in csv_files:
+               if '_train' in csv_file or '241' in csv_file:
+                    self.csv_path = csv_file  # 첫 번째 CSV 파일 경로 선택
+                    self.open_csv2(self.csv_path, self.tableWidget)
+
 
         # 헤더 설정
         header = self.treeView.header()
@@ -206,6 +206,36 @@ class createtrainclass(QMainWindow, form_class):
 
 
 
+    # 상태값을 불러오거나 초기화하는 함수
+    def load_or_initialize_states(self):
+        # 파일이 있으면 불러오기, 없으면 초기화
+        statepath = self.resource_path(os.path.join(self.case_direc, "states.json"))
+        if os.path.exists(statepath):
+            with open(statepath, "r") as file:
+                self.states = json.load(file)
+                print("기존 상태값을 불러왔습니다:", self.states)
+        else:
+            self.states = self.default_states.copy()
+
+            print("파일이 없어 기본 상태값으로 초기화하고 저장했습니다:", self.states)
+
+        self.structure_seq_state = self.states["structure_seq_state"]
+        self.frame_gop_state = self.states["frame_gop_state"]
+        self.frame_ratio_state = self.states["frame_ratio_state"]
+        self.frame_sps_state = self.states["frame_sps_state"]
+        self.structure_val_state = self.states["structure_val_state"]
+
+
+
+    def set_state(self, state_name, value):
+        self.states[state_name] = value
+
+    def save_states(self, states):
+        statepath = self.resource_path(os.path.join(self.case_direc, "states.json"))
+        with open(statepath, "w") as file:
+            json.dump(states, file)
+        print("상태값이 JSON 파일에 저장되었습니다.")
+
     def on_combobox_select(self, index):
         self.trainclass.index = index
 
@@ -228,6 +258,7 @@ class createtrainclass(QMainWindow, form_class):
     def classmain(self):
         binstat = self.binButton_3.isChecked()
         mulstat = self.mulButton_3.isChecked()
+        states = self.load_or_initialize_states()
         if binstat:
             self.trainclass = twoTrainClass() ##### 이진으로 설정
             self.classmode = 'bin_'
@@ -285,8 +316,10 @@ class createtrainclass(QMainWindow, form_class):
 
 
     def display_dataframe(self, df, widgettype):
-        df = self.move_label_to_second_column(df)
-
+        try:
+            df = self.move_label_to_second_column(df)
+        except:
+            pass
         widgettype.setRowCount(df.shape[0])
         widgettype.setColumnCount(df.shape[1])
         widgettype.setHorizontalHeaderLabels(df.columns)
@@ -346,29 +379,6 @@ class createtrainclass(QMainWindow, form_class):
         self.listWidget.clear()
         self.file_paths = []
 
-    def extract_ngram(self, n, file_paths): # 바이너리 데이터를 n-gram으로 변환하여 n크기 피처 추출
-        ngram_sets = []
-        self.ngrams_list = []
-        self.hex_lists = []
-
-        for file_path in file_paths:
-            with open(file_path, 'rb') as file:
-                content = file.read()
-                self.hex_values = content.hex()
-                ngrams = []
-
-                for i in range(len(self.hex_values) - n + 1): # hex값 돌며 n-gram 추출
-                    ngram = self.hex_values[i:i + n]
-                    ngrams.append(ngram)
-
-            # 파일 이름과 헥사 값 저장
-            self.hex_lists.append((file_path, self.hex_values))
-
-            # 파일 이름과 ngram 저장
-            self.ngrams_list.append((file_path, ngrams))
-            # [(file_path_1, [ngram_1, ngram_2, ngram_3, ...]),
-            # (file_path_2, [ngram_1, ngram_2, ngram_3, ...]), ...]
-
     def lcs(self, X, Y):
         m = len(X)
         n = len(Y)
@@ -417,11 +427,6 @@ class createtrainclass(QMainWindow, form_class):
                 return []
 
         return current_lcs
-        # lists = [
-        #     ['a', 'b', 'c', 'd', 'e'],
-        #     ['b', 'c', 'e', 'f', 'g'],
-        #     ['c', 'e', 'g', 'h', 'i']
-        # ]
 
     def process_files(self):
         progress_window = ProgressWindow()
@@ -445,7 +450,6 @@ class createtrainclass(QMainWindow, form_class):
         progress_window.exec_()
 
     def get_files_value(self): # self.file_paths의 모든 파일 처리하고 self.all_result 저장 및 반환
-        results = {}
         self.all_result = []
         self.count = -1
         # 폴더 내 모든 파일에 대해 수행
@@ -689,10 +693,6 @@ class createtrainclass(QMainWindow, form_class):
 
             for row in data_list:
                 csv_writer.writerow(row)
-                # 1,2,3
-                # abcdef,ghijkl,mnopqr
-                # stuvwx,yzabcd,efghij
-                # klmnop,qrstuv,wxyzab
 
     # value로 key찾기
     def find_key_by_value(self, dictionary, value):
@@ -765,16 +765,36 @@ class createtrainclass(QMainWindow, form_class):
 
         return combined_data
 
+    def get_fast_file_hash(self, filepath, hash_type='md5', chunk_size=8192, sample_size=1024):
+        hash_func = getattr(hashlib, hash_type)()
+
+        with open(filepath, 'rb') as f:
+            # 파일의 처음 부분에서 sample_size 만큼 읽기
+            start_chunk = f.read(sample_size)
+            hash_func.update(start_chunk)
+
+            # 파일의 마지막 부분에서 sample_size 만큼 읽기
+            f.seek(0, 2)  # 파일 끝으로 이동
+            file_size = f.tell()
+            if file_size > sample_size:
+                f.seek(-sample_size, 2)  # 파일 끝에서 sample_size 전으로 이동
+                end_chunk = f.read(sample_size)
+                hash_func.update(end_chunk)
+
+        return hash_func.hexdigest()
+
     def extract_box_feature(self, file_paths):
         #excel_file = str((self.extension[1:]).lower() + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
         all_results = []  # 모든 파일 데이터 저장할 리스트
 
-        excel_file = str(('mp4').lower() + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
+        excel_file = str(('mp4').lower() + '\\' + '_dict.xlsx')  # 엑셀 파일 경로  # 엑셀 파일 경로
+        excel_file = self.resource_path(excel_file)
         df = pd.read_excel(excel_file)  # 엑셀 파일 읽기
-
 
         # 엑셀 데이터를 딕셔너리로 변환 (엑셀 파일의 첫 번째 열을 key로, 두 번째 열을 value로)
         self.seqdict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
+
+
 
         filecount = 0
         if isinstance(file_paths, str):
@@ -786,10 +806,15 @@ class createtrainclass(QMainWindow, form_class):
             results.append(('name', os.path.basename(file_path)))  # 파일명 열 추가
             nameprintformat = f"{filecount}/{len(file_paths)}_{results}"
             print(nameprintformat)
+
+            hashf = self.get_fast_file_hash(file_path)
+            results.append(('md5', hashf))
+
             if self.structure_val_state == True or self.structure_seq_state == True:
-                 # 각 파일 데이터 저장 리스트
 
+                self.set_state("structure_val_state", 1)
 
+                # 각 파일 데이터 저장 리스트
                 onesequence = []
                 # 파일 내 Box 파싱
                 def parse_box(f, end_position, depth=0, max_depth=100):
@@ -837,6 +862,7 @@ class createtrainclass(QMainWindow, form_class):
                             box_data_hex = box_data.hex()
 
                             if self.structure_seq_state == True :
+                                self.set_state("structure_seq_state", 1)
                                 if box_type in self.seqdict :
                                     onesequence.append(str(self.seqdict[box_type]))
 
@@ -938,16 +964,19 @@ class createtrainclass(QMainWindow, form_class):
                     f.seek(0)  # 커서를 파일 시작 위치로 이동
                     parse_box(f, file_size)  # 재귀
 
-            if self.frame_gop_state == True:
+            if self.frame_gop_state == 1:
+                self.set_state("frame_gop_state", 1)
                 onesequence = extractGOP(file_path)
                 results.append(('GOP', onesequence))
 
-            if self.frame_ratio_state == True:
+            if self.frame_ratio_state == 1:
+                self.set_state("frame_ratio_state", 1)
                 ratio = process_videos_in_folder(file_path)
                 results.append(('GOP compression', ratio))
 
 
-            if self.frame_sps_state == True:
+            if self.frame_sps_state == 1:
+                self.set_state("frame_sps_state", 1)
                 try :
                     parse_sps(file_path)
                     file_name = os.path.basename(file_path)
@@ -964,8 +993,8 @@ class createtrainclass(QMainWindow, form_class):
                         print(f"{sps_filepath} 파일이 존재하지 않습니다.")
 
 
-            if self.structure_seq_state == True:
-
+            if self.structure_seq_state == 1:
+                self.set_state("structure_seq_state", 1)
                 onesequence = Simhash(onesequence).value
                 results.append(('sequence', onesequence))
 
@@ -980,72 +1009,76 @@ class createtrainclass(QMainWindow, form_class):
     def on_structure_val_changed(self, state):
         if state == Qt.Checked:
             print('structure_val Box is checked')
-            self.structure_val_state = True
+            self.structure_val_state = 1
             if '_val' not in self.tempcsv_file:
                 self.tempcsv_file += '_val'
         else:
             print('structure_val Box is unchecked')
-            self.structure_val_state = False
+            self.structure_val_state = 1
             self.tempcsv_file = self.tempcsv_file.replace('_val', '')
 
     def on_structure_seq_changed(self, state):
         if state == Qt.Checked:
             print('structure_seq Box is checked')
-            self.structure_seq_state = True
+            self.structure_seq_state = 1
             if '_seq' not in self.tempcsv_file:
                 self.tempcsv_file += '_seq'
         else:
             print('structure_seq Box is unchecked')
-            self.structure_seq_state = False
+            self.structure_seq_state = 0
             self.tempcsv_file = self.tempcsv_file.replace('_seq', '')
 
     def on_frame_sps_changed(self, state):
         if state == Qt.Checked:
             print('frame_sps Box is checked')
-            self.frame_sps_state = True
+            self.frame_sps_state = 1
             if '_sps' not in self.tempcsv_file:
                 self.tempcsv_file += '_sps'
         else:
             print('frame_sps Box is unchecked')
-            self.frame_sps_state = False
+            self.frame_sps_state = 0
             self.tempcsv_file = self.tempcsv_file.replace('_sps', '')
 
     def on_frame_gop_changed(self, state):
         if state == Qt.Checked:
             print('frame_gop Box is checked')
-            self.frame_gop_state = True
+            self.frame_gop_state = 1
             if '_gop' not in self.tempcsv_file:
                 self.tempcsv_file += '_gop'
         else:
             print('frame_gop Box is unchecked')
-            self.frame_gop_state = False
+            self.frame_gop_state = 0
             self.tempcsv_file = self.tempcsv_file.replace('_gop', '')
 
     def on_frame_ratio_changed(self, state):
         if state == Qt.Checked:
             print('frame_ratio Box is checked')
-            self.frame_ratio_state = True
+            self.frame_ratio_state = 1
             if '_ratio' not in self.tempcsv_file:
                 self.tempcsv_file += '_ratio'
         else:
             print('frame_ratio Box is unchecked')
-            self.frame_ratio_state = False
+            self.frame_ratio_state = 0
             self.tempcsv_file = self.tempcsv_file.replace('_ratio', '')
 
     # 결과를 CSV로 저장
     def save_to_csv(self, all_data):
-        if self.csv_file == '':
-            csv_file = self.csv_file
-            timestamp = datetime.now().strftime("%y%m%d%H%M%S")
+        if self.csv_path == '':
+            csv_file = self.csv_path
+            timestamp = datetime.now().strftime("%y%m%d%H%M")
 
             # 파일 이름에 타임스탬프 추가
-            self.csv_file = f"{csv_file}_{timestamp}.csv"
-            self.csv_file = os.path.join(self.case_direc, self.csv_file)
+            filename = f"{csv_file}_train_{timestamp}.csv"
+            self.csv_path = os.path.join(self.case_direc, filename)
+        csv_path = self.csv_path
+
+        if self.csv_file!='':
+            csv_path = self.csv_file
 
         # 기존 파일에서 데이터와 헤더 불러오기
         existing_data = []
-        if os.path.exists(self.csv_file):
-            with open(self.csv_file, 'r', encoding='utf-8') as csvfile:
+        if os.path.exists(csv_path):
+            with open(csv_path, 'r', encoding='utf-8') as csvfile:
                 reader = csv.DictReader(csvfile)
                 existing_fieldnames = reader.fieldnames if reader.fieldnames else []
                 for row in reader:
@@ -1110,12 +1143,13 @@ class createtrainclass(QMainWindow, form_class):
         print('최종 필드명 확인: ', fieldnames)
 
         # CSV에 기존 데이터와 함께 쓰기
+        try:
+            all_data = self.move_label_to_second_column(all_data)
+        except Exception as e:
+            strtem = f'{e}, " -- label 컬럼이 존재하지 않습니다."'
+            self.show_alert(strtem)
 
-
-
-        all_data = self.move_label_to_second_column(all_data)
-
-        with open(self.csv_file, 'w', newline='', encoding='utf-8') as csvfile:
+        with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
 
@@ -1160,9 +1194,11 @@ class createtrainclass(QMainWindow, form_class):
 
                 writer.writerow({key: row_data.get(key, "") for key in fieldnames})
 
-        print(f"Results saved to {self.csv_file}")
-        savemassage = f"학습데이터셋이 파일 {self.csv_file} 에 저장되었습니다."
-        self.show_file_alert(self.csv_file, savemassage, self.tableWidget_Create)
+        print(f"Results saved to {csv_path}")
+        savemassage = f"학습데이터셋이 파일 {csv_path} 에 저장되었습니다."
+        self.show_file_alert(csv_path, savemassage, self.tableWidget_Create)
+
+        self.save_states(self.states)
 
 
     @staticmethod
@@ -1197,7 +1233,9 @@ class createtrainclass(QMainWindow, form_class):
         """Predict the label for a new file while handling missing and extra features."""
         try:
             # Extract and flatten features from the file
+
             feature_data = self.extract_features_from_file(file_path)
+
             structured_data = self.flatten_features_for_prediction(feature_data)
 
             # Load model and scaler
@@ -1269,6 +1307,7 @@ class createtrainclass(QMainWindow, form_class):
     def extract_features_from_file(self, file_path):
         """Extract features from the selected file, using the same state-based logic."""
         results = []
+        self.load_or_initialize_states()
 
         if self.structure_val_state:
             box_features = self.extract_box_feature(file_path)
@@ -1350,9 +1389,10 @@ class createtrainclass(QMainWindow, form_class):
         df['predicted_label'] = y_pred
 
         # Load label information from Excel
-        labelpath = "labelinfo.xlsx"
+        labelpath = "labeldata_mul.csv"
+        labelpath = os.path.join(labelpath)
         labelpath = self.resource_path(labelpath)
-        labeltransferdf = pd.read_excel(labelpath)
+        labeltransferdf = pd.read_csv(labelpath)
 
         try:
             # Convert prediction to integer for column access
@@ -1381,7 +1421,78 @@ class createtrainclass(QMainWindow, form_class):
 
         return df
 
+    def show_select_file(self):
+        """파일 경로를 받아 사용자에게 알림을 표시하고 파일을 여는 함수."""
+        app = QApplication.instance()  # 이미 실행 중인 QApplication 인스턴스 확인
+        if not app:
+            app = QApplication(sys.argv)
 
+        # QDialog를 사용해 타이틀 없는 커스텀 알림창 생성
+        dialog = QDialog()
+        dialog.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)  # 타이틀 바 제거 및 최상단 설정
+
+        # 다크 모드 스타일 적용
+        dialog.setStyleSheet("""
+                    QDialog {
+                        background-color: #2e2e2e;
+                        border: 2px solid #444;
+                        border-radius: 15px;
+                        padding: 20px;
+                        font: bold 10pt "Playfair Display";
+                    }
+                    QLabel {
+                        color: #f5f5f5;
+                        font-size: 20px;
+                        font-weight: bold;
+                        margin-bottom: 10px;
+                        font: bold 10pt "Playfair Display";
+                    }
+                    QPushButton {
+                        background-color: #444;
+                        color: white;
+                        border: 1px solid #777;
+                        border-radius: 5px;
+                        padding: 8px 15px;
+                        margin-top: 10px;
+                        font: bold 10pt "Playfair Display";
+                    }
+                    QPushButton:hover {
+                        background-color: #555;
+                    }
+                """)
+
+        # 레이아웃 생성 및 위젯 추가
+        layout = QVBoxLayout()
+        messages = "현재 케이스의 csv에 추가하겠습니까?(No 선택시 다른 케이스의 csv를 직접 선택)"
+        message_label = QLabel(messages)
+        message_label.setWordWrap(True)
+        layout.addWidget(message_label)
+
+        # '확인' 버튼 추가
+        open_button = QPushButton("확인") # 파일 열기 함수 호출
+        open_button.clicked.connect(dialog.accept)
+        layout.addWidget(open_button)
+
+        # '취소' 버튼 추가
+        cancel_button = QPushButton("취소")
+        cancel_button.clicked.connect(self.filedialog)
+        cancel_button.clicked.connect(dialog.accept) # 창 닫기
+        layout.addWidget(cancel_button)
+        dialog.setFixedSize(400, 200)
+        dialog.setLayout(layout)
+
+        # 창 크기 조정 및 화면 중앙 배치
+        dialog.adjustSize()
+
+        # 알림 창 표시
+        dialog.exec_()
+        return
+
+
+    def filedialog(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "파일 선택", "", "All Files (*);;Text Files (*.txt)")
+        self.csv_file = file_path
+        return file_path
 
     def show_file_alert(self, file_path, messagea, widgett):
         """파일 경로를 받아 사용자에게 알림을 표시하고 파일을 여는 함수."""
@@ -1445,7 +1556,6 @@ class createtrainclass(QMainWindow, form_class):
 
         # 창 크기 조정 및 화면 중앙 배치
         dialog.adjustSize()
-
 
         # 알림 창 표시
         dialog.exec_()
@@ -1580,9 +1690,35 @@ class createtrainclass(QMainWindow, form_class):
 
                 print("2클릭", )
                 print("선택한 파일", self.file_paths)
+                if self.csv_file != '' or self.existval == 1:
+                    file_names = [os.path.basename(path) for path in self.file_paths]
+                    if self.csv_file != '':
+                        csv_file_path = self.csv_file
+                    else :
+                        csv_file_path = self.csv_path
+                    df = pd.read_csv(csv_file_path)
+                    file_info = {self.get_fast_file_hash(path): path for path in self.file_paths}
 
+                    existing_hashes = set(df['md5'])
 
-                self.extract_box_feature(self.file_paths)
+                    # CSV의 hash 컬럼과 file_info 해시 값을 비교합니다.
+                    # 해시가 같으면서 name 컬럼의 파일명이 다른 경우 name 값을 업데이트합니다.
+                    for i, row in df.iterrows():
+                        file_hash = row['md5']
+                        if file_hash in file_info:
+                            csv_name = row['name']
+                            file_name = os.path.basename(file_info[file_hash])
+                            if csv_name != file_name:
+                                df.at[i, 'name'] = file_name
+                    df.to_csv(csv_file_path, index=False)
+
+                    # 기존 CSV에 없는 새로운 해시만 추출하여 new_entries에 저장합니다.
+                    new_entries = [file_info[hash_val] for hash_val in file_info if hash_val not in existing_hashes]
+
+                    self.extract_box_feature(new_entries)
+
+                else :
+                    self.extract_box_feature(self.file_paths)
 
 
 
@@ -1621,8 +1757,8 @@ class createtrainclass(QMainWindow, form_class):
                 messagebox.showinfo("Notification", "Learning data extraction has been completed")
                 break
 
-            elif choice ==5:
-                print("종료")
+            else :
+                self.show_alert("학습버튼을 선택하세요")
                 break
 
 
@@ -1643,12 +1779,13 @@ class createtrainclass(QMainWindow, form_class):
 
     def load_excel_data(self):
         """엑셀 데이터를 DataFrame으로 불러와 테이블에 표시."""
-        labelname = "labelinfo.xlsx"
+        labelname = "labeldata_mul.csv"
+        labelname = os.path.join(self.case_direc, labelname)
         labelpath = self.resource_path(labelname)
         if not os.path.exists(labelpath):
             print(self, "Warning", "No Excel file found!")
 
-        df = pd.read_excel(labelpath)  # 엑셀 파일을 DataFrame으로 로드
+        df = pd.read_csv(labelpath)  # 엑셀 파일을 DataFrame으로 로드
         df.columns = [str(col) for col in df.columns]
 
         self.display_dataframe(df, widgettype=self.tableWidget_train)
@@ -1800,9 +1937,18 @@ class createtrainclass(QMainWindow, form_class):
 
 
     def open_existcsv(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "파일 선택", "", "All Files (*);;Text Files (*.txt)")
+        self.existval = 1
+        self.choice == 2
+        self.show_select_file()
+        csv_files = [file for file in glob.glob(os.path.join(self.case_direc, "*.csv")) if
+                     'feature_importance.csv' not in os.path.basename(file)]
 
-        self.csv_file = file_path
+        # .csv 파일이 하나 이상 있을 때 일단은 첫 번째 파일을 열기
+
+        for csv_file in csv_files:
+            if '_train' in csv_file or '241' in csv_file:
+                self.csv_path = csv_file  # 첫 번째 CSV 파일 경로 선택
+
 
 ##################라벨입력
 class DataEntryWindow(QWidget):
@@ -1812,7 +1958,7 @@ class DataEntryWindow(QWidget):
         self.label_counter = 0
         self.headers = []
         self.values = []
-        labelpath = "labelinfo.xlsx"
+        labelpath = 'labeldata_mul.csv'
         labelpath = os.path.join(direc, labelpath)
         self.filename = createtrainclass.resource_path(self, labelpath)
 

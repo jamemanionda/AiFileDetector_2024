@@ -369,10 +369,20 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         plt.ylabel('True')
         plt.title('Confusion Matrix')
         plt.show()
-
+        plt.savefig(self.resource_path('confusion_matrix.png'), format='png')
         # 추가적으로 classification report도 출력
         print("Classification Report:")
         print(classification_report(y_train, y_pred_classes))
+
+    def resource_path(self, relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
+
 
     def remove_highly_correlated_features(self, X, threshold=0.9):
         """
