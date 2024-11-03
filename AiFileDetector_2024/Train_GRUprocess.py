@@ -141,7 +141,7 @@ class twoTrainClass():
 
     def train_baseline_model(self, df):
 
-        X = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
+        X = df.drop(columns=['label', 'name'])
 
         # 'label' 컬럼을 출력 변수로 설정
         y = df['label'].astype("int")
