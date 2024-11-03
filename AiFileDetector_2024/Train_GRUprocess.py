@@ -374,8 +374,8 @@ class twoTrainClass():
 
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
-
-            file_path = os.path.join(os.path.dirname(self.csv_path), "feature_importance.csv")
+            importance_path = os.path.join(str(self.aimodel + "feature_importance.pkl"))
+            file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
             importance_df.to_csv(file_path, index=False)
 
         # 추후 변경 필요 --> 파일이름을 피처 반영되게 / self.csv_path랑 동일 경로에 feature.json저장

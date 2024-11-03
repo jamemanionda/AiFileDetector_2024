@@ -137,25 +137,28 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
     def preprocess_data(self, filepath, is_train=True):
         """데이터 전처리"""
 
-        df = pd.read_csv(filepath, header=None, encoding='UTF-8')
+        sample_df = pd.read_csv(filepath, nrows=1, header=None)
+        tempvalue = sample_df.iloc[0, 0]
+        # 첫 번째 행의 첫 번째 값이 'name'이 아닌 경우 두 번째 행을 헤더로 설정
+        if tempvalue != 'name':
+            # 첫 번째 행에 컬럼 이름이 없으면 두 번째 행을 헤더로 설정하여 다시 읽어옵니다
+            df = pd.read_csv(filepath, header=1)
+        else:
+            # 첫 번째 행이 컬럼 이름이면 기본적으로 읽어옵니다
+            df = pd.read_csv(filepath)
+
         column_count = df.shape[1]
         original_labels = None
 
         if is_train:
-            temp_feat = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
-
-            features = temp_feat.values
-            df.columns = ['name'] + list(features) + ['label']
+            features = [col for col in df.columns if col not in ['name', 'label']]
             df = df[1:]
-            original_labels = df[['name', 'label']]
+
         else:
-            temp_feat = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
-
-            features = temp_feat.values
+            features = df.columns[1:-1]
             df.columns = ['name'] + list(features) + ['label']
             original_labels = df[['name', 'label']]
             df = df[1:]
-
         return df, original_labels
 
     @staticmethod
