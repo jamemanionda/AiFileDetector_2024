@@ -1368,7 +1368,7 @@ class createtrainclass(QMainWindow, form_class):
 
         # Keep only the relevant features and ensure the order matches
         df = df[model_features]
-
+        df = df.drop(columns='md5')
         # Drop unnecessary columns, e.g., 'name'
         df = df.drop(columns=[col for col in df.columns if col == 'name'], errors='ignore')
 

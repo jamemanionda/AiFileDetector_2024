@@ -41,7 +41,10 @@ class twoTrainClass():
         self.classmode = classmode
         print("***이진분류 시작***")
         df, _ = self.preprocess_data(self.csv_path, is_train=True)
-
+        try:
+            df= df.drop(columns='md5')
+        except Exception as e:
+            pass
         self.extension = os.path.basename(os.path.dirname(self.csv_path))
         # 훈련 데이터와 테스트 데이터로 분할
         df_train, df_test = train_test_split(df, test_size=0.25, random_state=42)
@@ -107,18 +110,15 @@ class twoTrainClass():
         print(f"F1 Score: {f1:.2f}")
 
     def train_model(self, df):
-        try:
+        try :
             if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
-                self.ensemble(df)
-                self.get_feature_importance()
-                importance_df = self.get_feature_importance()
-                self.plot_feature_importance(importance_df)
-
+                model, accuracy = self.ensemble(df)
+                message = f"정확도 {accuracy}%로 학습되었습니다."
+                self.show_alert(message)
             elif self.index == 1:
                 self.lstm(df)
         except Exception as e:
             self.index = 0
-            self.ensemble(df)
 
     def analyze_prediction(self, df, original_labels):
         """위변조 판단"""
@@ -176,22 +176,28 @@ class twoTrainClass():
     def preprocess_data(self, filepath, is_train=True):
         """데이터 전처리"""
 
-        df = pd.read_csv(filepath, header=None ,encoding='CP949')
+        sample_df = pd.read_csv(filepath, nrows=1, header=None)
+        tempvalue = sample_df.iloc[0, 0]
+        # 첫 번째 행의 첫 번째 값이 'name'이 아닌 경우 두 번째 행을 헤더로 설정
+        if tempvalue != 'name':
+            # 첫 번째 행에 컬럼 이름이 없으면 두 번째 행을 헤더로 설정하여 다시 읽어옵니다
+            df = pd.read_csv(filepath, header=1)
+        else:
+            # 첫 번째 행이 컬럼 이름이면 기본적으로 읽어옵니다
+            df = pd.read_csv(filepath)
+
         column_count = df.shape[1]
         original_labels = None
 
         if is_train:
-            features = df.iloc[0, 1:-1].values
-            df.columns = ['name'] + list(features) + ['label']
+            features = [col for col in df.columns if col not in ['name', 'label']]
             df = df[1:]
 
-
         else:
-            features = df.iloc[0, 1:-1].values
+            features = df.columns[1:-1]
             df.columns = ['name'] + list(features) + ['label']
             original_labels = df[['name', 'label']]
             df = df[1:]
-
         return df, original_labels
 
     def predict_data(self, df):
@@ -322,7 +328,9 @@ class twoTrainClass():
 
     def ensemble(self, df):
         """이진분류를 위한 앙상블 모델 구성"""
-        X = df.loc[:, ['name'] + [col for col in df.columns if col not in ['name', 'label']]]
+        X = df.drop(columns=['label', 'name'])
+
+        # 'label' 컬럼을 출력 변수로 설정
         y = df['label'].astype("int")
 
         # 데이터 분할
@@ -353,10 +361,7 @@ class twoTrainClass():
         self.show_alert(message)
         print(f"Model Accuracy: {accuracy:.2f}")
 
-        # Confusion Matrix 시각화
-        self.confusion_matrix2(y_test, y_pred)
 
-        # 다중분류에서 가져온 importance.csv 부분
         if hasattr(self.model, 'feature_importances_'):
             feature_importances = self.model.feature_importances_
             importance_df = pd.DataFrame({
@@ -370,9 +375,14 @@ class twoTrainClass():
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
 
-            file_path = 'feature_importance.csv'
+            file_path = os.path.join(os.path.dirname(self.csv_path), "feature_importance.csv")
             importance_df.to_csv(file_path, index=False)
 
+        # 추후 변경 필요 --> 파일이름을 피처 반영되게 / self.csv_path랑 동일 경로에 feature.json저장
+        self.feature_list = X.columns.tolist()
+        jsonpath = os.path.join(os.path.dirname(self.csv_path), "feature.json")
+        with open(jsonpath, 'w') as f:
+            json.dump(self.feature_list, f)
 
     def show_alert(self, message):
         title = "알림"

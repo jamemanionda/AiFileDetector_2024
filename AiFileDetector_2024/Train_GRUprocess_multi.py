@@ -158,8 +158,10 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         self.index = trainindex
         self.aimodel = model
         df, _ = self.preprocess_data(self.csv_path, is_train=True)
-
-
+        try:
+            df= df.drop(columns='md5')
+        except:
+            pass
         self.extension = os.path.basename(os.path.dirname(self.csv_path))
         # 훈련 데이터와 테스트 데이터로 분할
         df_train, df_test = train_test_split(df, test_size=0.25, random_state=42)
@@ -408,7 +410,10 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         return X
 
     def ensemble(self, df):
-
+        try:
+            df= df.drop(columns='md5')
+        except:
+            pass
         X = df.drop(columns=['label', 'name'])
 
         # 'label' 컬럼을 출력 변수로 설정
