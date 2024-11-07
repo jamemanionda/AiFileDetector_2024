@@ -206,7 +206,7 @@ class createtrainclass(QMainWindow, form_class):
         except:
             pass
         self.label_input_but.clicked.connect(self.input_label)
-        self.aimodel = self.model_combo_2.currentText()
+        self.model_combo.currentTextChanged.connect(self.on_modelcombobox_select)
         self.trainindex = self.comboBox.currentIndex()
 
 
@@ -243,7 +243,8 @@ class createtrainclass(QMainWindow, form_class):
 
     def on_combobox_select(self, index):
         self.trainclass.index = index
-
+    def on_modelcombobox_select(self):
+        self.aimodel = self.model_combo.currentText()
 
     def clustermain(self):
 
@@ -275,6 +276,7 @@ class createtrainclass(QMainWindow, form_class):
 
         self.trainindex = self.model_combo.currentIndex()
         self.model_combo.activated.connect(self.on_combobox_select)
+        self.model_combo.currentText()
         self.trainclass.csv_path = self.csv_path # 객체 csv 경로 설정
         self.trainclass.comboBox = self.model_combo_2
         try:
@@ -1642,9 +1644,6 @@ class createtrainclass(QMainWindow, form_class):
         results = df.to_string(index=False)
         QMessageBox.information(self, "Prediction Results", f"Prediction:\n{results}")
 
-    def on_train_button_click(self):
-        """Trigger model training."""
-        self.gotrain(self.classmode, self.aimodel, self.trainindex, self.csv_path)
 
     def align_features_with_model(self, df):
         """Align DataFrame columns with the model's feature set."""
@@ -2167,11 +2166,11 @@ class CaseSelectorApp(QMainWindow):
             print(f"Confirmed selection: {self.case_direc}")
 
 
-            dataset_direc, ok = QInputDialog.getText(self, "Dataset Directory",
-                                                     "데이터셋 디렉터리를 입력하세요 ex) Y://, Z://")
+            # dataset_direc, ok = QInputDialog.getText(self, "Dataset Directory",
+            #                                          "데이터셋 디렉터리를 입력하세요 ex) Y://, Z://")
 
-            # ok = 1
-            # dataset_direc = 'Y://'
+            ok = 1
+            dataset_direc = 'Y://'
             if ok and dataset_direc:
                 self.dataset_direc = dataset_direc
                 print(f"Dataset directory set to: {self.dataset_direc}")

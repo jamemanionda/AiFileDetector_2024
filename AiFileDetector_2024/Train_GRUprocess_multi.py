@@ -484,7 +484,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             grid_search.fit(X_train_scaled, y_train)
             self.model = grid_search.best_estimator_
         elif self.index == 4:
-            self.model = LogisticRegression(solver='lbfgs', max_iter=100)
+            self.model = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial')
             self.model.fit(X_train_scaled, y_train)  # LinearRegression에는 RandomizedSearchCV 적용 불필요
 
 
@@ -741,7 +741,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     def save_model2(self):
         """모델 저장"""
-        if self.index == 0 or self.index == 2 or self.index == 3:
+        if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
 
 
 
