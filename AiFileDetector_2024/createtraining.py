@@ -2166,12 +2166,12 @@ class CaseSelectorApp(QMainWindow):
         if self.case_direc:
             print(f"Confirmed selection: {self.case_direc}")
 
-            # Prompt user for dataset directory
-            # dataset_direc, ok = QInputDialog.getText(self, "Dataset Directory",
-            #                                          "데이터셋 디렉터리를 입력하세요 ex) Y://, Z://")
-            #
-            ok = 1
-            dataset_direc = 'Y://'
+
+            dataset_direc, ok = QInputDialog.getText(self, "Dataset Directory",
+                                                     "데이터셋 디렉터리를 입력하세요 ex) Y://, Z://")
+
+            # ok = 1
+            # dataset_direc = 'Y://'
             if ok and dataset_direc:
                 self.dataset_direc = dataset_direc
                 print(f"Dataset directory set to: {self.dataset_direc}")
