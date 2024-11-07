@@ -52,8 +52,6 @@ class twoTrainClass():
         # 훈련 데이터 전처리
         # df_train = df_test.drop(columns='label')
         df_train_processed = self.apply_simhash(df_train)
-        print("전처리한 훈련 데이터:")
-        print(df_train_processed)
 
         self.feature_list = df_train.drop(columns=['label']).columns.tolist()
 
@@ -398,7 +396,7 @@ class twoTrainClass():
 
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
-            importance_path = os.path.join(str("bin_" + self.aimodel + "feature_importance.pkl"))
+            importance_path = os.path.join(str("bin_" + self.aimodel + "feature_importance.csv"))
             file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
             importance_df.to_csv(file_path, index=False)
 

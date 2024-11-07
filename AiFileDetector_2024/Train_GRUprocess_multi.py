@@ -523,7 +523,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
 
-            importance_path = os.path.join(str(self.aimodel + "feature_importance.pkl"))
+            importance_path = os.path.join(str(self.aimodel + "feature_importance.csv"))
             file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
             importance_df.to_csv(file_path, index=False)
 
