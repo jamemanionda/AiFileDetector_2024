@@ -80,16 +80,18 @@ class twoTrainClass():
         predicted_data = self.predict_data(df_test_processed)
         predicted_datalabel = predicted_data['label']
         results, success_failure, results_df = self.analyze_prediction(predicted_data,
-                                                                       self.original_df_test[['name', 'label']])
+
+                                                                                    self.original_df_test[['name', 'label']])
         actual_labels = self.original_df_test['label']
         actual_labels = actual_labels.astype(int)
         predicted_labels = predicted_datalabel
 
+        print(results_df)
         #conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
         #print(conf_matrix)
 
-        #pd.set_option('display.max_rows', None)
-        #pd.set_option('display.max_columns', None)
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
 
         print(success_failure)
 
@@ -133,8 +135,7 @@ class twoTrainClass():
         for name, avg in group_averages.items():
             original_label = original_labels[original_labels['name'] == name]['label'].values[0]
             closest_label = round(avg)
-            filename = original_labels['name']
-            results[name] = f'{filename} 기존 label : {original_label}, 예측 label : {closest_label}'
+            results[name] = f'기존 label : {original_label}, 예측 label : {closest_label}'
             print(results[name])
             if int(original_label) == closest_label:
                 success_failure[name] = "예측 성공"
@@ -142,6 +143,9 @@ class twoTrainClass():
                 success_failure[name] = "예측 실패"
 
         results_df = pd.DataFrame(list(results.items()), columns=['name', 'result'])
+        print(results[:100])
+        print(results[100:])
+
         return results, success_failure, results_df
 
     def train_baseline_model(self, df):
