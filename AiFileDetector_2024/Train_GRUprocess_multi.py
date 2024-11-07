@@ -110,6 +110,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
 
 
+
     def display_dataframe(self, df):
         self.tableWidget.setRowCount(df.shape[0])
         self.tableWidget.setColumnCount(df.shape[1])

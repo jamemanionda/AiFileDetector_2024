@@ -85,14 +85,14 @@ class twoTrainClass():
         actual_labels = actual_labels.astype(int)
         predicted_labels = predicted_datalabel
 
-        conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
-        print(conf_matrix)
+        #conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
+        #print(conf_matrix)
 
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
+        #pd.set_option('display.max_rows', None)
+        #pd.set_option('display.max_columns', None)
 
         print(success_failure)
-        print(results_df)
+
 
         # 예측 성공률 계산
 
@@ -101,6 +101,9 @@ class twoTrainClass():
         success_rate = (success / total) * 100
         print(f"예측 성공률: {success_rate:.2f}%")
 
+        if self.index == 4:
+            threshold = 0.5
+            predicted_labels = [1 if y >= threshold else 0 for y in predicted_labels]
         precision = precision_score(actual_labels, predicted_labels, average='weighted')
         recall = recall_score(actual_labels, predicted_labels, average='weighted')
         f1 = f1_score(actual_labels, predicted_labels, average='weighted')
@@ -118,7 +121,8 @@ class twoTrainClass():
             elif self.index == 1:
                 self.lstm(df)
         except Exception as e:
-            self.index = 0
+            #self.index = 0
+            pass
 
     def analyze_prediction(self, df, original_labels):
         """위변조 판단"""
@@ -129,8 +133,9 @@ class twoTrainClass():
         for name, avg in group_averages.items():
             original_label = original_labels[original_labels['name'] == name]['label'].values[0]
             closest_label = round(avg)
-            results[name] = f'기존 label : {original_label}, 예측 label : {closest_label}'
-
+            filename = original_labels['name']
+            results[name] = f'{filename} 기존 label : {original_label}, 예측 label : {closest_label}'
+            print(results[name])
             if int(original_label) == closest_label:
                 success_failure[name] = "예측 성공"
             else:
@@ -349,13 +354,18 @@ class twoTrainClass():
         elif self.index == 3:
             self.model = LGBMClassifier(objective='binary', max_depth=5, n_estimators=250)
         elif self.index == 4:
-            self.model = LogisticRegression(solver='lbfgs', max_iter=100)
+            self.model = LinearRegression()
+            #self.model = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='ovr')
+
 
         # 모델 훈련
         self.model.fit(X_train_scaled, y_train)
 
         # 성능 평가
         y_pred = self.model.predict(X_test_scaled)
+        if self.index == 4:
+            threshold = 0.5
+            y_pred = [1 if y >= threshold else 0 for y in y_pred]
         accuracy = accuracy_score(y_test, y_pred)
         message = f"정확도 {accuracy}%로 학습되었습니다."
         self.show_alert(message)
@@ -374,7 +384,7 @@ class twoTrainClass():
 
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
-            importance_path = os.path.join(str(self.aimodel + "feature_importance.pkl"))
+            importance_path = os.path.join(str("bin_" + self.aimodel + "feature_importance.pkl"))
             file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
             importance_df.to_csv(file_path, index=False)
 

@@ -140,8 +140,8 @@ font: 9pt &quot;Helvetica&quot;;</string>
    <widget class="QTableWidget" name="tableWidget">
     <property name="geometry">
      <rect>
-      <x>50</x>
-      <y>330</y>
+      <x>310</x>
+      <y>100</y>
       <width>651</width>
       <height>311</height>
      </rect>
@@ -199,7 +199,7 @@ color: rgb(255, 255, 255);</string>
      <x>0</x>
      <y>0</y>
      <width>976</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

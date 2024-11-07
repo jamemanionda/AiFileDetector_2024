@@ -144,8 +144,9 @@ class createtrainclass(QMainWindow, form_class):
         self.treeView.clicked.connect(self.file_selected)
         self.load_or_initialize_states()
         # 케이스 디렉토리에서 .csv 찾아서 csv_files 리스트로 반환
-        csv_files = [file for file in glob.glob(os.path.join(self.case_direc, "*.csv")) if 'feature_importance.csv' not in os.path.basename(file)]
-
+        all_files = glob.glob(os.path.join(self.case_direc, "*.csv"))
+        print("All CSV files:", all_files)
+        csv_files = [file for file in all_files if 'feature_importance.csv' not in os.path.basename(file)]
         self.csv_path = ''
 
         # .csv 파일이 하나 이상 있을 때 일단은 첫 번째 파일을 열기
@@ -794,8 +795,6 @@ class createtrainclass(QMainWindow, form_class):
         # 엑셀 데이터를 딕셔너리로 변환 (엑셀 파일의 첫 번째 열을 key로, 두 번째 열을 value로)
         self.seqdict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
 
-
-
         filecount = 0
         if isinstance(file_paths, str):
             file_paths = [file_paths]
@@ -817,7 +816,7 @@ class createtrainclass(QMainWindow, form_class):
                 # 각 파일 데이터 저장 리스트
                 onesequence = []
                 # 파일 내 Box 파싱
-                def parse_box(f, end_position, depth=0, max_depth=100):
+                def parse_box(f, end_position, depth=0, max_depth=300):
                     if depth > max_depth:
                         print("최대 재귀 깊이 도달 에러")
                         return
@@ -995,7 +994,17 @@ class createtrainclass(QMainWindow, form_class):
 
             if self.structure_seq_state == 1:
                 self.set_state("structure_seq_state", 1)
-                onesequence = Simhash(onesequence).value
+                try:
+                    try:
+                        try:
+                            onesequence = Simhash(onesequence).value
+                        except:
+                            onesequence = onesequence
+                    except:
+                        onesequence = np.uint16(onesequence)
+                except:
+                        onesequence = 0
+
                 results.append(('sequence', onesequence))
 
 
