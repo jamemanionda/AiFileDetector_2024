@@ -273,7 +273,6 @@ class createtrainclass(QMainWindow, form_class):
             self.classmode = 'mul_'
         else :
             messagebox.showerror("에러", "바이너리/멀티 모드를 선택")
-        self.aimodel = "Xgboost"
         self.trainindex = self.model_combo.currentIndex()
         self.model_combo.activated.connect(self.on_combobox_select)
         self.model_combo.currentText()
