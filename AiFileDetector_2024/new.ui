@@ -66,7 +66,7 @@ QTabBar::tab:hover {
 </string>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>0</number>
     </property>
     <property name="iconSize">
      <size>
@@ -230,6 +230,22 @@ QHeaderView::section {
       </property>
       <property name="text">
        <string>목록 비우기</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="csvlabel">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>550</y>
+        <width>491</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color:rgb(255, 210, 76);</string>
+      </property>
+      <property name="text">
+       <string>로드된 CSV 파일명</string>
       </property>
      </widget>
     </widget>
@@ -1104,7 +1120,7 @@ color: rgb(255, 255, 255);</string>
      <x>0</x>
      <y>0</y>
      <width>955</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">

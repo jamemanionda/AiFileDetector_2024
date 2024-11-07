@@ -156,7 +156,11 @@ class createtrainclass(QMainWindow, form_class):
                     self.csv_path = csv_file  # 첫 번째 CSV 파일 경로 선택
                     self.open_csv2(self.csv_path, self.tableWidget)
 
-
+        try :
+            file_name = os.path.basename(self.csv_path)
+            self.csvlabel.setText(file_name)
+        except Exception as e:
+            pass
         # 헤더 설정
         header = self.treeView.header()
         header.setSectionResizeMode(0, header.Interactive)
@@ -2163,8 +2167,11 @@ class CaseSelectorApp(QMainWindow):
             print(f"Confirmed selection: {self.case_direc}")
 
             # Prompt user for dataset directory
-            dataset_direc, ok = QInputDialog.getText(self, "Dataset Directory",
-                                                     "데이터셋 디렉터리를 입력하세요 ex) Y://, Z://")
+            # dataset_direc, ok = QInputDialog.getText(self, "Dataset Directory",
+            #                                          "데이터셋 디렉터리를 입력하세요 ex) Y://, Z://")
+            #
+            ok = 1
+            dataset_direc = 'Y://'
             if ok and dataset_direc:
                 self.dataset_direc = dataset_direc
                 print(f"Dataset directory set to: {self.dataset_direc}")

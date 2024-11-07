@@ -1,6 +1,6 @@
 import json
 import pickle
-
+import plotly.express as px
 import pyautogui
 import seaborn as sns
 from PyQt5.QtCore import Qt
@@ -262,13 +262,25 @@ class twoTrainClass():
         return df
 
     def plot_feature_importance(self, importance_df):
-        plt.figure(figsize=(10, 8))
-        plt.barh(importance_df['Feature'], importance_df['Importance'], align='center')
-        plt.xlabel('Importance')
-        plt.ylabel('Feature')
-        plt.title('Feature Importance')
-        plt.gca().invert_yaxis()  # Flip the order for better visualization
-        plt.show()
+        fig = px.bar(
+            importance_df,
+            y='Feature',
+            x='Importance',
+            orientation='h',  # 가로 막대 그래프
+            title='Feature Importance',
+            height=400 + len(importance_df) * 20  # 피처 수에 따른 그래프 높이 조정
+        )
+
+        fig.update_layout(
+            yaxis={'categoryorder': 'total ascending'},  # 중요도 순서로 정렬
+            showlegend=False,  # 범례
+
+            # 비활성화
+            xaxis_title='Importance',
+            yaxis_title='Feature',
+        )
+
+        fig.show()
 
     def get_feature_importance(self):
         if hasattr(self.model, 'feature_importances_'):
@@ -356,8 +368,8 @@ class twoTrainClass():
         elif self.index == 3:
             self.model = LGBMClassifier(objective='binary', max_depth=5, n_estimators=250)
         elif self.index == 4:
-            self.model = LinearRegression()
-            #self.model = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='ovr')
+            #self.model = LinearRegression()
+            self.model = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='ovr')
 
 
         # 모델 훈련

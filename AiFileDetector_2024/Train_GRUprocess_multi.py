@@ -101,7 +101,9 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
         fig.update_layout(
             yaxis={'categoryorder': 'total ascending'},  # 중요도 순서로 정렬
-            showlegend=False,  # 범례 비활성화
+            showlegend=False,  # 범례
+
+            # 비활성화
             xaxis_title='Importance',
             yaxis_title='Feature',
         )
@@ -170,8 +172,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         # 훈련 데이터 전처리
         #df_train = df_test.drop(columns='label')
         df_train_processed = self.apply_simhash(df_train)
-        print("전처리한 훈련 데이터:")
-        print(df_train_processed)
+        # print("전처리한 훈련 데이터:")
+        # print(df_train_processed)
 
         # 모델 훈련
         self.train_model(df_train_processed)
