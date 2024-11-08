@@ -274,6 +274,7 @@ class createtrainclass(QMainWindow, form_class):
         else :
             messagebox.showerror("에러", "바이너리/멀티 모드를 선택")
         self.trainindex = self.model_combo.currentIndex()
+        self.aimodel = 'Xgboost'
         self.model_combo.activated.connect(self.on_combobox_select)
         self.model_combo.currentText()
         self.trainclass.csv_path = self.csv_path # 객체 csv 경로 설정
