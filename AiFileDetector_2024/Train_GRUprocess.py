@@ -470,7 +470,13 @@ class twoTrainClass():
 
     @staticmethod
     def calculate_simhash_lib(value):
-        simval = Simhash(str(value)).value
+        try:
+            try:
+                simval = Simhash(str(value)).value
+            except:
+                simval = Simhash(str(value[:100])).value
+        except:
+            simval = 0
         return simval
 
     def confusion_matrix2(self, y_true, y_pred):
