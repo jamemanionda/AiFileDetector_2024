@@ -150,8 +150,15 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             else:
                 success_failure[name] = "예측 실패"
 
-        results_df = pd.DataFrame(list(results.items()), columns=['name', 'result'])
+        # Combine results and success_failure into a single DataFrame
+        results_df = pd.DataFrame({
+            'name': list(results.keys()),
+            'result': list(results.values()),
+            'success_failure': list(success_failure.values())
+        })
+
         return results, success_failure, results_df
+
 
     def gotrain(self, classmode, model, trainindex, csv_path):
         self.model = model
@@ -200,12 +207,13 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
         print(conf_matrix)
 
+        pd.set_option('display.width', 1000)
 
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_columns', None)
 
-        print(success_failure)
-        print(results_df)
+        #print(success_failure)
+        print(results)
 
         # 예측 성공률 계산
 

@@ -87,7 +87,7 @@ class twoTrainClass():
 
         #conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
         #print(conf_matrix)
-
+        pd.set_option('display.width', 1000)
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_columns', None)
         print(results_df)
@@ -134,16 +134,20 @@ class twoTrainClass():
             original_label = original_labels[original_labels['name'] == name]['label'].values[0]
             closest_label = round(avg)
             results[name] = f'기존 label : {original_label}, 예측 label : {closest_label}'
+
             if int(original_label) == closest_label:
                 success_failure[name] = "예측 성공"
             else:
                 success_failure[name] = "예측 실패"
 
-        results_df = pd.DataFrame(list(results.items()), columns=['name', 'result'])
-
+        # Combine results and success_failure into a single DataFrame
+        results_df = pd.DataFrame({
+            'name': list(results.keys()),
+            'result': list(results.values()),
+            'success_failure': list(success_failure.values())
+        })
 
         return results, success_failure, results_df
-
     def train_baseline_model(self, df):
 
         X = df.drop(columns=['label', 'name'])
