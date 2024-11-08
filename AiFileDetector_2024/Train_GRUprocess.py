@@ -92,12 +92,13 @@ class twoTrainClass():
         pd.set_option('display.max_columns', None)
         print(results_df)
         print(success_failure)
+        print(self.importance_df)
 
 
         # 예측 성공률 계산
 
         total = len(results_df)
-        success = sum([1 for row in success_failure.values() if "예측 성공" in row])
+        success = sum([1 for row in success_failure.values() if "성공" in row])
         success_rate = (success / total) * 100
         print(f"예측 성공률: {success_rate:.2f}%")
 
@@ -138,7 +139,7 @@ class twoTrainClass():
             if int(original_label) == closest_label:
                 success_failure[name] = "예측 성공"
             else:
-                success_failure[name] = "예측 실패"
+                success_failure[name] = "!!!예측 실패!!!"
 
         # Combine results and success_failure into a single DataFrame
         results_df = pd.DataFrame({
@@ -396,7 +397,7 @@ class twoTrainClass():
             }).sort_values(by='Importance', ascending=False)
 
             print("Feature Importance:")
-            print(importance_df)
+            self.importance_df = importance_df
 
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)

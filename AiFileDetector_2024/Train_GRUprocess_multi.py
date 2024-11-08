@@ -148,7 +148,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             if int(original_label) == closest_label:
                 success_failure[name] = "예측 성공"
             else:
-                success_failure[name] = "예측 실패"
+                success_failure[name] = "!!!예측 실패!!!"
 
         # Combine results and success_failure into a single DataFrame
         results_df = pd.DataFrame({
@@ -211,7 +211,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
         pd.set_option('display.max_rows', None)
         pd.set_option('display.max_columns', None)
-
+        print(self.importance_df)
         #print(success_failure)
         print(results)
 
@@ -526,8 +526,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             }).sort_values(by='Importance', ascending=False)
 
             print("Feature Importance:")
-            print(importance_df)
 
+            self.importance_df = importance_df
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
 
