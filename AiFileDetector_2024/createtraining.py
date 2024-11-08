@@ -7,6 +7,7 @@ import re
 import struct
 import sys
 import glob
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from tkinter import simpledialog, messagebox
 from frame_compression import process_videos_in_folder
@@ -2166,20 +2167,50 @@ class CaseSelectorApp(QMainWindow):
         if self.case_direc:
             print(f"Confirmed selection: {self.case_direc}")
 
+            # Check for base_directory.xml and load path if available
+            xml_path = "base_directory.xml"
+            xml_path = os.path.join(self.case_direc, xml_path)
+            dataset_direc = None
 
-            # dataset_direc, ok = QInputDialog.getText(self, "Dataset Directory",
-            #                                          "데이터셋 디렉터리를 입력하세요 ex) Y://, Z://")
+            if os.path.exists(xml_path):
+                try:
+                    tree = ET.parse(xml_path)
+                    root = tree.getroot()
+                    dataset_direc = root.findtext("dataset_directory")
+                    if dataset_direc:
+                        print(f"Loaded dataset directory from XML: {dataset_direc}")
+                    else:
+                        print("Dataset directory not found in XML. Requesting input.")
+                except ET.ParseError:
+                    print("Error parsing base_directory.xml. Requesting input.")
+            else:
+                print("base_directory.xml not found. Requesting input.")
 
-            ok = 1
-            dataset_direc = 'Y://'
-            if ok and dataset_direc:
-                self.dataset_direc = dataset_direc
-                print(f"Dataset directory set to: {self.dataset_direc}")
+            # If no valid directory is found, prompt user for input
+            if not dataset_direc:
+                dataset_direc, ok = QInputDialog.getText(self, "Dataset Directory",
+                                                         "데이터셋 디렉터리를 입력하세요 ex) Y://, Z://")
+                if ok and dataset_direc:
+                    # Save the directory to base_directory.xml for future use
+                    root = ET.Element("settings")
+                    ET.SubElement(root, "dataset_directory").text = dataset_direc
+                    tree = ET.ElementTree(root)
+                    try:
+                        with open(xml_path, "wb") as file:
+                            tree.write(file, encoding="utf-8", xml_declaration=True)
+                        print(f"Dataset directory saved to XML: {dataset_direc}")
+                    except IOError:
+                        QMessageBox.warning(self, "Error", "Failed to save dataset directory to XML.")
+                else:
+                    return  # User canceled the input dialog
 
-                # Create and show the CreateTrain window
-                self.create_train_window = createtrainclass(self.case_direc, self.dataset_direc)
-                self.create_train_window.show()  # Display the CreateTrain window
-                self.close()  # Close CaseSelectorApp after confirmation
+            self.dataset_direc = dataset_direc
+            print(f"Dataset directory set to: {self.dataset_direc}")
+
+            # Create and show the CreateTrain window
+            self.create_train_window = createtrainclass(self.case_direc, self.dataset_direc)
+            self.create_train_window.show()  # Display the CreateTrain window
+            self.close()  # Close CaseSelectorApp after confirmation # Close CaseSelectorApp after confirmation
 
     def create_new_case(self):
         """Prompt for a new case name and create the case directory."""
