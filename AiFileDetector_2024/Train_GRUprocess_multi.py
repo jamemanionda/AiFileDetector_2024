@@ -520,24 +520,39 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             self.show_message_box(message)
             accuracy = r2
 
+        if self.index <4 :
+            if hasattr(self.model, 'feature_importances_'):
+                feature_importances = self.model.feature_importances_
+                importance_df = pd.DataFrame({
+                    'Feature': X.columns,
+                    'Importance': feature_importances
+                }).sort_values(by='Importance', ascending=False)
 
-        if hasattr(self.model, 'feature_importances_'):
-            feature_importances = self.model.feature_importances_
+                print("Feature Importance:")
+
+                self.importance_df = importance_df
+                # 피처 중요도 시각화
+                self.plot_feature_importance(importance_df)
+
+                importance_path = os.path.join(str(self.aimodel + "feature_importance.csv"))
+                file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
+                importance_df.to_csv(file_path, index=False)
+        else :
+            feature_importances = np.abs(self.model.coef_[0])  # 계수의 절대값
             importance_df = pd.DataFrame({
                 'Feature': X.columns,
                 'Importance': feature_importances
             }).sort_values(by='Importance', ascending=False)
 
             print("Feature Importance:")
-
             self.importance_df = importance_df
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
 
+            # CSV 파일로 저장
             importance_path = os.path.join(str(self.aimodel + "feature_importance.csv"))
             file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
             importance_df.to_csv(file_path, index=False)
-
 
         # 추후 변경 필요 --> 파일이름을 피처 반영되게 / self.csv_path랑 동일 경로에 feature.json저장
         self.feature_list = X.columns.tolist()
