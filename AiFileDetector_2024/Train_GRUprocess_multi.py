@@ -213,7 +213,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         pd.set_option('display.max_columns', None)
         print(self.importance_df)
         #print(success_failure)
-        print(results)
+        print(results_df)
 
         # 예측 성공률 계산
 
