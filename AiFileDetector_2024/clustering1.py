@@ -233,6 +233,10 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
         df['cluster'] = self.kmeans.labels_
         self.compare_clusters_with_labels(df, original_labels)
 
+        self.evaluate_clustering(scaled_features_pca, original_labels, self.kmeans.labels_, "KMeans")
+        self.evaluate_clustering(scaled_features_pca, original_labels, self.dbscan.labels_, "DBSCAN")
+        self.evaluate_clustering(scaled_features_pca, original_labels, self.agglo.labels_, "AgglomerativeClustering")
+
         # PCA visualization
         self.visualize_pca(df, scaled_features, self.kmeans.labels_)
 
