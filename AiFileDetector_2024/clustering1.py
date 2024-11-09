@@ -192,6 +192,7 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
 
         # Dimensionality reduction using PCA
         pca = PCA(n_components=0.98)
+        #
         scaled_features_pca = pca.fit_transform(scaled_features)
 
         # Find optimal number of clusters for KMeans
