@@ -281,8 +281,11 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
     @staticmethod
     def calculate_simhash_lib(value):
         try:
-            simval = Simhash(str(value)).value
-        except :
+            try:
+                simval = Simhash(str(value)).value
+            except:
+                simval = Simhash(str(value[:100])).value
+        except:
             simval = 0
         return simval
 
