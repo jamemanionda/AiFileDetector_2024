@@ -92,7 +92,10 @@ class twoTrainClass():
         pd.set_option('display.max_columns', None)
         print(results_df)
         print(success_failure)
-        print(self.importance_df)
+        try:
+            print(self.importance_df)
+        except:
+            pass
 
 
         # 예측 성공률 계산

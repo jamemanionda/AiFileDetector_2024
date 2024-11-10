@@ -191,7 +191,7 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
         scaled_features = StandardScaler().fit_transform(features)
 
         # Dimensionality reduction using PCA
-        pca = PCA(n_components=0.98)
+        pca = PCA(n_components=0.5)
         #
         scaled_features_pca = pca.fit_transform(scaled_features)
 
