@@ -191,14 +191,14 @@ class trainClustering(QMainWindow):  # QMainWindow, form_class
         scaled_features = StandardScaler().fit_transform(features)
 
         # Dimensionality reduction using PCA
-        pca = PCA(n_components=0.5)
+        pca = PCA(n_components=0.99)
         #
         scaled_features_pca = pca.fit_transform(scaled_features)
 
         # Find optimal number of clusters for KMeans
         ssd = []
         silhouette_avg = []
-        range_n_clusters = range(2,200)
+        range_n_clusters = range(2,1000)
         for num_clusters in range_n_clusters:
             kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=15)
             kmeans.fit(scaled_features_pca)

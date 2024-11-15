@@ -291,11 +291,46 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     def apply_simhash(self, df):
         """Simhash 적용"""
+        # df.columns = df.columns.astype(str)
+        # columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
+        # for column in columns_to_process:
+        #     df[column] = df[column].apply(self.calculate_simhash_lib)
+        # return df
+
         df.columns = df.columns.astype(str)
         columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
+
+        def safe_hex_to_int(value):
+            try:
+                # 1. 문자열 값 확인
+                if isinstance(value, str):
+                    # 과학적 표기법 확인 및 처리
+                    if "E" in value.upper():
+                        # 과학적 표기법 값을 정수로 변환
+                        try:
+                            changeint =  int(float(value))
+                        except :
+                            changeint =  int(float(value[:100]))
+
+                    # 일반 문자열을 16진수로 변환
+                    return changeint
+                # 2. 이미 숫자인 경우
+                elif isinstance(value, (int, float)):
+                    return int(value)
+            except ValueError:
+                # 변환 실패 시 NaN 반환
+                print("이상함!!")
+                return float('nan')
+            except Exception as e :
+                print(e)
+
         for column in columns_to_process:
-            df[column] = df[column].apply(self.calculate_simhash_lib)
+            df[column] = df[column].apply(safe_hex_to_int)
+
         return df
+
+
+
     def show_alert(self, message):
         title = "알림"
         app = QApplication.instance()  # 이미 실행 중인 QApplication 인스턴스 확인
