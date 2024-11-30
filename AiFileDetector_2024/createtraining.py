@@ -1,6 +1,7 @@
 import csv
 import hashlib
 import json
+import math
 import os
 import pickle
 import re
@@ -122,7 +123,7 @@ class createtrainclass(QMainWindow, form_class):
 
             except Exception as e:
                 # 경로가 유효하지 않으면 기본 경로를 설정
-                self.dataset_direc = 'Y:\\'
+                self.dataset_direc = 'y:\\'
                 print("데이터셋 경로가 Y:\\로 설정되었습니다.")
 
             print("=====================================")
@@ -166,9 +167,7 @@ class createtrainclass(QMainWindow, form_class):
         header = self.treeView.header()
         header.setSectionResizeMode(0, header.Interactive)
         header.resizeSection(0, 400)
-        self.feature_create1.clicked.connect(lambda: setattr(self, 'choice', 1))
         self.create_value2.clicked.connect(lambda: setattr(self, 'choice', 2))
-        self.create_sequence3.clicked.connect(lambda: setattr(self, 'choice', 3))
 
         self.structure_val_state = False
         self.structure_seq_state = False
@@ -183,7 +182,7 @@ class createtrainclass(QMainWindow, form_class):
         self.frame_sps_but.stateChanged.connect(self.on_frame_sps_changed)
         self.frame_gop_but.stateChanged.connect(self.on_frame_gop_changed)
         self.frame_ratio_but.stateChanged.connect(self.on_frame_ratio_changed)
-
+        self.stateButton.clicked.connect(self.save_states)
 
         self.LoadButton.clicked.connect(self.main) # Load 버튼 클릭 시 self.main() 호출
         self.cluster_train.clicked.connect(self.clustermain)
@@ -225,21 +224,23 @@ class createtrainclass(QMainWindow, form_class):
 
             print("파일이 없어 기본 상태값으로 초기화하고 저장했습니다:", self.states)
 
-        self.structure_seq_state = self.states["structure_seq_state"]
-        self.frame_gop_state = self.states["frame_gop_state"]
-        self.frame_ratio_state = self.states["frame_ratio_state"]
-        self.frame_sps_state = self.states["frame_sps_state"]
-        self.structure_val_state = self.states["structure_val_state"]
-
+        try:
+            self.structure_seq_state = self.states["structure_seq_state"]
+            self.frame_gop_state = self.states["frame_gop_state"]
+            self.frame_ratio_state = self.states["frame_ratio_state"]
+            self.frame_sps_state = self.states["frame_sps_state"]
+            self.structure_val_state = self.states["structure_val_state"]
+        except Exception as e:
+            pass
 
 
     def set_state(self, state_name, value):
         self.states[state_name] = value
 
-    def save_states(self, states):
+    def save_states(self):
         statepath = self.resource_path(os.path.join(self.case_direc, "states.json"))
         with open(statepath, "w") as file:
-            json.dump(states, file)
+            json.dump(self.states, file)
         print("상태값이 JSON 파일에 저장되었습니다.")
 
     def on_combobox_select(self, index):
@@ -277,7 +278,7 @@ class createtrainclass(QMainWindow, form_class):
         self.trainindex = self.model_combo.currentIndex()
         self.aimodel = 'Xgboost'
         self.model_combo.activated.connect(self.on_combobox_select)
-        self.model_combo.currentText()
+        self.aimodel = self.model_combo.currentText()
         self.trainclass.csv_path = self.csv_path # 객체 csv 경로 설정
         self.trainclass.comboBox = self.model_combo_2
         try:
@@ -860,7 +861,6 @@ class createtrainclass(QMainWindow, form_class):
                             # 컨테이너 Box 처리
                             parse_box(f, box_end_position, depth + 1, max_depth)
                         else:  # 컨테이너가 아닌 Box 처리
-
                             if box_type == 'mdat':
                                 f.seek(box_end_position)
                                 continue
@@ -1027,54 +1027,64 @@ class createtrainclass(QMainWindow, form_class):
         if state == Qt.Checked:
             print('structure_val Box is checked')
             self.structure_val_state = 1
+            self.set_state("structure_val_state", 1)
             if '_val' not in self.tempcsv_file:
                 self.tempcsv_file += '_val'
         else:
             print('structure_val Box is unchecked')
             self.structure_val_state = 1
+            self.set_state("structure_val_state", 0)
             self.tempcsv_file = self.tempcsv_file.replace('_val', '')
 
     def on_structure_seq_changed(self, state):
         if state == Qt.Checked:
             print('structure_seq Box is checked')
             self.structure_seq_state = 1
+            self.set_state("structure_seq_state", 1)
             if '_seq' not in self.tempcsv_file:
                 self.tempcsv_file += '_seq'
         else:
             print('structure_seq Box is unchecked')
             self.structure_seq_state = 0
+            self.set_state("structure_seq_state", 0)
             self.tempcsv_file = self.tempcsv_file.replace('_seq', '')
 
     def on_frame_sps_changed(self, state):
         if state == Qt.Checked:
             print('frame_sps Box is checked')
+            self.set_state("frame_sps_state", 1)
             self.frame_sps_state = 1
             if '_sps' not in self.tempcsv_file:
                 self.tempcsv_file += '_sps'
         else:
             print('frame_sps Box is unchecked')
             self.frame_sps_state = 0
+            self.set_state("frame_sps_state", 0)
             self.tempcsv_file = self.tempcsv_file.replace('_sps', '')
 
     def on_frame_gop_changed(self, state):
         if state == Qt.Checked:
             print('frame_gop Box is checked')
             self.frame_gop_state = 1
+            self.set_state("frame_gop_state", 1)
             if '_gop' not in self.tempcsv_file:
                 self.tempcsv_file += '_gop'
         else:
             print('frame_gop Box is unchecked')
+            self.set_state("frame_gop_state", 0)
             self.frame_gop_state = 0
             self.tempcsv_file = self.tempcsv_file.replace('_gop', '')
 
     def on_frame_ratio_changed(self, state):
         if state == Qt.Checked:
             print('frame_ratio Box is checked')
+            self.set_state("frame_ratio_state", 1)
             self.frame_ratio_state = 1
             if '_ratio' not in self.tempcsv_file:
                 self.tempcsv_file += '_ratio'
         else:
             print('frame_ratio Box is unchecked')
+            self.set_state("frame_ratio_state", 0)
             self.frame_ratio_state = 0
             self.tempcsv_file = self.tempcsv_file.replace('_ratio', '')
 
@@ -1111,51 +1121,54 @@ class createtrainclass(QMainWindow, form_class):
         for file_data in all_data:
             key_count_local = {}  # 각 파일 내에서의 중복 key 카운트
             for key, value in file_data:
-                # 중복 필드 처리 (필드 이름 중복 시 숫자를 붙임)
-                if key in key_count_local:
-                    key_count_local[key] += 1
-                    key_with_count = f"{key}({key_count_local[key]})"
+                if key!='GOP':
+                    # 중복 필드 처리 (필드 이름 중복 시 숫자를 붙임)
+                    if key in key_count_local:
+                        key_count_local[key] += 1
+                        key_with_count = f"{key}({key_count_local[key]})"
+                    else:
+                        key_count_local[key] = 1
+                        key_with_count = key
+
+                    # 콜론이 있는 경우 자식 속성 분리
+                    if isinstance(value, str) and ":" in value:
+                        attributes = [attr.strip() for attr in value.split(",")]
+                        for attr in attributes:
+                            if ":" in attr:
+                                attr_name = f"{key_with_count}_{attr.split(':')[0].strip()}"
+                                attr_value = attr.split(":")[1].strip()
+
+                                # 필드가 fieldnames에 없고 값이 있는 경우만 필드를 추가
+                                if attr_name not in fieldnames and attr_value:
+                                    fieldnames.append(attr_name)
+                    else:
+                        if key_with_count not in fieldnames:
+                            fieldnames.append(key_with_count)
+
+                #print('keycount (local):', key_count_local)
+                #print('new_fieldnames:', fieldnames)
                 else:
-                    key_count_local[key] = 1
-                    key_with_count = key
-
-                # 콜론이 있는 경우 자식 속성 분리
-                if isinstance(value, str) and ":" in value:
-                    attributes = [attr.strip() for attr in value.split(",")]
-                    for attr in attributes:
-                        if ":" in attr:
-                            attr_name = f"{key_with_count}_{attr.split(':')[0].strip()}"
-                            attr_value = attr.split(":")[1].strip()
-
-                            # 필드가 fieldnames에 없고 값이 있는 경우만 필드를 추가
-                            if attr_name not in fieldnames and attr_value:
-                                fieldnames.append(attr_name)
-                else:
-                    if key_with_count not in fieldnames:
-                        fieldnames.append(key_with_count)
-
-            #print('keycount (local):', key_count_local)
-            #print('new_fieldnames:', fieldnames)
+                    fieldnames.append(key)
 
         ##1025 레이블 추가
         if 'label' not in fieldnames:
             fieldnames.append('label')
 
         # GOP 처리
-        for onedata in all_data:
-            for key, value in onedata:
-                if key == 'GOP':
-                    if isinstance(value, str) and ":" in value:
-                        # 자식 속성 있는 경우 속성 분할(예: “생성 시간: 1234, 수정 시간: 5678”).
-                        attributes = [attr.strip() for attr in value.split(",")]
-                        for attr in attributes:
-                            if ":" in attr:
-                                attr_name = f"{key}_{attr.split(':')[0].strip()}"
-                                if attr_name not in fieldnames:
-                                    fieldnames.append(attr_name)
-                    else:
-                        if key not in fieldnames:
-                            fieldnames.append(key)
+        # for onedata in all_data:
+        #     for key, value in onedata:
+        #         if key == 'GOP':
+        #             if isinstance(value, str) and ":" in value:
+        #                 # 자식 속성 있는 경우 속성 분할(예: “생성 시간: 1234, 수정 시간: 5678”).
+        #                 attributes = [attr.strip() for attr in value.split(",")]
+        #                 for attr in attributes:
+        #                     if ":" in attr:
+        #                         attr_name = f"{key}_{attr.split(':')[0].strip()}"
+        #                         if attr_name not in fieldnames:
+        #                             fieldnames.append(attr_name)
+        #             else:
+        #                 if key not in fieldnames:
+        #                     fieldnames.append(key)
 
         print('최종 필드명 확인: ', fieldnames)
 
@@ -1215,21 +1228,153 @@ class createtrainclass(QMainWindow, form_class):
         savemassage = f"학습데이터셋이 파일 {csv_path} 에 저장되었습니다."
         self.show_file_alert(csv_path, savemassage, self.tableWidget_Create)
 
-        self.save_states(self.states)
+        self.save_states()
+        self.post_process_csv(csv_path)
+
+#preprocessing
+    def get_fieldnames(self, all_data, existing_data):
+        fieldnames = set()
+        for row in existing_data:
+            fieldnames.update(row.keys())
+        for file_data in all_data:
+            fieldnames.update(file_data.keys())
+        if 'label' not in fieldnames:
+            fieldnames.add('label')
+        return list(fieldnames)
+
+    # Helper function to prepare a row for writing
+    def prepare_row_data(self, file_data, fieldnames):
+        row_data = {}
+        for key, value in file_data.items():
+            row_data[key] = value
+        if 'label' in fieldnames and self.label_data:
+            row_data['label'] = self.label_data
+        return row_data
+
+    # Function to post-process the saved CSV
+    def post_process_csv(self, csv_path):
+        result_path = csv_path.replace(".csv", "_processed.csv")
+        df = pd.read_csv(csv_path)
+
+        # Apply transformations for specific columns
+        self.adjust_time_columns(df)
+        self.adjust_duration_columns(df)
+        self.adjust_dimensions(df)
+
+        # Save processed data
+        df.to_csv(result_path, index=False)
+        print(f"Processed data saved to {result_path}")
+
+    # Functions for column-specific adjustments
+    def adjust_time_columns(self, df):
+        pattern = re.compile(r'.*(Create Time|Modify Time)', re.IGNORECASE)
+        for col in df.columns:
+            if pattern.search(col):
+                df[col] = df[col].apply(self.transform_time)
+
+    def transform_time(self, value):
+        if pd.notna(value) and len(str(value)) >= 4:
+            if str(value).startswith('1'):
+                return 1
+            elif str(value).startswith('3'):
+                return 3
+        return value
+
+    def adjust_duration_columns(self, df):
+        pattern = re.compile(r'.*(duration|Entry|Entries)\b', re.IGNORECASE)
+        for col in df.columns:
+            if pattern.search(col):
+                df[col] = df[col].apply(self.transform_duration)
+
+    def transform_duration(self, value):
+        if pd.notna(value):
+            return 1
+        return -1 if pd.isna(value) or value == '' else value
+
+    def adjust_dimensions(self, df):
+        pattern = re.compile(r'.*(width|height)\b$', re.IGNORECASE)
+        for col in df.columns:
+            if pattern.search(col):
+                df[col] = df[col].apply(self.transform_dimension)
+
+    def transform_dimension(self, value):
+        if pd.notna(value):
+            if value > 1:
+                return 1
+            elif value == 0:
+                return 0
+        return -1 if pd.isna(value) or value == '' else value
+
+
 
 
     @staticmethod
     def calculate_simhash_lib(value):
-        simval = Simhash(str(value)).value
+        try:
+            if value in [0, None, ""] or (isinstance(value, float) and math.isnan(value)):
+                return -111111111
+        except Exception as e:
+            pass
+        try:
+            try:
+                simval = Simhash(str(value)).value
+            except:
+                simval = Simhash(str(value[:100])).value
+        except Exception as e:
+            print(e)
+            simval = 0
         return simval
 
     def apply_simhash(self, df):
+        """Simhash 적용"""
+        # df.columns = df.columns.astype(str)
+        # columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
+        # for column in columns_to_process:
+        #     df[column] = df[column].apply(self.calculate_simhash_lib)
+        # return df
+
         """Simhash 적용"""
         df.columns = df.columns.astype(str)
         columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
         for column in columns_to_process:
             df[column] = df[column].apply(self.calculate_simhash_lib)
+        # return df
+
+        # df.columns = df.columns.astype(str)
+        # columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
+        #
+        # def safe_hex_to_int(value):
+        #     try:
+        #         # 1. 문자열 값 확인
+        #         try:
+        #             value = int(value)
+        #         except:
+        #             pass
+        #
+        #         if isinstance(value, str):
+        #             # 과학적 표기법 확인 및 처리
+        #             if "E" in value.upper():
+        #                 # 과학적 표기법 값을 정수로 변환
+        #                 try:
+        #                     changeint =  int(float(value))
+        #                 except :
+        #                     changeint =  int(float(value[:100]))
+        #                 return changeint
+        #             # 일반 문자열을 16진수로 변환
+        #             else:
+        #                 return value
+        #         # 2. 이미 숫자인 경우
+        #         elif isinstance(value, (int, float)):
+        #             return int(value)
+        #     except Exception as e :
+        #         print(e)
+        #         return float('nan')
+        #
+        # for column in columns_to_process:
+        #     df[column] = df[column].apply(safe_hex_to_int)
+
         return df
+
     def load_file_for_prediction(self):
         """Open a dialog to select a file for prediction."""
         self.detectmode = 1
@@ -1285,40 +1430,123 @@ class createtrainclass(QMainWindow, form_class):
                 data_dict[key] = item
         return data_dict
 
-
     def flatten_features_for_prediction(self, data):
- # Handle duplicate keys
+        # Initialize an empty list for the flattened rows
+        flattened_rows = []
+
+        # To store unique field names
+        global_fieldnames = set()
+
+        # Flatten each file data
         for file_data in data:
             flattened = {}
-            key_count = {}
+            key_count_local = {}  # Local key duplication count for each file
+
             for key, value in file_data:
-                if key in key_count:
-                    key_count[key] += 1
-                    key = f"{key}({key_count[key]})"
-                else:
-                    key_count[key] = 1
+                if key != 'GOP':
+                    # Handle key duplication within the current file
+                    if key in key_count_local:
+                        key_count_local[key] += 1
+                        key_with_count = f"{key}({key_count_local[key]})"
+                    else:
+                        key_count_local[key] = 1
+                        key_with_count = key
 
-                if isinstance(value, str) and ":" in value:
-                    attributes = [attr.strip() for attr in value.split(",")]
-                    for attr in attributes:
-                        if ":" in attr:
-                            attr_name, attr_value = attr.split(":", 1)
-                            flattened[f"{key}_{attr_name.strip()}"] = attr_value.strip()
-                        else:
-                            flattened[key] = value
-                elif isinstance(value, list):
-                    for item in value:
-                        if ":" in item:
-                            attr_name, attr_value = item.split(":", 1)
-                            flattened[f"{key}_{attr_name.strip()}"] = attr_value.strip()
-                        else:
-                            flattened[key] = item
+                    # Flatten the attributes in the value if it's a string with nested attributes
+                    if isinstance(value, str) and ":" in value:
+                        attributes = [attr.strip() for attr in value.split(",")]
+                        for attr in attributes:
+                            if ":" in attr:
+                                attr_name, attr_value = attr.split(":", 1)
+                                attr_name = f"{key_with_count}_{attr_name.strip()}"
+                                flattened[attr_name] = attr_value.strip()
+                                global_fieldnames.add(attr_name)
+                            else:
+                                flattened[key_with_count] = value
+                                global_fieldnames.add(key_with_count)
+                    elif isinstance(value, list):
+                        for item in value:
+                            if ":" in item:
+                                attr_name, attr_value = item.split(":", 1)
+                                attr_name = f"{key_with_count}_{attr_name.strip()}"
+                                flattened[attr_name] = attr_value.strip()
+                                global_fieldnames.add(attr_name)
+                            else:
+                                flattened[key_with_count] = item
+                                global_fieldnames.add(key_with_count)
+                    else:
+                        flattened[key_with_count] = value
+                        global_fieldnames.add(key_with_count)
                 else:
-                    flattened[key] = value
+                    # Handle the 'GOP' key separately
+                    gop_value = value.split(':')[0]
+                    flattened[key] = gop_value
+                    global_fieldnames.add(key)
 
+            flattened_rows.append(flattened)
+
+        # Convert flattened rows into a DataFrame
+        df = pd.DataFrame(flattened_rows)
+
+        # Apply transformation functions
+        self.adjust_time_columns(df)
+        self.adjust_duration_columns(df)
+        self.adjust_dimensions(df)
+
+        # Fill missing fields with None
+        for field in global_fieldnames:
+            if field not in df.columns:
+                df[field] = None
+
+        return df
+
+        # Ensure all flattened rows have the same fields, filling missing ones with None
+        global_fieldnames = list(global_fieldnames)  # Convert to a sorted list for consistency
+        for row in flattened_rows:
+            for field in global_fieldnames:
+                if field not in row:
+                    row[field] = None  # Fill missing fields with None
+
+        return flattened_rows
+
+    def transform_in_flattened(self, flattened, pattern, transform_func):
+        """Applies transformation to the flattened data based on the column name pattern."""
+        for key, value in flattened.items():
+            if pattern.search(key):  # Apply transformation to matching columns
+                flattened[key] = transform_func(value)
         return flattened
 
+    def transform_duration_entry(self, x):
+        """Transformation logic for duration, entry, and entries columns."""
+        if pd.notna(x):  # If value is not NaN, set it to 1
+            return 1
+        elif pd.isna(x) or x == '':  # If value is NaN or empty, set it to -1
+            return -1
+        return x  # Otherwise, keep the original value
 
+    def transform_time_value(self, x):
+        """Transformation logic for time-related columns (Create Time, Modify Time)."""
+        if pd.notna(x) and len(str(x)) >= 4:
+            x_str = str(x)
+            if x_str.startswith('1'):
+                return 1
+            elif x_str.startswith('3'):
+                return 3
+            else:
+                return 0
+        return x  # Keep original value if it doesn't match
+
+    def transform_width_height(self, x):
+        """Transformation logic for width and height columns."""
+        x = int(x)
+        if pd.notna(x):
+            if x > 1:
+                return 1  # If width/height is greater than 1, return 1
+            elif x == 0:
+                return 0  # If width/height is 0, return 0
+        elif pd.isna(x) or x == '':
+            return -1  # If value is NaN or empty, return -1
+        return x  # Otherwise, keep the original value
 
 
     def extract_features_from_file(self, file_path):
@@ -1349,6 +1577,9 @@ class createtrainclass(QMainWindow, form_class):
 
         binstat = self.binButton_2.isChecked()
         mulstat = self.mulButton_2.isChecked()
+        self.aimodel = 'Xgboost'
+        self.model_combo_2.activated.connect(self.on_combobox_select)
+        self.aimodel = self.model_combo_2.currentText()
         if binstat:
             self.classmode = 'bin_'
         elif mulstat:
@@ -1371,11 +1602,13 @@ class createtrainclass(QMainWindow, form_class):
 
     def predict_data1(self, structured_data):
         """Scale the features and predict the label."""
-        df = pd.DataFrame([structured_data])
+        df = pd.DataFrame(structured_data)
   # Drop the first row and reset the index
 
         # Load model features from feature.json
-        with open('feature.json', 'r') as f:
+
+        jsonpath = os.path.join(os.path.dirname(self.csv_path), "feature.json")
+        with open(jsonpath, 'r') as f:
             model_features = json.load(f)
 
         # Add missing features with default value 0
@@ -1385,7 +1618,10 @@ class createtrainclass(QMainWindow, form_class):
 
         # Keep only the relevant features and ensure the order matches
         df = df[model_features]
-        df = df.drop(columns='md5')
+        try:
+            df = df.drop(columns='md5')
+        except Exception as e:
+            pass
         # Drop unnecessary columns, e.g., 'name'
         df = df.drop(columns=[col for col in df.columns if col == 'name'], errors='ignore')
 
@@ -1394,7 +1630,7 @@ class createtrainclass(QMainWindow, form_class):
 
         # Align df with the scaler's features by reordering
         scaler_features = self.scaler.feature_names_in_
-        df = df.reindex(columns=scaler_features, fill_value=0)  # Fill missing features with 0
+        df = df.reindex(columns=scaler_features)  # Fill missing features with 0
 
         # Scale features and predict
         X_new_scaled = self.scaler.transform(df)
@@ -1641,26 +1877,7 @@ class createtrainclass(QMainWindow, form_class):
         # 알림 창 표시
         dialog.exec_()
 
-    def show_prediction_results(self, df):
-        """Display prediction results."""
-        results = df.to_string(index=False)
-        QMessageBox.information(self, "Prediction Results", f"Prediction:\n{results}")
 
-
-    def align_features_with_model(self, df):
-        """Align DataFrame columns with the model's feature set."""
-        # Load the feature set used during training (from model or scaler)
-        model_features = self.feature_list
-
-        # Add missing features with a default value (e.g., 0)
-        for feature in model_features:
-            if feature not in df.columns:
-                df[feature] = 0
-
-        # Ensure the DataFrame contains only the required features
-        aligned_df = df[model_features]
-
-        return aligned_df
     def extract_sps_features(self, file_path):
         """Extract SPS features."""
         try:

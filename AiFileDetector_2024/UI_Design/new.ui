@@ -66,7 +66,7 @@ QTabBar::tab:hover {
 </string>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>1</number>
     </property>
     <property name="iconSize">
      <size>
@@ -442,7 +442,7 @@ font: 700 15pt &quot;Arial&quot;;</string>
      <widget class="QLabel" name="label_9">
       <property name="geometry">
        <rect>
-        <x>410</x>
+        <x>340</x>
         <y>225</y>
         <width>241</width>
         <height>21</height>
@@ -459,7 +459,7 @@ font: 700 15pt &quot;Arial&quot;;</string>
      <widget class="QWidget" name="verticalLayoutWidget_3">
       <property name="geometry">
        <rect>
-        <x>410</x>
+        <x>340</x>
         <y>265</y>
         <width>243</width>
         <height>81</height>
@@ -598,6 +598,39 @@ QPushButton:pressed {
       </property>
       <property name="text">
        <string>기존 학습데이터에 추가</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="stateButton">
+      <property name="geometry">
+       <rect>
+        <x>610</x>
+        <y>310</y>
+        <width>91</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">
+QPushButton {
+  background-color: rgb(212, 175, 55);
+  color: rgb(35, 37, 42);
+  font: bold 10pt &quot;Arial&quot;;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+QPushButton:hover {
+  background-color: rgb(183, 149, 11);
+}
+
+QPushButton:pressed {
+  background-color: rgb(212, 175, 55);
+  border: 1px solid rgb(160, 130, 0);
+}
+</string>
+      </property>
+      <property name="text">
+       <string>save state</string>
       </property>
      </widget>
     </widget>
@@ -1038,7 +1071,7 @@ color: rgb(255, 255, 255);</string>
      <x>0</x>
      <y>0</y>
      <width>955</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">

@@ -1,4 +1,5 @@
 import json
+import math
 import pickle
 import plotly.express as px
 import pyautogui
@@ -191,12 +192,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         self.save_model2()
         self.original_df_test = df_test
         df_test = df_test.drop(columns='label')
-        # 테스트 데이터 전처리
         df_test_processed = self.apply_simhash(df_test)
 
-
-
-        # 모델 로드 및 테스트 데이터 예측
         predicted_data = self.predict_data(df_test_processed)
         predicted_datalabel = predicted_data['label']
         results, success_failure, results_df = self.analyze_prediction(predicted_data, self.original_df_test[['name', 'label']])
@@ -280,54 +277,64 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     @staticmethod
     def calculate_simhash_lib(value):
-        try:
+
+        if value in [0, None, ""] or (isinstance(value, float) and math.isnan(value)):
+            return -111111111
+        else:
             try:
-                simval = Simhash(str(value)).value
-            except:
-                simval = Simhash(str(value[:100])).value
-        except:
-            simval = 0
-        return simval
+                try:
+                    simval = Simhash(str(value)).value
+                except:
+                    simval = Simhash(str(value[:100])).value
+            except Exception as e:
+                print(e)
+                simval = 0
+            return simval
 
     def apply_simhash(self, df):
         """Simhash 적용"""
-        # df.columns = df.columns.astype(str)
-        # columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
-        # for column in columns_to_process:
-        #     df[column] = df[column].apply(self.calculate_simhash_lib)
-        # return df
-
         df.columns = df.columns.astype(str)
         columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
-
-        def safe_hex_to_int(value):
-            try:
-                # 1. 문자열 값 확인
-                if isinstance(value, str):
-                    # 과학적 표기법 확인 및 처리
-                    if "E" in value.upper():
-                        # 과학적 표기법 값을 정수로 변환
-                        try:
-                            changeint =  int(float(value))
-                        except :
-                            changeint =  int(float(value[:100]))
-
-                    # 일반 문자열을 16진수로 변환
-                    return changeint
-                # 2. 이미 숫자인 경우
-                elif isinstance(value, (int, float)):
-                    return int(value)
-            except ValueError:
-                # 변환 실패 시 NaN 반환
-                print("이상함!!")
-                return float('nan')
-            except Exception as e :
-                print(e)
-
         for column in columns_to_process:
-            df[column] = df[column].apply(safe_hex_to_int)
-
+            df[column] = df[column].apply(self.calculate_simhash_lib)
         return df
+
+        # df.columns = df.columns.astype(str)
+        # columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
+        #
+        # def safe_hex_to_int(value):
+        #     try:
+        #         # 1. 문자열 값 확인
+        #
+        #         try:
+        #             value = int(value)
+        #         except:
+        #             pass
+        #
+        #         if isinstance(value, str):
+        #             # 과학적 표기법 확인 및 처리
+        #             if "E" in value.upper():
+        #                 # 과학적 표기법 값을 정수로 변환
+        #                 try:
+        #                     changeint =  int(float(value))
+        #                 except :
+        #                     changeint =  int(float(value[:100]))
+        #                 return changeint
+        #             # 일반 문자열을 16진수로 변환
+        #             else:
+        #                 return value
+        #
+        #         # 2. 이미 숫자인 경우
+        #         elif isinstance(value, (int, float)):
+        #             return int(value)
+        #     except Exception as e :
+        #         print(e)
+        #         return float('nan')
+        #
+        # for column in columns_to_process:
+        #     df[column] = df[column].apply(safe_hex_to_int)
+        #
+        # return df
 
 
 
@@ -459,10 +466,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         return X
 
     def ensemble(self, df):
-        try:
-            df= df.drop(columns='md5')
-        except:
-            pass
+
         X = df.drop(columns=['label', 'name'])
 
         # 'label' 컬럼을 출력 변수로 설정
@@ -709,39 +713,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
         return model
 
-    # def lstm(self, df):
-    #     """훈련"""
-    #     features = df[df.columns[1:-1]]
-    #     labels = df['label']
-    #     X = df.iloc[:, 1:-1]
-    #
-    #     y = df['label']
-    #     y = y.astype("int")
-    #     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
-    #
-    #     self.scaler = MinMaxScaler()
-    #     X_train_scaled = self.scaler.fit_transform(X_train)
-    #     X_test_scaled = self.scaler.transform(X_test)
-    #
-    #     X_train_scaled = X_train_scaled.reshape((X_train_scaled.shape[0], 1, X_train_scaled.shape[1]))
-    #     X_test_scaled = X_test_scaled.reshape((X_test_scaled.shape[0], 1, X_test_scaled.shape[1]))
-    #     # 패딩
-    #
-    #     model = Sequential()
-    #     # LSTM 모델 구성
-    #     model.add(LSTM(50, activation='relu', input_shape=(1, X_train_scaled.shape[2])))
-    #
-    #     model.add(Dropout(0.2))
-    #     model.add(Dense(4, activation='softmax'))
-    #     model.compile(optimizer='adam',
-    #                   loss='sparse_categorical_crossentropy',
-    #                   metrics=['mae'])
-    #
-    #     # 모델 학습
-    #     model.fit(X_train_scaled, y_train, epochs=20, batch_size=32, validation_data=(X_test_scaled, y_test))
-    #
-    #
-    #     self.model = model
 
     def lstm(self, df):
         """훈련"""
