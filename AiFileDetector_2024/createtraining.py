@@ -161,6 +161,7 @@ class createtrainclass(QMainWindow, form_class):
         try :
             file_name = os.path.basename(self.csv_path)
             self.csvlabel.setText(file_name)
+            self.caselabel.setText(self.case_direc)
         except Exception as e:
             pass
         # 헤더 설정
@@ -1265,6 +1266,16 @@ class createtrainclass(QMainWindow, form_class):
         df.to_csv(result_path, index=False)
         print(f"Processed data saved to {result_path}")
 
+    def post_process(self, df):
+        oridf = df
+        # Apply transformations for specific columns
+        self.adjust_time_columns(df)
+        self.adjust_duration_columns(df)
+        self.adjust_dimensions(df)
+
+        return df
+
+
     # Functions for column-specific adjustments
     def adjust_time_columns(self, df):
         pattern = re.compile(r'.*(Create Time|Modify Time)', re.IGNORECASE)
@@ -1281,7 +1292,7 @@ class createtrainclass(QMainWindow, form_class):
         return value
 
     def adjust_duration_columns(self, df):
-        pattern = re.compile(r'.*(duration|Entry|Entries)\b', re.IGNORECASE)
+        pattern = re.compile(r'.*(duration|Entry|Entries|Sample Count)\b', re.IGNORECASE)
         for col in df.columns:
             if pattern.search(col):
                 df[col] = df[col].apply(self.transform_duration)
@@ -1298,6 +1309,9 @@ class createtrainclass(QMainWindow, form_class):
                 df[col] = df[col].apply(self.transform_dimension)
 
     def transform_dimension(self, value):
+        if type(value) is str :
+            value = int(value)
+
         if pd.notna(value):
             if value > 1:
                 return 1
@@ -1610,14 +1624,13 @@ class createtrainclass(QMainWindow, form_class):
         jsonpath = os.path.join(os.path.dirname(self.csv_path), "feature.json")
         with open(jsonpath, 'r') as f:
             model_features = json.load(f)
-
+        oridf = df
+        df = self.post_process(df)
         # Add missing features with default value 0
-        for feature in model_features:
-            if feature not in df.columns:
-                df[feature] = 0  # Add missing features with 0
+
 
         # Keep only the relevant features and ensure the order matches
-        df = df[model_features]
+        #df = df[model_features]
         try:
             df = df.drop(columns='md5')
         except Exception as e:
@@ -1627,9 +1640,13 @@ class createtrainclass(QMainWindow, form_class):
 
         # Apply Simhash transformation (assuming apply_simhash is defined)
         df = self.apply_simhash(df)
-
+        ori_df = df.columns
         # Align df with the scaler's features by reordering
         scaler_features = self.scaler.feature_names_in_
+        for feature in model_features:
+            if feature not in df.columns:
+                df[feature] = -111111111  # Add missing features with 0
+
         df = df.reindex(columns=scaler_features)  # Fill missing features with 0
 
         # Scale features and predict

@@ -495,7 +495,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         self.scaler = MinMaxScaler()
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
-
+        X_scaled = self.scaler.transform(X)
         params_xgb = {
             'max_depth': [2, 3, 4, 5, 6, 7,8],
             'n_estimators': [150, 200, 250,300],
@@ -785,6 +785,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             with open(self.scalername, 'wb') as f:
                 joblib.dump(self.scaler, f)
                 f.close()
+
+
 
         elif self.index == 1:
             self.model.save(str(self.extension + '\\' + 'model.h5'))

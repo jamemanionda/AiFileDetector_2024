@@ -11,7 +11,7 @@ class combinedclass():
         while 1:
             csv_path1 = self.showFileDialog()
             csv_path2 = self.showFileDialog()
-            result_csv = 'Y:\결과물들\라벨링\\1108 2차 실험\\combined.csv'
+            result_csv = 'Y:\결과물들\라벨링\\1108 2차 실험\\1202combined.csv'
             self.update_or_add_rows(csv_path1, csv_path2, result_csv)
 
     def update_or_add_rows(self, csv1_path, csv2_path, output_path):
