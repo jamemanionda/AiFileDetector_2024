@@ -163,7 +163,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     def gotrain(self, classmode, model, trainindex, csv_path):
         self.model = model
-        print("***다중분류 시작***")
+        print("***ver2. 다중분류 시작***")
         self.csv_path = csv_path
         self.classmode = classmode
         self.index = trainindex
@@ -179,7 +179,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
         # 훈련 데이터 전처리
         #df_train = df_test.drop(columns='label')
-        df_train_processed = self.apply_simhash(df_train)
+        df_train_processed = self.apply_simhash(df)
         # print("전처리한 훈련 데이터:")
         # print(df_train_processed)
 
@@ -190,33 +190,32 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         #print("베이스라인 정확도", baseline_accuracy)
 
         self.save_model2()
-        self.original_df_test = df_test
-        df_test = df_test.drop(columns='label')
-        df_test_processed = self.apply_simhash(df_test)
+        # self.original_df_test = df_test
+        # df_test = df_test.drop(columns='label')
+        # df_test_processed = self.apply_simhash(df_test)
 
-        predicted_data = self.predict_data(df_test_processed)
-        predicted_datalabel = predicted_data['label']
-        results, success_failure, results_df = self.analyze_prediction(predicted_data, self.original_df_test[['name', 'label']])
-        actual_labels = self.original_df_test['label']
-        actual_labels = actual_labels.astype(int)
-        predicted_labels = predicted_datalabel
-
-        conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
-        print(conf_matrix)
-
-        pd.set_option('display.width', 1000)
-
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
-        print(self.importance_df)
-        #print(success_failure)
-        print(results_df)
-
-        # 예측 성공률 계산
-
-        total = len(results_df)
-        success = sum([1 for row in success_failure.values() if "예측 성공" in row])
-        success_rate = (success / total) * 100
+        # predicted_data = self.predict_data(df_test_processed)
+        # predicted_datalabel = predicted_data['label']
+        # results, success_failure, results_df = self.analyze_prediction(predicted_data, self.original_df_test[['name', 'label']])
+        # actual_labels = self.original_df_test['label']
+        # actual_labels = actual_labels.astype(int)
+        # predicted_labels = predicted_datalabel
+        #
+        # conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
+        # print(conf_matrix)
+        #
+        # pd.set_option('display.width', 1000)
+        #
+        # pd.set_option('display.max_rows', None)
+        # pd.set_option('display.max_columns', None)
+        # #print(success_failure)
+        # print(results_df)
+        #
+        # # 예측 성공률 계산
+        #
+        # total = len(results_df)
+        # success = sum([1 for row in success_failure.values() if "예측 성공" in row])
+        # success_rate = (success / total) * 100
         # print(f"예측 성공률: {success_rate:.2f}%")
         # accuracy = accuracy_score(actual_labels, predicted_labels)
         # precision = precision_score(actual_labels, predicted_labels, average = 'weighted')
@@ -467,87 +466,96 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     def ensemble(self, df):
 
+        names = df['name']
+        labels = df['label']
         X = df.drop(columns=['label', 'name'])
+        y = labels.astype("int")
 
-        # 'label' 컬럼을 출력 변수로 설정
-        y = df['label'].astype("int")
+        # Train-test split
+        X_train, X_test, y_train, y_test, names_train, names_test = train_test_split(
+            X, y, names, test_size=0.25, random_state=42
+        )
 
-        ######1026 피처 전처리 추가
-        # 2. 상관관계가 높은 피처 제거
-        #X = self.remove_highly_correlated_features(X)
-
-        # 3. 피처 선택 (중요도가 낮은 피처 제거)
-        # feature_selector = RandomForestClassifier(n_estimators=100, random_state=42)
-        # feature_selector.fit(X, y)
-        # feature_importances = pd.Series(feature_selector.feature_importances_, index=X.columns)
-        #
-        # # 임계값 기준으로 피처 선택 (중요도가 0.01 이상인 피처만 사용)
-        # selected_features = feature_importances[feature_importances >= 0.01].index
-        # X = X[selected_features]
-        # self.X = X
-
-
-        if self.index < 4:
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
-        else:
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
         # MinMaxScaler 적용
         self.scaler = MinMaxScaler()
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
-        X_scaled = self.scaler.transform(X)
+
+        # Define parameter grids
         params_xgb = {
-            'max_depth': [2, 3, 4, 5, 6, 7,8],
-            'n_estimators': [150, 200, 250,300],
+            'max_depth': [2, 3, 4, 5, 6, 7, 8],
+            'n_estimators': [150, 200, 250, 300],
             'learning_rate': [0.001, 0.01, 0.05, 0.1],
             'eval_metric': ['logloss', 'error']
         }
-
         params_rf = {
             'n_estimators': [10, 20, 30, 40, 50],
             'max_depth': [3, 4, 5, 6, 7],
             'min_samples_split': [2, 5, 10],
             'min_samples_leaf': [1, 2, 4]
         }
-
         params_lgbm = {
             'max_depth': [3, 4, 5, 6, 7],
             'n_estimators': [100, 150, 200, 250],
             'learning_rate': [0.01, 0.05, 0.1]
         }
 
+        # Select and train the model based on self.index
         if self.index == 0:
             self.model = xgb.XGBClassifier(random_state=42)
-            grid_search  = GridSearchCV(self.model, params_xgb, cv=3, scoring='accuracy')
-            le = LabelEncoder()
-            y_train = le.fit_transform(y_train)
-            grid_search.fit(X_train_scaled, y_train)
+            grid_search = GridSearchCV(self.model, params_xgb, cv=3, scoring='accuracy')
+            y_train_encoded = LabelEncoder().fit_transform(y_train)
+            grid_search.fit(X_train_scaled, y_train_encoded)
             self.model = grid_search.best_estimator_
         elif self.index == 2:
             self.model = RandomForestClassifier()
-            grid_search = RandomizedSearchCV(self.model, params_rf, n_iter=10, cv=3, scoring='accuracy', random_state=42)
+            grid_search = RandomizedSearchCV(self.model, params_rf, n_iter=10, cv=3, scoring='accuracy',
+                                             random_state=42)
             grid_search.fit(X_train_scaled, y_train)
             self.model = grid_search.best_estimator_
         elif self.index == 3:
             self.model = LGBMClassifier(objective='multiclass')
-            grid_search = RandomizedSearchCV(self.model, params_lgbm, n_iter=10, cv=3, scoring='accuracy', random_state=42)
+            grid_search = RandomizedSearchCV(self.model, params_lgbm, n_iter=10, cv=3, scoring='accuracy',
+                                             random_state=42)
             grid_search.fit(X_train_scaled, y_train)
             self.model = grid_search.best_estimator_
         elif self.index == 4:
             self.model = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial')
-            self.model.fit(X_train_scaled, y_train)  # LinearRegression에는 RandomizedSearchCV 적용 불필요
+            self.model.fit(X_train_scaled, y_train)
 
-
-        # 성능 평가
+        # Model evaluation
         y_pred = self.model.predict(X_test_scaled)
-        if self.index != 5:
-            # 주요 평가지표 계산
-            accuracy = accuracy_score(y_test, y_pred)
-            precision = precision_score(y_test, y_pred, average='weighted')
-            recall = recall_score(y_test, y_pred, average='weighted')
-            f1 = f1_score(y_test, y_pred, average='weighted')
+        y_test_labels = y_test.astype(int)
+        # Combine test data with predicted labels
+        df_test = pd.DataFrame(X_test, columns=X.columns)
+        df_test['name'] = names_test.values
+        df_test['label'] = y_pred
 
-            # 출력 및 저장
+        # Original labels for comparison
+        original_labels = pd.DataFrame({
+            'name': names_test.values,
+            'label': y_test.values
+        })
+
+        # Analyze prediction using the provided function
+        results, success_failure, results_df = self.analyze_prediction(df_test, original_labels)
+
+        # Print results
+        print("Prediction Results:")
+        print(results_df)
+
+        # Confusion Matrix
+        conf_matrix = confusion_matrix(y_test_labels, y_pred)
+        print("Confusion Matrix:")
+        print(conf_matrix)
+
+        # Print evaluation metrics
+        if self.index != 5:
+            accuracy = accuracy_score(y_test_labels, y_pred)
+            precision = precision_score(y_test_labels, y_pred, average='weighted')
+            recall = recall_score(y_test_labels, y_pred, average='weighted')
+            f1 = f1_score(y_test_labels, y_pred, average='weighted')
+
             print(f"Accuracy: {accuracy:.4f}")
             print(f"Precision: {precision:.4f}")
             print(f"Recall: {recall:.4f}")
@@ -596,9 +604,11 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             }).sort_values(by='Importance', ascending=False)
 
             print("Feature Importance:")
+            print(importance_df)
             self.importance_df = importance_df
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
+
 
             # CSV 파일로 저장
             importance_path = os.path.join(str(self.aimodel + "feature_importance.csv"))
