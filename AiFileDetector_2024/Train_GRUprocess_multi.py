@@ -579,6 +579,12 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             self.show_message_box(message)
             accuracy = r2
 
+        pd.set_option('display.width', 1000)
+
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+
+
         if self.index <4 :
             if hasattr(self.model, 'feature_importances_'):
                 feature_importances = self.model.feature_importances_
