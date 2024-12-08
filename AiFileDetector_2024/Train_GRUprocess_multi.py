@@ -176,8 +176,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         # 훈련 데이터 전처리
         #df_train = df_train.drop(columns='label')
         df_train_processed = self.apply_simhash(df_train)
-        # print("전처리한 훈련 데이터:")
-        # print(df_train_processed)
 
         # 모델 훈련
         self.train_model(df_train_processed)
@@ -273,6 +271,11 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     @staticmethod
     def calculate_simhash_lib(value):
+        try:
+            value =  str(value)
+        except :
+            pass
+
         try:
             if value in [0, None, ""] or (isinstance(value, float) and math.isnan(value)):
                 return -99999999
