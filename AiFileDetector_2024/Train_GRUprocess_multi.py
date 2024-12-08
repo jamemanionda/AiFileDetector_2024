@@ -588,7 +588,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
                 }).sort_values(by='Importance', ascending=False)
 
                 print("Feature Importance:")
-
+                print(importance_df)
                 self.importance_df = importance_df
                 # 피처 중요도 시각화
                 self.plot_feature_importance(importance_df)
