@@ -390,54 +390,6 @@ class createtrainclass(QMainWindow, form_class):
         self.listWidget.clear()
         self.file_paths = []
 
-    def lcs(self, X, Y):
-        m = len(X)
-        n = len(Y)
-
-        # memoization table 초기화
-        L = [[0] * (n + 1) for _ in range(m + 1)]
-
-        # X[0..m-1]와 Y[0..n-1] LCS 계산
-        for i in range(m + 1):
-            for j in range(n + 1):
-                if i == 0 or j == 0:
-                    L[i][j] = 0
-                elif X[i - 1] == Y[j - 1]:
-                    L[i][j] = L[i - 1][j - 1] + 1
-                else:
-                    L[i][j] = max(L[i - 1][j], L[i][j - 1])
-
-        # LCS
-        index = L[m][n]
-        lcs_list = [None] * index
-
-        i = m
-        j = n
-        while i > 0 and j > 0:
-            if X[i - 1] == Y[j - 1]:
-                lcs_list[index - 1] = X[i - 1]
-                i -= 1
-                j -= 1
-                index -= 1
-            elif L[i - 1][j] > L[i][j - 1]:
-                i -= 1
-            else:
-                j -= 1
-
-        return lcs_list
-
-    def lcs_multiple_lists(self, lists): # 가장 긴 공통 서브시퀀스 찾기
-        if len(lists) < 2: # 리스트가 2개 이상 있어야 LCS 찾기 가능
-            raise ValueError("At least two lists are required")
-
-        current_lcs = self.lcs(lists[0], lists[1]) # 처음 두 리스트의 LCS 계산
-
-        for lst in lists[2:]: # 나머지 리스트와의 LCS 반복 계산
-            current_lcs = self.lcs(current_lcs, lst)
-            if not current_lcs:
-                return []
-
-        return current_lcs
 
     def process_files(self):
         progress_window = ProgressWindow()
@@ -1146,30 +1098,13 @@ class createtrainclass(QMainWindow, form_class):
                         if key_with_count not in fieldnames:
                             fieldnames.append(key_with_count)
 
-                #print('keycount (local):', key_count_local)
-                #print('new_fieldnames:', fieldnames)
+
                 else:
                     fieldnames.append(key)
 
         ##1025 레이블 추가
         if 'label' not in fieldnames:
             fieldnames.append('label')
-
-        # GOP 처리
-        # for onedata in all_data:
-        #     for key, value in onedata:
-        #         if key == 'GOP':
-        #             if isinstance(value, str) and ":" in value:
-        #                 # 자식 속성 있는 경우 속성 분할(예: “생성 시간: 1234, 수정 시간: 5678”).
-        #                 attributes = [attr.strip() for attr in value.split(",")]
-        #                 for attr in attributes:
-        #                     if ":" in attr:
-        #                         attr_name = f"{key}_{attr.split(':')[0].strip()}"
-        #                         if attr_name not in fieldnames:
-        #                             fieldnames.append(attr_name)
-        #             else:
-        #                 if key not in fieldnames:
-        #                     fieldnames.append(key)
 
         print('최종 필드명 확인: ', fieldnames)
 
@@ -1326,17 +1261,17 @@ class createtrainclass(QMainWindow, form_class):
     def calculate_simhash_lib(value):
         try:
             if value in [0, None, ""] or (isinstance(value, float) and math.isnan(value)):
-                return -111111111
+                return -99999999
         except Exception as e:
             pass
         try:
             try:
                 simval = Simhash(str(value)).value
             except:
-                simval = Simhash(str(value[:100])).value
+                simval = Simhash(str(value[:200])).value
         except Exception as e:
             print(e)
-            simval = 0
+            simval = -99999999
         return simval
 
     def apply_simhash(self, df):
@@ -1352,40 +1287,6 @@ class createtrainclass(QMainWindow, form_class):
         columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
         for column in columns_to_process:
             df[column] = df[column].apply(self.calculate_simhash_lib)
-        # return df
-
-        # df.columns = df.columns.astype(str)
-        # columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
-        #
-        # def safe_hex_to_int(value):
-        #     try:
-        #         # 1. 문자열 값 확인
-        #         try:
-        #             value = int(value)
-        #         except:
-        #             pass
-        #
-        #         if isinstance(value, str):
-        #             # 과학적 표기법 확인 및 처리
-        #             if "E" in value.upper():
-        #                 # 과학적 표기법 값을 정수로 변환
-        #                 try:
-        #                     changeint =  int(float(value))
-        #                 except :
-        #                     changeint =  int(float(value[:100]))
-        #                 return changeint
-        #             # 일반 문자열을 16진수로 변환
-        #             else:
-        #                 return value
-        #         # 2. 이미 숫자인 경우
-        #         elif isinstance(value, (int, float)):
-        #             return int(value)
-        #     except Exception as e :
-        #         print(e)
-        #         return float('nan')
-        #
-        # for column in columns_to_process:
-        #     df[column] = df[column].apply(safe_hex_to_int)
 
         return df
 

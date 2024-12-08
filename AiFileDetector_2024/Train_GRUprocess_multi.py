@@ -128,12 +128,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         self.index = index
 
 
-    def load_model2(self):
-        """학습 모델 로드"""
-        if self.index == 0 or 2 or 3:
-            self.model = joblib.load(str(self.extension + '\\' + "model.pkl"))
-        elif self.index == 1:
-            self.model = load_model(str(self.extension + '\\' + 'model.h5'))
 
     def analyze_prediction(self, df, original_labels):
         """위변조 판단"""
@@ -175,11 +169,11 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             pass
         self.extension = os.path.basename(os.path.dirname(self.csv_path))
         # 훈련 데이터와 테스트 데이터로 분할
-        df_train, df_test = train_test_split(df, test_size=0.05, random_state=42)
+        df_train, df_test = train_test_split(df, test_size=0.25, random_state=42)
 
         # 훈련 데이터 전처리
-        #df_train = df_test.drop(columns='label')
-        df_train_processed = self.apply_simhash(df)
+        #df_train = df_train.drop(columns='label')
+        df_train_processed = self.apply_simhash(df_train)
         # print("전처리한 훈련 데이터:")
         # print(df_train_processed)
 
@@ -188,43 +182,44 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         #baseline_model, baseline_accuracy =self.train_baseline_model(df_train_processed)
 
         #print("베이스라인 정확도", baseline_accuracy)
-
+        print(f"----------validation--------------")
         self.save_model2()
-        # self.original_df_test = df_test
-        # df_test = df_test.drop(columns='label')
-        # df_test_processed = self.apply_simhash(df_test)
+        self.original_df_test = df_test
+        df_test = df_test.drop(columns='label')
+        df_test_processed = self.apply_simhash(df_test)
 
-        # predicted_data = self.predict_data(df_test_processed)
-        # predicted_datalabel = predicted_data['label']
-        # results, success_failure, results_df = self.analyze_prediction(predicted_data, self.original_df_test[['name', 'label']])
-        # actual_labels = self.original_df_test['label']
-        # actual_labels = actual_labels.astype(int)
-        # predicted_labels = predicted_datalabel
-        #
-        # conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
-        # print(conf_matrix)
-        #
-        # pd.set_option('display.width', 1000)
-        #
-        # pd.set_option('display.max_rows', None)
-        # pd.set_option('display.max_columns', None)
-        # #print(success_failure)
-        # print(results_df)
+        predicted_data = self.predict_data(df_test_processed)
+        predicted_datalabel = predicted_data['label']
+        results, success_failure, results_df = self.analyze_prediction(predicted_data, self.original_df_test[['name', 'label']])
+        actual_labels = self.original_df_test['label']
+        actual_labels = actual_labels.astype(int)
+        predicted_labels = predicted_datalabel
+
+        conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
+        print(conf_matrix)
+
+        pd.set_option('display.width', 1000)
+
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        #print(success_failure)
+        print(results_df)
         #
         # # 예측 성공률 계산
         #
-        # total = len(results_df)
-        # success = sum([1 for row in success_failure.values() if "예측 성공" in row])
-        # success_rate = (success / total) * 100
-        # print(f"예측 성공률: {success_rate:.2f}%")
-        # accuracy = accuracy_score(actual_labels, predicted_labels)
-        # precision = precision_score(actual_labels, predicted_labels, average = 'weighted')
-        # recall = recall_score(actual_labels, predicted_labels, average = 'weighted')
-        # f1 = f1_score(actual_labels, predicted_labels, average = 'weighted')
-        # print(f"Accuracy: {accuracy:.4f}")
-        # print(f"Precision: {precision:.4f}")
-        # print(f"Recall: {recall:.4f}")
-        # print(f"F1 Score: {f1:.4f}")
+        total = len(results_df)
+        success = sum([1 for row in success_failure.values() if "예측 성공" in row])
+        success_rate = (success / total) * 100
+
+        print(f"예측 성공률: {success_rate:.2f}%")
+        accuracy = accuracy_score(actual_labels, predicted_labels)
+        precision = precision_score(actual_labels, predicted_labels, average = 'weighted')
+        recall = recall_score(actual_labels, predicted_labels, average = 'weighted')
+        f1 = f1_score(actual_labels, predicted_labels, average = 'weighted')
+        print(f"Accuracy: {accuracy:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1 Score: {f1:.4f}")
 
 
 
@@ -276,19 +271,20 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
     @staticmethod
     def calculate_simhash_lib(value):
-
-        if value in [0, None, ""] or (isinstance(value, float) and math.isnan(value)):
-            return -111111111
-        else:
+        try:
+            if value in [0, None, ""] or (isinstance(value, float) and math.isnan(value)):
+                return -99999999
+        except Exception as e:
+            pass
+        try:
             try:
-                try:
-                    simval = Simhash(str(value)).value
-                except:
-                    simval = Simhash(str(value[:100])).value
-            except Exception as e:
-                print(e)
-                simval = 0
-            return simval
+                simval = Simhash(str(value)).value
+            except:
+                simval = Simhash(str(value[:200])).value
+        except Exception as e:
+            print(e)
+            simval = -99999999
+        return simval
 
     def apply_simhash(self, df):
         """Simhash 적용"""
@@ -500,28 +496,42 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             'learning_rate': [0.01, 0.05, 0.1]
         }
 
+        class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+        class_weight_dict = dict(enumerate(class_weights))
+
         # Select and train the model based on self.index
-        if self.index == 0:
+        # Select and train the model based on self.index
+        sample_weights = y_train.map(lambda x: class_weight_dict[x])
+        if self.index == 0:  # XGBoost
+
             self.model = xgb.XGBClassifier(random_state=42)
             grid_search = GridSearchCV(self.model, params_xgb, cv=3, scoring='accuracy')
             y_train_encoded = LabelEncoder().fit_transform(y_train)
-            grid_search.fit(X_train_scaled, y_train_encoded)
+            grid_search.fit(X_train_scaled, y_train_encoded, sample_weight=sample_weights)
             self.model = grid_search.best_estimator_
-        elif self.index == 2:
+
+        elif self.index == 2:  # RandomForest
             self.model = RandomForestClassifier()
             grid_search = RandomizedSearchCV(self.model, params_rf, n_iter=10, cv=3, scoring='accuracy',
                                              random_state=42)
-            grid_search.fit(X_train_scaled, y_train)
+            grid_search.fit(X_train_scaled, y_train, class_weight=class_weight_dict)
             self.model = grid_search.best_estimator_
-        elif self.index == 3:
-            self.model = LGBMClassifier(objective='multiclass')
+
+        elif self.index == 3:  # LightGBM
+
+            class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+            scale_pos_weight_dict = {i: weight for i, weight in enumerate(class_weights)}
+
+            # Initialize the LightGBM model with scale_pos_weight
+            self.model = LGBMClassifier(objective='multiclass', class_weight='balanced')
             grid_search = RandomizedSearchCV(self.model, params_lgbm, n_iter=10, cv=3, scoring='accuracy',
                                              random_state=42)
-            grid_search.fit(X_train_scaled, y_train)
+            grid_search.fit(X_train_scaled, y_train)  # No scale_pos_weight here
             self.model = grid_search.best_estimator_
-        elif self.index == 4:
+
+        elif self.index == 4:  # Logistic Regression
             self.model = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial')
-            self.model.fit(X_train_scaled, y_train)
+            self.model.fit(X_train_scaled, y_train, class_weight=sample_weights)
 
         # Model evaluation
         y_pred = self.model.predict(X_test_scaled)
