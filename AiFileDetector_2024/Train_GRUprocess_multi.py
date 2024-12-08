@@ -175,7 +175,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             pass
         self.extension = os.path.basename(os.path.dirname(self.csv_path))
         # 훈련 데이터와 테스트 데이터로 분할
-        df_train, df_test = train_test_split(df, test_size=0.25, random_state=42)
+        df_train, df_test = train_test_split(df, test_size=0.05, random_state=42)
 
         # 훈련 데이터 전처리
         #df_train = df_test.drop(columns='label')
@@ -217,15 +217,15 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         total = len(results_df)
         success = sum([1 for row in success_failure.values() if "예측 성공" in row])
         success_rate = (success / total) * 100
-        print(f"예측 성공률: {success_rate:.2f}%")
-
-        precision = precision_score(actual_labels, predicted_labels, average = 'weighted')
-        recall = recall_score(actual_labels, predicted_labels, average = 'weighted')
-        f1 = f1_score(actual_labels, predicted_labels, average = 'weighted')
-        print(f"Accuracy: {self.accuracy:.4f}")
-        print(f"Precision: {precision:.4f}")
-        print(f"Recall: {recall:.4f}")
-        print(f"F1 Score: {f1:.4f}")
+        # print(f"예측 성공률: {success_rate:.2f}%")
+        # accuracy = accuracy_score(actual_labels, predicted_labels)
+        # precision = precision_score(actual_labels, predicted_labels, average = 'weighted')
+        # recall = recall_score(actual_labels, predicted_labels, average = 'weighted')
+        # f1 = f1_score(actual_labels, predicted_labels, average = 'weighted')
+        # print(f"Accuracy: {accuracy:.4f}")
+        # print(f"Precision: {precision:.4f}")
+        # print(f"Recall: {recall:.4f}")
+        # print(f"F1 Score: {f1:.4f}")
 
 
 
@@ -540,22 +540,34 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
         # 성능 평가
         y_pred = self.model.predict(X_test_scaled)
-        if not self.index == 5:
+        if self.index != 5:
+            # 주요 평가지표 계산
             accuracy = accuracy_score(y_test, y_pred)
+            precision = precision_score(y_test, y_pred, average='weighted')
+            recall = recall_score(y_test, y_pred, average='weighted')
+            f1 = f1_score(y_test, y_pred, average='weighted')
+
+            # 출력 및 저장
+            print(f"Accuracy: {accuracy:.4f}")
+            print(f"Precision: {precision:.4f}")
+            print(f"Recall: {recall:.4f}")
+            print(f"F1 Score: {f1:.4f}")
+
+            self.accuracy = accuracy
             self.y_pred = y_pred
 
-            print("Model accuracy:", accuracy)
-            message = "Model accuracy: " + str(accuracy)
-            self.accuracy = accuracy
-
+            message = f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1 Score: {f1:.4f}"
             self.show_alert(message)
-        else :
-            mae = mean_absolute_error(y_test, y_pred)  # Mean Absolute Error
-            mse = mean_squared_error(y_test, y_pred)  # Mean Squared Error
-            rmse = np.sqrt(mse)  # Root Mean Squared Error
+        else:
+            # 회귀 모델 평가지표
+            mae = mean_absolute_error(y_test, y_pred)
+            mse = mean_squared_error(y_test, y_pred)
+            rmse = np.sqrt(mse)
             r2 = r2_score(y_test, y_pred)
-            print("Model accuracy:", mae)
-            message = "Model accuracy: " + str(mae)+","+ str(mse)+ ","+str(rmse)+","+str(r2)
+
+            print(f"MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}, R2: {r2:.4f}")
+
+            message = f"MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}, R2: {r2:.4f}"
             self.show_message_box(message)
             accuracy = r2
 
