@@ -532,8 +532,13 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             self.model = grid_search.best_estimator_
 
         elif self.index == 4:  # Logistic Regression
-            self.model = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial')
-            self.model.fit(X_train_scaled, y_train, class_weight=sample_weights)
+            class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(y_train), y=y_train)
+            class_weight_dict = dict(zip(np.unique(y_train), class_weights))
+
+            # LogisticRegression에 전달
+            self.model = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial',
+                                            class_weight=class_weight_dict)
+            self.model.fit(X_train_scaled, y_train)
 
         # Model evaluation
         y_pred = self.model.predict(X_test_scaled)

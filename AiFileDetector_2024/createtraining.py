@@ -1260,6 +1260,11 @@ class createtrainclass(QMainWindow, form_class):
     @staticmethod
     def calculate_simhash_lib(value):
         try:
+            value = int(value)
+        except:
+            pass
+
+        try:
             if value in [0, None, ""] or (isinstance(value, float) and math.isnan(value)):
                 return -99999999
         except Exception as e:
