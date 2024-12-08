@@ -1527,6 +1527,7 @@ class createtrainclass(QMainWindow, form_class):
             model_features = json.load(f)
         oridf = df
         df = self.post_process(df)
+        oridf2 = df
         # Add missing features with default value 0
 
 
@@ -1542,12 +1543,13 @@ class createtrainclass(QMainWindow, form_class):
         # Apply Simhash transformation (assuming apply_simhash is defined)
         df = self.apply_simhash(df)
         ori_df = df.columns
+        ori2df = df
         # Align df with the scaler's features by reordering
         scaler_features = self.scaler.feature_names_in_
         for feature in model_features:
             if feature not in df.columns:
-                df[feature] = -111111111  # Add missing features with 0
-
+                df[feature] = -99999999  # Add missing features with 0
+        ori3df = df
         df = df.reindex(columns=scaler_features)  # Fill missing features with 0
 
         # Scale features and predict

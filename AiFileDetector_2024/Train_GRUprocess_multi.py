@@ -478,7 +478,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         self.scaler = MinMaxScaler()
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
-
+        X_scaled = self.scaler.transform(X)
         # Define parameter grids
         params_xgb = {
             'max_depth': [2, 3, 4, 5, 6, 7, 8],
@@ -513,10 +513,10 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             self.model = grid_search.best_estimator_
 
         elif self.index == 2:  # RandomForest
-            self.model = RandomForestClassifier()
+            self.model = RandomForestClassifier(class_weight=class_weight_dict)
             grid_search = RandomizedSearchCV(self.model, params_rf, n_iter=10, cv=3, scoring='accuracy',
                                              random_state=42)
-            grid_search.fit(X_train_scaled, y_train, class_weight=class_weight_dict)
+            grid_search.fit(X_train_scaled, y_train)
             self.model = grid_search.best_estimator_
 
         elif self.index == 3:  # LightGBM
