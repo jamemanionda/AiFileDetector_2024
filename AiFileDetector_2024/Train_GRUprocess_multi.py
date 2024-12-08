@@ -158,6 +158,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
     def gotrain(self, classmode, model, trainindex, csv_path):
         self.model = model
         print("***ver2. 다중분류 시작***")
+        print("선택한 모델 : ", self.aimodel)
+
         self.csv_path = csv_path
         self.classmode = classmode
         self.index = trainindex
