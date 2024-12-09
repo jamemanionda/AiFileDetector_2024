@@ -562,6 +562,11 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
         # Print results
         print("Prediction Results:")
+
+        pd.set_option('display.width', 1000)
+
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
         print(results_df)
 
         # Confusion Matrix
