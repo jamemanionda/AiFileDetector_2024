@@ -13,68 +13,42 @@ def extractGOP(video_file):
     if video_file.endswith(('.mp4','.MP4','.mov','.MOV')):
         input_video = os.path.join(video_folder, video_file)
 
-        # Step 3: Extract frame types from the video
         result = subprocess.run(
             ['ffprobe', '-v', 'error', '-select_streams', 'v', '-show_frames', '-of', 'json', input_video],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
-        )
+            text=True )
 
         frame_data = json.loads(result.stdout)
-        frame_types_string = ""  # Initialize a string to store frame types
+        frame_types_string = ""
 
         if 'frames' in frame_data:
             frames = frame_data['frames']
             for frame in frames:
                 if 'pict_type' in frame:
-                    # Append frame type to the string
                     frame_types_string += frame['pict_type']
         else:
-            print(f"No frames found or error in extracting frames for {video_file}.")
+            print(f"추출 불가")
 
-        print(f"Frame Types String for {video_file}: {frame_types_string}")  # Output the constructed frame types string
 
-        # Step 4: Parse the frame_types_string to count 'P' frames after each 'I'
-        p_counts = []  # List to store the number of 'P' frames between 'I' frames
+        p_counts = []
         count = 0
         for i in range(len(frame_types_string)):
             if frame_types_string[i] == 'I':
-                if count > 0:  # Add the previous count if there was an 'I' before
+                if count > 0:
                     p_counts.append(count)
-                count = 0  # Reset count after each 'I'
+                count = 0
             elif frame_types_string[i] == 'P':
                 count += 1
 
         if count > 0:
-            p_counts.append(count)  # Add the last count if any
+            p_counts.append(count)
 
-        # Print out the counts of 'P' frames after each 'I' frame
+        # I프레임 뒤에 P, B 프레임만 모음
         for idx, p_count in enumerate(p_counts):
             framestr = f"I frame {idx + 1}: P frames count = {p_count}"
 
-
-
-        # Step 5: Update Excel file with GOP information
-
-        #video_name = video_file  # Extract just the filename
-
-        # Find the row index where the video name matches input_video
-        #row_index = df[df['Name'] == video_name].index
-
-        #if not row_index.empty:
-            # Update the 'GOP' column with the frame_types_string
-        #    df.at[row_index[0], 'GOP'] = frame_types_string
-        #    print(f"GOP updated for {video_name} in CSV.")
-        #    print(f"*************************************")
-        #else:
-            # Add a new row with the video name and GOP information
-        #    new_row = pd.DataFrame({'Name': [video_name], 'GOP': [frame_types_string]})
-        #    df = pd.concat([df, new_row], ignore_index=True)
-        #    print(f"Video {video_name} not found in CSV. Added new entry with GOP data.")
     frame_types_string = extract_pattern_with_repeats_lcs(frame_types_string)
-    print(frame_types_string)
-        #df.to_csv(excel_file, index=False)
     return frame_types_string
 
 def extract_pattern_with_repeats_lcs(s):

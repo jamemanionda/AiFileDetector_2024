@@ -10,10 +10,10 @@ from keras.regularizers import l2
 from lightgbm import LGBMClassifier
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, confusion_matrix, classification_report, \
-    precision_score, recall_score, f1_score
+    precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder, StandardScaler, LabelBinarizer
 from tensorflow import keras
 import numpy as np
 from keras import Sequential
@@ -171,11 +171,11 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             pass
         self.extension = os.path.basename(os.path.dirname(self.csv_path))
         # 훈련 데이터와 테스트 데이터로 분할
-        df_train, df_test = train_test_split(df, test_size=0.25, random_state=42)
+        #df_train, df_test = train_test_split(df, test_size=0.25, random_state=42)
 
         # 훈련 데이터 전처리
         #df_train = df_train.drop(columns='label')
-        df_train_processed = self.apply_simhash(df_train)
+        df_train_processed = self.apply_simhash(df)
 
         # 모델 훈련
         self.train_model(df_train_processed)
@@ -184,42 +184,43 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         #print("베이스라인 정확도", baseline_accuracy)
         print(f"----------validation--------------")
         self.save_model2()
-        self.original_df_test = df_test
-        df_test = df_test.drop(columns='label')
-        df_test_processed = self.apply_simhash(df_test)
-
-        predicted_data = self.predict_data(df_test_processed)
-        predicted_datalabel = predicted_data['label']
-        results, success_failure, results_df = self.analyze_prediction(predicted_data, self.original_df_test[['name', 'label']])
-        actual_labels = self.original_df_test['label']
-        actual_labels = actual_labels.astype(int)
-        predicted_labels = predicted_datalabel
-
-        conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
-        print(conf_matrix)
-
-        pd.set_option('display.width', 1000)
-
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
-        #print(success_failure)
-        print(results_df)
+        # self.original_df_test = df_test
+        # df_test = df_test.drop(columns='label')
+        # df_test_processed = self.apply_simhash(df_test)
         #
-        # # 예측 성공률 계산
+        # predicted_data = self.predict_data(df_test_processed)
+        # predicted_datalabel = predicted_data['label']
+        # results, success_failure, results_df = self.analyze_prediction(predicted_data, self.original_df_test[['name', 'label']])
+        # actual_labels = self.original_df_test['label']
+        # actual_labels = actual_labels.astype(int)
+        # predicted_labels = predicted_datalabel
         #
-        total = len(results_df)
-        success = sum([1 for row in success_failure.values() if "예측 성공" in row])
-        success_rate = (success / total) * 100
+        # conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
+        # print(conf_matrix)
+        #
+        # pd.set_option('display.width', 1000)
+        #
+        # pd.set_option('display.max_rows', None)
+        # pd.set_option('display.max_columns', None)
+        # #print(success_failure)
+        # print(results_df)
+        # #
+        # # # 예측 성공률 계산
+        # #
+        # total = len(results_df)
+        # success = sum([1 for row in success_failure.values() if "예측 성공" in row])
+        # success_rate = (success / total) * 100
+        #
+        # print(f"예측 성공률: {success_rate:.2f}%")
+        # accuracy = accuracy_score(actual_labels, predicted_labels)
+        # precision = precision_score(actual_labels, predicted_labels, average = 'weighted')
+        # recall = recall_score(actual_labels, predicted_labels, average = 'weighted')
+        # f1 = f1_score(actual_labels, predicted_labels, average = 'weighted')
+        # print(f"Accuracy: {accuracy:.4f}")
+        # print(f"Precision: {precision:.4f}")
+        # print(f"Recall: {recall:.4f}")
+        # print(f"F1 Score: {f1:.4f}")
 
-        print(f"예측 성공률: {success_rate:.2f}%")
-        accuracy = accuracy_score(actual_labels, predicted_labels)
-        precision = precision_score(actual_labels, predicted_labels, average = 'weighted')
-        recall = recall_score(actual_labels, predicted_labels, average = 'weighted')
-        f1 = f1_score(actual_labels, predicted_labels, average = 'weighted')
-        print(f"Accuracy: {accuracy:.4f}")
-        print(f"Precision: {precision:.4f}")
-        print(f"Recall: {recall:.4f}")
-        print(f"F1 Score: {f1:.4f}")
 
 
 
@@ -470,6 +471,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         names = df['name']
         labels = df['label']
         X = df.drop(columns=['label', 'name'])
+
         y = labels.astype("int")
 
         # Train-test split
@@ -527,7 +529,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
             scale_pos_weight_dict = {i: weight for i, weight in enumerate(class_weights)}
 
-            # Initialize the LightGBM model with scale_pos_weight
             self.model = LGBMClassifier(objective='multiclass', class_weight='balanced')
             grid_search = RandomizedSearchCV(self.model, params_lgbm, n_iter=10, cv=3, scoring='accuracy',
                                              random_state=42)
@@ -574,6 +575,33 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         print("Confusion Matrix:")
         print(conf_matrix)
 
+        y_scores = self.model.predict_proba(X_test_scaled)
+        lb = LabelBinarizer()
+        y_test_binarized = lb.fit_transform(y_test)
+
+        # Align y_scores with the expected output
+        # Ensure y_scores has the same number of columns as unique classes in y_train
+        if y_scores.shape[1] != len(lb.classes_):
+            # Add missing classes with zero probabilities
+            full_scores = np.zeros((y_scores.shape[0], len(lb.classes_)))
+            for idx, cls in enumerate(lb.classes_):
+                if cls in self.model.classes_:
+                    full_scores[:, idx] = y_scores[:, list(self.model.classes_).index(cls)]
+            y_scores = full_scores
+
+        # Compute AUROC
+        auroc = roc_auc_score(y_test_binarized, y_scores, multi_class='ovo', average='weighted')
+
+        # AUPR (multi-class)
+        from sklearn.metrics import average_precision_score
+        aupr = average_precision_score(y_test, y_scores, average='weighted')
+
+        self.auroc = auroc
+        self.aupr = aupr
+
+        print(f"AUROC: {auroc:.6f}")
+        print(f"AUPR: {aupr:.6f}")
+
         # Print evaluation metrics
         if self.index != 5:
             accuracy = accuracy_score(y_test_labels, y_pred)
@@ -581,7 +609,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             recall = recall_score(y_test_labels, y_pred, average='weighted')
             f1 = f1_score(y_test_labels, y_pred, average='weighted')
 
-            print(f"Accuracy: {accuracy:.4f}")
+            #print(f"Accuracy: {accuracy:.4f}")
             print(f"Precision: {precision:.4f}")
             print(f"Recall: {recall:.4f}")
             print(f"F1 Score: {f1:.4f}")
@@ -591,6 +619,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
             message = f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1 Score: {f1:.4f}"
             self.show_alert(message)
+
+
         else:
             # 회귀 모델 평가지표
             mae = mean_absolute_error(y_test, y_pred)

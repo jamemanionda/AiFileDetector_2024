@@ -18,7 +18,6 @@ def analyzesps(file_path):
             capture_output=True,
             text=True
         )
-
         # 실행 결과 확인
         if result.returncode != 0:
             print("Error:", result.stderr)

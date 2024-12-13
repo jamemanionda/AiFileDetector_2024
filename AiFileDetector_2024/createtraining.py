@@ -624,7 +624,6 @@ class createtrainclass(QMainWindow, form_class):
     def feature_dictionary(self, hexa):
 
         array10 = []
-
         # 엑셀 파일에서 데이터 읽어오기 (엑셀 파일 경로를 설정해 주세요)
         excel_file = str(self.extension + '\\' + '_dict.xlsx')  # 엑셀 파일 경로
         self.resource_path(excel_file)
@@ -632,9 +631,7 @@ class createtrainclass(QMainWindow, form_class):
 
         # 엑셀 데이터를 딕셔너리로 변환 (엑셀 파일의 첫 번째 열을 key로, 두 번째 열을 value로)
         newdict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
-
         result = hexa
-
         # newdict의 value가 result[1]에 있으면 key를 array10에 추가
         for key, value in newdict.items():
             if value in result[1]:
@@ -800,9 +797,9 @@ class createtrainclass(QMainWindow, form_class):
                             f.seek(0,1)
                             continue
 
-                        if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
+                        if box_size == 0:
                             break
-                        elif box_size == 1:  # 실제 크기는 다음 8Bytes에 저장됨
+                        elif box_size == 1:
                             large_size = f.read(8)
                             actual_box_size = struct.unpack(">Q", large_size)[0]
                         else:
@@ -811,7 +808,7 @@ class createtrainclass(QMainWindow, form_class):
                         box_end_position = f.tell() + (actual_box_size - 8 if box_size == 1 else box_size - 8)
 
                         if box_type in ('moov', 'trak', 'mdia', 'minf', 'stbl', 'udta', 'edts', 'moof', 'traf'):
-                            # 컨테이너 Box 처리
+                            # 컨테이너 Box 처리(메타데이터 없이 하위박스 구조만 가진 경우)
                             parse_box(f, box_end_position, depth + 1, max_depth)
                         else:  # 컨테이너가 아닌 Box 처리
                             if box_type == 'mdat':
