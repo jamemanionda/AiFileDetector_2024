@@ -406,8 +406,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         try :
             if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
                 model, accuracy = self.ensemble(df)
-                message = f"정확도 {accuracy}%로 학습되었습니다."
-                self.show_alert(message)
+                #message = f"정확도 {accuracy}%로 학습되었습니다."
+                #self.show_alert(message)
             elif self.index == 1:
                 self.lstm(df)
         except Exception as e:
@@ -506,8 +506,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
         class_weight_dict = dict(enumerate(class_weights))
 
-        # Select and train the model based on self.index
-        # Select and train the model based on self.index
         sample_weights = y_train.map(lambda x: class_weight_dict[x])
         if self.index == 0:  # XGBoost
 
@@ -527,12 +525,21 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         elif self.index == 3:  # LightGBM
 
             class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
-            scale_pos_weight_dict = {i: weight for i, weight in enumerate(class_weights)}
+            class_weight_dict = dict(zip(np.unique(y_train), class_weights))
 
-            self.model = LGBMClassifier(objective='multiclass', class_weight='balanced')
-            grid_search = RandomizedSearchCV(self.model, params_lgbm, n_iter=10, cv=3, scoring='accuracy',
-                                             random_state=42)
-            grid_search.fit(X_train_scaled, y_train)  # No scale_pos_weight here
+            # LightGBM 모델 초기화
+            base_model = LGBMClassifier(objective='multiclass', class_weight=class_weight_dict, random_state=42)
+
+            # RandomizedSearchCV로 하이퍼파라미터 튜닝
+            grid_search = RandomizedSearchCV(
+                base_model,
+                params_lgbm,
+                n_iter=10,
+                cv=3,
+                scoring='accuracy',
+                random_state=42
+            )
+            grid_search.fit(X_train_scaled, y_train)
             self.model = grid_search.best_estimator_
 
         elif self.index == 4:  # Logistic Regression
@@ -858,8 +865,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         """모델 저장"""
         if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
 
-
-
             folder_path = os.getcwd()
             pklname = os.path.join(folder_path, str(self.csv_path+"_" + self.aimodel + "model.pkl"))
             joblib.dump(self.model, pklname)
@@ -868,7 +873,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             with open(self.scalername, 'wb') as f:
                 joblib.dump(self.scaler, f)
                 f.close()
-
 
 
         elif self.index == 1:
@@ -896,14 +900,6 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         y_pred = baseline_model.predict(X_test_scaled)
         accuracy = accuracy_score(y_test, y_pred)
         print("Baseline Model accuracy:", accuracy)
-
-        # cm = confusion_matrix(y_test, y_pred)d
-
-        # sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-        # plt.xlabel('Predicted')
-        # plt.ylabel('True')
-        # plt.title('Baseline Model Confusion Matrix')
-        #plt.show()
 
         print("Classification Report:")
         print(classification_report(y_test, y_pred))

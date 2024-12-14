@@ -161,7 +161,7 @@ class createtrainclass(QMainWindow, form_class):
         try :
             file_name = os.path.basename(self.csv_path)
             self.csvlabel.setText(file_name)
-            self.caselabel.setText(self.case_direc)
+            self.caselabel.setText(self.case_direc[:10])
         except Exception as e:
             pass
         # 헤더 설정
