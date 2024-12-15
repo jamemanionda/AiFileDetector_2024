@@ -612,19 +612,36 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         # Print evaluation metrics
         if self.index != 5:
             accuracy = accuracy_score(y_test_labels, y_pred)
-            precision = precision_score(y_test_labels, y_pred, average='weighted')
-            recall = recall_score(y_test_labels, y_pred, average='weighted')
-            f1 = f1_score(y_test_labels, y_pred, average='weighted')
+            weightedprecision = precision_score(y_test_labels, y_pred, average='weighted')
+            microprecision = precision_score(y_test_labels, y_pred, average='micro')
+            macroprecision = precision_score(y_test_labels, y_pred, average='macro')
+            weightedrecall = recall_score(y_test_labels, y_pred, average='weighted')
+            microrecall = recall_score(y_test_labels, y_pred, average='micro')
+            macrorecall = recall_score(y_test_labels, y_pred, average='macro')
+            weightedf1 = f1_score(y_test_labels, y_pred, average='weighted')
+            microf1 = f1_score(y_test_labels, y_pred, average='micro')
+            macrof1 = f1_score(y_test_labels, y_pred, average='macro')
 
-            #print(f"Accuracy: {accuracy:.4f}")
-            print(f"Precision: {precision:.4f}")
-            print(f"Recall: {recall:.4f}")
-            print(f"F1 Score: {f1:.4f}")
+            print(f"Accuracy: {accuracy:.4f}")
 
+            print("*********Precision*************")
+            print(f"wightedPrecision: {weightedprecision:.4f}")
+            print(f"microPrecision: {microprecision:.4f}")
+            print(f"macroPrecision: {macroprecision:.4f}")
+
+            print("*********Recall*************")
+            print(f"wightedRecall: {weightedrecall:.4f}")
+            print(f"microRecall: {microrecall:.4f}")
+            print(f"macroRecall: {macrorecall:.4f}")
+
+            print("*********f1score*************")
+            print(f"weightedF1 Score: {weightedf1:.4f}")
+            print(f"microF1 Score: {microf1:.4f}")
+            print(f"macroF1 Score: {macrof1:.4f}")
             self.accuracy = accuracy
             self.y_pred = y_pred
 
-            message = f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1 Score: {f1:.4f}"
+            message = f"Accuracy: {accuracy:.4f}, Precision: {weightedprecision:.4f}, Recall: {weightedrecall:.4f}, F1 Score: {weightedf1:.4f}"
             self.show_alert(message)
 
 
@@ -689,7 +706,9 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         with open(jsonpath, 'w') as f:
             json.dump(self.feature_list, f)
 
-
+        print("******************은지********************")
+        print(recall_score(y_test_labels, y_pred, average=None))  # 클래스별 Recall
+        print(classification_report(y_test_labels, y_pred))
 
 
         return self.model, accuracy
