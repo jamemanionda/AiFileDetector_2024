@@ -715,9 +715,9 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         with open(jsonpath, 'w') as f:
             json.dump(self.feature_list, f)
 
-        print("******************은지********************")
-        print(recall_score(y_test_labels, y_pred, average=None))  # 클래스별 Recall
-        print(classification_report(y_test_labels, y_pred))
+        # print("******************은지********************")
+        # print(recall_score(y_test_labels, y_pred, average=None))  # 클래스별 Recall
+        # print(classification_report(y_test_labels, y_pred))
 
 
         return self.model, accuracy
