@@ -626,22 +626,31 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
 
             print("*********Precision*************")
             print(f"wightedPrecision: {weightedprecision:.4f}")
-            #print(f"microPrecision: {microprecision:.4f}")
-            #print(f"macroPrecision: {macroprecision:.4f}")
+            print(f"microPrecision: {microprecision:.4f}")
+            print(f"macroPrecision: {macroprecision:.4f}")
 
             print("*********Recall*************")
-            #print(f"wightedRecall: {weightedrecall:.4f}")
-            #print(f"microRecall: {microrecall:.4f}")
+            print(f"wightedRecall: {weightedrecall:.4f}")
+            print(f"microRecall: {microrecall:.4f}")
             print(f"macroRecall: {macrorecall:.4f}")
 
             print("*********f1score*************")
             print(f"weightedF1 Score: {weightedf1:.4f}")
-            #print(f"microF1 Score: {microf1:.4f}")
-            #print(f"macroF1 Score: {macrof1:.4f}")
+            print(f"microF1 Score: {microf1:.4f}")
+            print(f"macroF1 Score: {macrof1:.4f}")
             self.accuracy = accuracy
             self.y_pred = y_pred
 
-            message = f"Accuracy: {accuracy:.4f}, Precision: {weightedprecision:.4f}, Recall: {weightedrecall:.4f}, F1 Score: {weightedf1:.4f}"
+            print("**************************")
+            print("**************************")
+            print("**************************")
+            print(f"Accuracy: {accuracy:.4f}")
+            print(f"macroPrecision: {macroprecision:.4f}")
+            print(f"macroRecall: {macrorecall:.4f}")
+            print(f"macroF1 Score: {macrof1:.4f}")
+
+
+            message = f"Accuracy: {accuracy:.4f}, Precision: {macroprecision:.4f}, Recall: {macrorecall:.4f}, F1 Score: {macrof1:.4f}"
             self.show_alert(message)
 
 
