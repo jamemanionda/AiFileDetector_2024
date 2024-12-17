@@ -644,6 +644,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             print("**************************")
             print("**************************")
             print("**************************")
+            print(f"AUROC: {auroc:.6f}")
+            print(f"AUPR: {aupr:.6f}")
             print(f"Accuracy: {accuracy:.4f}")
             print(f"macroPrecision: {macroprecision:.4f}")
             print(f"macroRecall: {macrorecall:.4f}")
