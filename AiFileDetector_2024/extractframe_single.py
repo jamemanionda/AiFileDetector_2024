@@ -125,4 +125,3 @@ def find_lcs(str1, str2):
 
 
 
-extractGOP('Y:\\version2\\앱폴더분류\\dream_I\\dream_i_017.MP4')
