@@ -10,7 +10,7 @@ class columnclass():
 
         while 1:
             csv_path1 = self.showFileDialog()
-            csv_path2 = "C:\\Users\\User\\PycharmProjects\AiFileDetector_2024\\AiFileDetector_2024\\Cases\\백업\\val+seq+gop+sps\\_train_2412011610_processed_.csv"
+            csv_path2 = "Y:\\4차\\GOP기준\\_train_2412011610_processed_.csv"
             result_csv = f'adjustGOP_{csv_path1}'
             self.update_csv_with_gop(csv_path1, csv_path2, result_csv)
 
