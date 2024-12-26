@@ -1,3 +1,4 @@
+import os
 import sys
 
 import pandas as pd
@@ -10,8 +11,10 @@ class columnclass():
 
         while 1:
             csv_path1 = self.showFileDialog()
+            directory, filename = os.path.split(csv_path1)
             csv_path2 = "Y:\\4차\\GOP기준\\_train_2412011610_processed_.csv"
-            result_csv = f'adjustGOP_{csv_path1}'
+            result_csv = f'adjustGOP_{filename}'
+            csv_path1 = os.path.join(directory, result_csv)
             self.update_csv_with_gop(csv_path1, csv_path2, result_csv)
 
     def showFileDialog(self):
