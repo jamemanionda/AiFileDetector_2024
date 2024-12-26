@@ -8,6 +8,8 @@ class columnclass():
     def __init__(self):
         super(columnclass, self).__init__()
 
+
+
     def showFileDialog(self):
         # 파일 다이얼로그를 띄워서 파일 선택
         csv_path, _ = QFileDialog.getOpenFileName()

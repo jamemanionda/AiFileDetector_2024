@@ -29,7 +29,7 @@ def extractGOP(video_file):
                     frame_types_string += frame['pict_type']
         else:
             print(f"추출 불가")
-
+        print(frame_types_string)
 
         p_counts = []
         count = 0
@@ -48,7 +48,8 @@ def extractGOP(video_file):
         for idx, p_count in enumerate(p_counts):
             framestr = f"I frame {idx + 1}: P frames count = {p_count}"
 
-    frame_types_string = extract_pattern_with_repeats_lcs(frame_types_string)
+        #frame_types_string = extract_pattern_with_repeats_lcs(frame_types_string)
+        print(frame_types_string)
     return frame_types_string
 
 def extract_pattern_with_repeats_lcs(s):
@@ -124,4 +125,4 @@ def find_lcs(str1, str2):
 
 
 
-print("CSV file updated successfully.")
+extractGOP('Y:\\version2\\앱폴더분류\\dream_I\\dream_i_017.MP4')

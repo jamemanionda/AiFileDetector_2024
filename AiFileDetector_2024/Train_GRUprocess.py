@@ -4,15 +4,13 @@ import plotly.express as px
 import pyautogui
 import seaborn as sns
 from PyQt5.QtCore import Qt
-from keras.optimizers import Adam
-from keras.regularizers import l2
 from lightgbm import LGBMClassifier
 from matplotlib import pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, confusion_matrix, classification_report, \
-    precision_score, recall_score, f1_score
+    precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder, OneHotEncoder, StandardScaler, LabelBinarizer
 from tensorflow import keras
 import numpy as np
 from keras import Sequential
@@ -40,6 +38,7 @@ class twoTrainClass():
         self.csv_path = csv_path
         self.classmode = classmode
         print("***이진분류 시작***")
+        print("선택한 모델 : ", model)
         df, _ = self.preprocess_data(self.csv_path, is_train=True)
         try:
             df= df.drop(columns='md5')
@@ -47,74 +46,74 @@ class twoTrainClass():
             pass
         self.extension = os.path.basename(os.path.dirname(self.csv_path))
         # 훈련 데이터와 테스트 데이터로 분할
-        df_train, df_test = train_test_split(df, test_size=0.25, random_state=42)
+        #df_train, df_test = train_test_split(df, test_size=0.25, random_state=42)
 
         # 훈련 데이터 전처리
         # df_train = df_test.drop(columns='label')
-        df_train_processed = self.apply_simhash(df_train)
+        df_train_processed = self.apply_simhash(df)
 
-        self.feature_list = df_train.drop(columns=['label']).columns.tolist()
+        #self.feature_list = df_train_processed.drop(columns=['label']).columns.tolist()
 
         # 모델 훈련
         self.train_model(df_train_processed)
-        baseline_model, baseline_accuracy = self.train_baseline_model(df_train_processed)
+        #baseline_model, baseline_accuracy = self.train_baseline_model(df_train_processed)
 
-        print("베이스라인 정확도", baseline_accuracy)
+        #print("베이스라인 정확도", baseline_accuracy)
 
         self.save_model2()
-        self.original_df_test = df_test
-        df_test = df_test.drop(columns='label')
+        #self.original_df_test = df_test
+        #df_test = df_test.drop(columns='label')
 
         # 테스트 데이터 전처리
-        df_test_processed = self.apply_simhash(df_test)
+        #df_test_processed = self.apply_simhash(df_test)
 
         # 추후 변경 필요 --> 파일이름을 피처 반영되게 / csv_path랑 동일 경로에 feature.json저장
-        jsonpath = os.path.join(os.path.dirname(csv_path), "feature.json")
-        with open(jsonpath, 'w') as f:
-            json.dump(self.feature_list, f)
+        # jsonpath = os.path.join(os.path.dirname(csv_path), "feature.json")
+        # with open(jsonpath, 'w') as f:
+        #     json.dump(self.feature_list, f)
 
         # 모델 로드 및 테스트 데이터 예측
         # self.load_model2()
-        predicted_data = self.predict_data(df_test_processed)
-        predicted_datalabel = predicted_data['label']
-        results, success_failure, results_df = self.analyze_prediction(predicted_data,
-
-                                                                                    self.original_df_test[['name', 'label']])
-        actual_labels = self.original_df_test['label']
-        actual_labels = actual_labels.astype(int)
-        predicted_labels = predicted_datalabel
+        # predicted_data = self.predict_data(df_test_processed)
+        # predicted_datalabel = predicted_data['label']
+        # results, success_failure, results_df = self.analyze_prediction(predicted_data,
+        #
+        #                                                                             self.original_df_test[['name', 'label']])
+        # actual_labels = self.original_df_test['label']
+        # actual_labels = actual_labels.astype(int)
+        # predicted_labels = predicted_datalabel
 
 
         #conf_matrix = self.confusion_matrix2(actual_labels, predicted_labels)
         #print(conf_matrix)
-        pd.set_option('display.width', 1000)
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
-        print(results_df)
-        print(success_failure)
-        try:
-            print(self.importance_df)
-        except:
-            pass
-
-
-        # 예측 성공률 계산
-
-        total = len(results_df)
-        success = sum([1 for row in success_failure.values() if "성공" in row])
-        success_rate = (success / total) * 100
-        print(f"예측 성공률: {success_rate:.2f}%")
-
-        if self.index == 4:
-            threshold = 0.5
-            predicted_labels = [1 if y >= threshold else 0 for y in predicted_labels]
-        precision = precision_score(actual_labels, predicted_labels, average='weighted')
-        recall = recall_score(actual_labels, predicted_labels, average='weighted')
-        f1 = f1_score(actual_labels, predicted_labels, average='weighted')
-        print(f"Accuracy: {self.accuracy:.4f}")
-        print(f"Precision: {precision:.4f}")
-        print(f"Recall: {recall:.4f}")
-        print(f"F1 Score: {f1:.4f}")
+        # pd.set_option('display.width', 1000)
+        # pd.set_option('display.max_rows', None)
+        # pd.set_option('display.max_columns', None)
+        # print(results_df)
+        # print(success_failure)
+        # try:
+        #     print(self.importance_df)
+        # except:
+        #     pass
+        #
+        #
+        # # 예측 성공률 계산
+        #
+        # total = len(results_df)
+        # success = sum([1 for row in success_failure.values() if "성공" in row])
+        # success_rate = (success / total) * 100
+        # print(f"예측 성공률: {success_rate:.2f}%")
+        #
+        # if self.index == 4:
+        #     threshold = 0.5
+        #     predicted_labels = [1 if y >= threshold else 0 for y in predicted_labels]
+        # precision = precision_score(actual_labels, predicted_labels, average='weighted')
+        # recall = recall_score(actual_labels, predicted_labels, average='weighted')
+        # f1 = f1_score(actual_labels, predicted_labels, average='weighted')
+        # print(f"Accuracy: {self.accuracy:.4f}")
+        # print(f"Precision: {precision:.4f}")
+        # print(f"Recall: {recall:.4f}")
+        # print(f"F1 Score: {f1:.4f}")
 
     def train_model(self, df):
         try :
@@ -353,13 +352,16 @@ class twoTrainClass():
 
     def ensemble(self, df):
         """이진분류를 위한 앙상블 모델 구성"""
+        names = df['name']
         X = df.drop(columns=['label', 'name'])
 
         # 'label' 컬럼을 출력 변수로 설정
         y = df['label'].astype("int")
 
         # 데이터 분할
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+        X_train, X_test, y_train, y_test, names_train, names_test = train_test_split(
+            X, y, names, test_size=0.25, random_state=42
+        )
 
         # MinMaxScaler로 정규화
         self.scaler = MinMaxScaler()
@@ -381,30 +383,165 @@ class twoTrainClass():
         # 모델 훈련
         self.model.fit(X_train_scaled, y_train)
 
-        # 성능 평가
-        y_pred = self.model.predict(X_test_scaled)
-        if self.index == 4:
-            threshold = 0.5
-            y_pred = [1 if y >= threshold else 0 for y in y_pred]
-        accuracy = accuracy_score(y_test, y_pred)
-        message = f"정확도 {accuracy}%로 학습되었습니다."
-        self.show_alert(message)
-        print(f"Model Accuracy: {accuracy:.2f}")
-        self.accuracy = accuracy
 
-        if hasattr(self.model, 'feature_importances_'):
-            feature_importances = self.model.feature_importances_
+        y_pred = self.model.predict(X_test_scaled)
+        y_test_labels = y_test.astype(int)
+        # Combine test data with predicted labels
+        df_test = pd.DataFrame(X_test, columns=X.columns)
+        df_test['name'] = names_test.values
+        df_test['label'] = y_pred
+
+        # Original labels for comparison
+        original_labels = pd.DataFrame({
+            'name': names_test.values,
+            'label': y_test.values
+        })
+
+        # Analyze prediction using the provided function
+        results, success_failure, results_df = self.analyze_prediction(df_test, original_labels)
+
+        # Print results
+        print("Prediction Results:")
+
+        pd.set_option('display.width', 1000)
+
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        print(results_df)
+
+        # Confusion Matrix
+        conf_matrix = confusion_matrix(y_test_labels, y_pred)
+        print("Confusion Matrix:")
+        print(conf_matrix)
+
+
+        y_scores = self.model.predict_proba(X_test_scaled)
+        y_scores_positive = y_scores[:, 1]
+        lb = LabelBinarizer()
+        y_test_binarized = lb.fit_transform(y_test)
+
+        # Align y_scores with the expected output
+        # Ensure y_scores has the same number of columns as unique classes in y_train
+        if y_scores.shape[1] != len(lb.classes_):
+            # Add missing classes with zero probabilities
+            full_scores = np.zeros((y_scores.shape[0], len(lb.classes_)))
+            for idx, cls in enumerate(lb.classes_):
+                if cls in self.model.classes_:
+                    full_scores[:, idx] = y_scores[:, list(self.model.classes_).index(cls)]
+            y_scores = full_scores
+
+        # Compute AUROC
+        auroc = roc_auc_score(y_test_binarized, y_scores_positive)
+
+        # AUPR (multi-class)
+        from sklearn.metrics import average_precision_score
+        aupr = average_precision_score(y_test_binarized, y_scores_positive)
+
+        self.auroc = auroc
+        self.aupr = aupr
+
+        print(f"AUROC: {auroc:.6f}")
+        print(f"AUPR: {aupr:.6f}")
+
+        # Print evaluation metrics
+        if self.index != 5:
+            accuracy = accuracy_score(y_test_labels, y_pred)
+            weightedprecision = precision_score(y_test_labels, y_pred)
+            microprecision = precision_score(y_test_labels, y_pred)
+            macroprecision = precision_score(y_test_labels, y_pred)
+            weightedrecall = recall_score(y_test_labels, y_pred)
+            microrecall = recall_score(y_test_labels, y_pred)
+            macrorecall = recall_score(y_test_labels, y_pred)
+            weightedf1 = f1_score(y_test_labels, y_pred)
+            microf1 = f1_score(y_test_labels, y_pred)
+            macrof1 = f1_score(y_test_labels, y_pred)
+
+            print(f"Accuracy: {accuracy:.4f}")
+
+            print("*********Precision*************")
+            print(f"wightedPrecision: {weightedprecision:.4f}")
+            print(f"microPrecision: {microprecision:.4f}")
+            print(f"macroPrecision: {macroprecision:.4f}")
+
+            print("*********Recall*************")
+            print(f"wightedRecall: {weightedrecall:.4f}")
+            print(f"microRecall: {microrecall:.4f}")
+            print(f"macroRecall: {macrorecall:.4f}")
+
+            print("*********f1score*************")
+            print(f"weightedF1 Score: {weightedf1:.4f}")
+            print(f"microF1 Score: {microf1:.4f}")
+            print(f"macroF1 Score: {macrof1:.4f}")
+            self.accuracy = accuracy
+            self.y_pred = y_pred
+
+            print("**************************")
+            print("**************************")
+            print("**************************")
+            print(f"AUROC: {auroc:.6f}")
+            print(f"AUPR: {aupr:.6f}")
+            print(f"Accuracy: {accuracy:.4f}")
+            print(f"macroPrecision: {macroprecision:.4f}")
+            print(f"macroRecall: {macrorecall:.4f}")
+            print(f"macroF1 Score: {macrof1:.4f}")
+
+
+            message = f"Accuracy: {accuracy:.4f}, Precision: {macroprecision:.4f}, Recall: {macrorecall:.4f}, F1 Score: {macrof1:.4f}"
+            self.show_alert(message)
+
+
+        else:
+            # 회귀 모델 평가지표
+            mae = mean_absolute_error(y_test, y_pred)
+            mse = mean_squared_error(y_test, y_pred)
+            rmse = np.sqrt(mse)
+            r2 = r2_score(y_test, y_pred)
+
+            print(f"MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}, R2: {r2:.4f}")
+
+            message = f"MAE: {mae:.4f}, MSE: {mse:.4f}, RMSE: {rmse:.4f}, R2: {r2:.4f}"
+            self.show_message_box(message)
+            accuracy = r2
+
+        pd.set_option('display.width', 1000)
+
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+
+
+        if self.index <4 :
+            if hasattr(self.model, 'feature_importances_'):
+                feature_importances = self.model.feature_importances_
+                importance_df = pd.DataFrame({
+                    'Feature': X.columns,
+                    'Importance': feature_importances
+                }).sort_values(by='Importance', ascending=False)
+
+                print("Feature Importance:")
+                print(importance_df)
+                self.importance_df = importance_df
+                # 피처 중요도 시각화
+                self.plot_feature_importance(importance_df)
+
+                importance_path = os.path.join(str(self.aimodel + "feature_importance.csv"))
+                file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
+                importance_df.to_csv(file_path, index=False)
+        else :
+            feature_importances = np.abs(self.model.coef_[0])  # 계수의 절대값
             importance_df = pd.DataFrame({
                 'Feature': X.columns,
                 'Importance': feature_importances
             }).sort_values(by='Importance', ascending=False)
 
             print("Feature Importance:")
+            print(importance_df)
             self.importance_df = importance_df
-
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
-            importance_path = os.path.join(str("bin_" + self.aimodel + "feature_importance.csv"))
+
+
+            # CSV 파일로 저장
+            importance_path = os.path.join(str(self.aimodel + "feature_importance.csv"))
             file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
             importance_df.to_csv(file_path, index=False)
 
@@ -413,6 +550,49 @@ class twoTrainClass():
         jsonpath = os.path.join(os.path.dirname(self.csv_path), "feature.json")
         with open(jsonpath, 'w') as f:
             json.dump(self.feature_list, f)
+
+        # print("******************은지********************")
+        # print(recall_score(y_test_labels, y_pred, average=None))  # 클래스별 Recall
+        # print(classification_report(y_test_labels, y_pred))
+
+
+        return self.model, accuracy
+
+
+
+
+        # 성능 평가
+        # y_pred = self.model.predict(X_test_scaled)
+        # if self.index == 4:
+        #     threshold = 0.5
+        #     y_pred = [1 if y >= threshold else 0 for y in y_pred]
+        # accuracy = accuracy_score(y_test, y_pred)
+        # message = f"정확도 {accuracy}%로 학습되었습니다."
+        # self.show_alert(message)
+        # print(f"Model Accuracy: {accuracy:.2f}")
+        # self.accuracy = accuracy
+        #
+        # if hasattr(self.model, 'feature_importances_'):
+        #     feature_importances = self.model.feature_importances_
+        #     importance_df = pd.DataFrame({
+        #         'Feature': X.columns,
+        #         'Importance': feature_importances
+        #     }).sort_values(by='Importance', ascending=False)
+        #
+        #     print("Feature Importance:")
+        #     self.importance_df = importance_df
+        #
+        #     # 피처 중요도 시각화
+        #     self.plot_feature_importance(importance_df)
+        #     importance_path = os.path.join(str("bin_" + self.aimodel + "feature_importance.csv"))
+        #     file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
+        #     importance_df.to_csv(file_path, index=False)
+        #
+        # # 추후 변경 필요 --> 파일이름을 피처 반영되게 / self.csv_path랑 동일 경로에 feature.json저장
+        # self.feature_list = X.columns.tolist()
+        # jsonpath = os.path.join(os.path.dirname(self.csv_path), "feature.json")
+        # with open(jsonpath, 'w') as f:
+        #     json.dump(self.feature_list, f)
 
     def show_alert(self, message):
         title = "알림"
