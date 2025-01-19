@@ -1,0 +1,1 @@
+{"structure_seq_state": 1, "frame_gop_state": 0, "frame_ratio_state": 0, "frame_sps_state": 0, "structure_val_state": 1}

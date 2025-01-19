@@ -1,7 +1,6 @@
 import json
 import pickle
 import plotly.express as px
-import pyautogui
 import seaborn as sns
 from PyQt5.QtCore import Qt
 from lightgbm import LGBMClassifier

@@ -154,7 +154,7 @@ class createtrainclass(QMainWindow, form_class):
         # .csv 파일이 하나 이상 있을 때 일단은 첫 번째 파일을 열기
         if csv_files:
             for csv_file in csv_files:
-               if '_train' in csv_file or '241' in csv_file:
+               if '_train' in csv_file:
                     self.csv_path = csv_file  # 첫 번째 CSV 파일 경로 선택
                     self.open_csv2(self.csv_path, self.tableWidget)
 

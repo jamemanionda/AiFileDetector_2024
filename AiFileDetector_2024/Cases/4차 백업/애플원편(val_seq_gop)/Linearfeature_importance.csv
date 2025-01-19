@@ -1,0 +1,187 @@
+Feature,Importance
+stsz(4)_Sample Size,1.5134245965820698
+tref,1.0331130702347104
+tref(2),1.0331130702347104
+sgpd(3),1.001982003650058
+cslg,0.8538138462305458
+stsz(3)_Sample Size,0.8296516753454858
+ctts,0.8240712539177962
+sgpd(2),0.8100169225001612
+sdtp,0.7745282214414815
+stco(4),0.6088044222594325
+stsz(2)_Sample Size,0.539227518102418
+meta(2),0.4125121706863398
+GOP,0.4081751756450937
+stco(3),0.3621947454359702
+sgpd(4),0.32983910312479353
+csgm,0.2951210748293897
+csgm(2),0.2928672395185192
+stco(2),0.19787699429369454
+mdhd(5)_Timescale,0.1689045424749103
+elst(5)_Media Time,0.1689045424749103
+hdlr(10),0.1689045424749103
+mdhd(5)_Language Code,0.1689045424749103
+elst(5)_Rate,0.16890454247491005
+tref(3),0.16890454247491005
+dinf(5),0.16890454247491005
+hdlr(9),0.16890454247491005
+gmhd(3),0.16890454247491005
+mdhd(5)_Modify Time,0.15728519193280044
+mdhd(5)_Create Time,0.15728519193280044
+tkhd(5)_Create Time,0.15728519193280044
+tkhd(5)_Height,0.15728519193280044
+tkhd(5)_Width,0.15728519193280044
+tkhd(5)_Modify Time,0.15728519193280044
+tkhd(5)_Track ID,0.15728519193280044
+gmhd(2),0.13303019916409467
+hdlr(7),0.13303019916409467
+elst(4)_Rate,0.13303019916409467
+dinf(4),0.13303019916409467
+mdhd(4)_Timescale,0.13303019916409464
+tkhd(4)_Track ID,0.13303019916409464
+hdlr(8),0.13303019916409464
+mdhd(4)_Language Code,0.13303019916409464
+tkhd(4)_Modify Time,0.12141084862198476
+tkhd(4)_Create Time,0.12141084862198476
+tkhd(4)_Width,0.12141084862198476
+tkhd(4)_Height,0.12141084862198476
+mdhd(4)_Create Time,0.12141084862198476
+mdhd(4)_Modify Time,0.12141084862198476
+elst(3)_Rate,0.11436629777277979
+dinf(3),0.11436629777277979
+hdlr(5),0.11436629777277979
+gmhd,0.11436629777277979
+mdhd(3)_Timescale,0.11436629777277975
+mdhd(3)_Language Code,0.11436629777277975
+hdlr(6),0.11436629777277975
+sequence,0.11378059802074394
+tkhd(3)_Height,0.10274694723067034
+tkhd(3)_Modify Time,0.10274694723067034
+tkhd(3)_Create Time,0.10274694723067034
+tkhd(3)_Track ID,0.10274694723067034
+tkhd(3)_Width,0.10274694723067034
+mdhd(3)_Create Time,0.10274694723067034
+mdhd(3)_Modify Time,0.10274694723067034
+elst(2)_Media Time,0.09552931318651449
+tkhd(2)_Height,0.09318023015092651
+tkhd(2)_Width,0.09318023015092651
+sbgp(2),0.09115988911339647
+elst(3)_Media Time,0.08871762334307808
+hdlr,0.08623568315253764
+tkhd_Width,0.0835457630077556
+tkhd_Height,0.0835457630077556
+stco(5),0.07846228673145524
+stss,0.0743906324151162
+elst(4)_Media Time,0.06768415335029175
+stco,0.06471438992466136
+mdhd_Timescale,0.054104923654985586
+meta,0.04757014159859966
+mvhd_Timescale,0.042397482444117555
+hdlr(3),0.03479729660009801
+hdlr(4),0.03479306131060815
+tapt,0.03392209307691238
+hdlr(2),0.03392199024282678
+stsz(5)_Sample Size,0.030397454102287967
+mdhd(2)_Timescale,0.027824421115202308
+ftyp_Compatible Brands,0.02000601790777746
+mvhd_Next Track ID,0.01628886296902765
+ftyp_Major Brand,0.012642810189680673
+elst_Media Time,0.01144689558968703
+tgas,0.010437104720863894
+name(2),0.00794031400254854
+free,0.00794031400254678
+tkhd_Modify Time,0.006734061974373476
+tkhd_Create Time,0.006734061974373476
+mdhd_Create Time,0.006734061974373476
+mdhd_Modify Time,0.006734061974373476
+mvhd_Modify Time,0.0062264582466741965
+mvhd_Create Time,0.0062264582466741965
+sgpd,0.005665523086032414
+elst(2)_Rate,0.005663919938500401
+sbgp,0.005663919938500399
+mdhd_Language Code,0.0047928488731156125
+mdhd(2)_Language Code,0.004041027424319106
+elst_Rate,0.0036790365395616715
+mdhd(2)_Create Time,0.0028271770418869754
+mdhd(2)_Modify Time,0.0028271770418869754
+tkhd(2)_Modify Time,0.0028271770418869754
+tkhd(2)_Create Time,0.0028271770418869754
+ftyp_Minor Version,0.0024224328801762673
+dinf(2),0.0019848833989387187
+smhd,0.0019848833989387187
+tkhd(2)_Track ID,0.0019848833989387187
+wide,0.0
+vmhd(2),0.0
+tapt(2),0.0
+auth,0.0
+cslg(2),0.0
+mvhd_Duration,0.0
+mvhd_Preferred Rate,0.0
+mvhd_Preferred Volume,0.0
+smme,0.0
+skip,0.0
+tkhd_Track ID,0.0
+0,0.0
+soct,0.0
+ctts(2),0.0
+tagc(2),0.0
+stss(2),0.0
+sdtp(2),0.0
+elst(2)_'Duration,0.0
+elst_'Duration,0.0
+type,0.0
+vhdr,0.0
+co64(2)_Entry Count,0.0
+co64_Entry Count,0.0
+smta,0.0
+smrd,0.0
+SDLN,0.0
+free(2),0.0
+stsz(5)_Sample Count,0.0
+sbgp(3),0.0
+sgpd(5),0.0
+tagc(3),0.0
+tagc,0.0
+tkhd_Duration,0.0
+mdhd(3)_Duration,0.0
+elst_Entry Count,0.0
+stts(4)_Entry Count,0.0
+elst(2)_Entry Count,0.0
+elst(2)_Entries,0.0
+mdhd(4)_Duration,0.0
+mdhd(2)_Duration,0.0
+stsd(2)_Entry Count,0.0
+stts(2)_Entry Count,0.0
+elst(4)_Entries,0.0
+elst(4)_Entry Count,0.0
+stsc(2)_Entry Count,0.0
+stsz(2)_Sample Count,0.0
+tkhd(4)_Duration,0.0
+SPS,0.0
+tkhd(3)_Duration,0.0
+elst(3)_Entry Count,0.0
+stsc(3)_Entry Count,0.0
+stts(3)_Entry Count,0.0
+stsd(3)_Entry Count,0.0
+stsd(4)_Entry Count,0.0
+stsc(4)_Entry Count,0.0
+stsc(5)_Entry Count,0.0
+tkhd(2)_Duration,0.0
+stts(5)_Entry Count,0.0
+stsd(5)_Entry Count,0.0
+elst_Entries,0.0
+elst(3)_Entries,0.0
+mdhd(5)_Duration,0.0
+mdhd_Duration,0.0
+vmhd,0.0
+dinf,0.0
+stsd_Entry Count,0.0
+stts_Entry Count,0.0
+elst(5)_Entries,0.0
+elst(5)_Entry Count,0.0
+stsc_Entry Count,0.0
+stsz_Sample Size,0.0
+tkhd(5)_Duration,0.0
+stsz_Sample Count,0.0
+stsz(4)_Sample Count,0.0
+stsz(3)_Sample Count,0.0

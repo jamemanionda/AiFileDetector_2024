@@ -13,7 +13,7 @@ class ColumnClass():
             csv_path1 = self.showFileDialog()
             directory, filename = os.path.split(csv_path1)
             csv_path2 = "Y:\\4차\\GOP기준\\_train_2412011610_processed_.csv"
-            result_csv = f'adjustGOP_{filename}'
+            result_csv = f'adjustGOPwithName_{filename}'
             result_path = os.path.join(directory, result_csv)
             self.update_csv_with_gop(csv_path1, csv_path2, result_path)
 
@@ -55,12 +55,12 @@ class ColumnClass():
         df2 = self.load_csv_with_fallback(second_csv_path)
 
         # 'md5' 키가 없는 경우 처리
-        if 'md5' not in df1.columns or 'md5' not in df2.columns:
-            print("두 파일 중 하나에서 'md5' 컬럼을 찾을 수 없습니다.")
+        if 'name' not in df1.columns or 'name' not in df2.columns:
+            print("두 파일 중 하나에서 'name' 컬럼을 찾을 수 없습니다.")
             return
 
         # MD5 값을 기준으로 병합
-        merged_df = df1.merge(df2[['md5', 'GOP']], on='md5', how='left', suffixes=('', '_new'))
+        merged_df = df1.merge(df2[['name', 'GOP']], on='name', how='left', suffixes=('', '_new'))
 
         # GOP_new 값이 비어있지 않은 경우에만 GOP 값을 업데이트
         merged_df['GOP'] = merged_df.apply(lambda row: row['GOP_new'] if pd.notna(row['GOP_new']) else row['GOP'], axis=1)

@@ -158,6 +158,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
     def gotrain(self, classmode, model, trainindex, csv_path):
         self.model = model
         print("***ver2. 다중분류 시작***")
+        print("학습csv : ", csv_path)
         print("선택한 모델 : ", model)
 
         self.csv_path = csv_path
@@ -528,7 +529,7 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             class_weight_dict = dict(zip(np.unique(y_train), class_weights))
 
             # LightGBM 모델 초기화
-            base_model = LGBMClassifier(objective='multiclass', class_weight=class_weight_dict, random_state=42)
+            base_model = LGBMClassifier(objective='multiclass', class_weight=class_weight_dict, verbose=-1,random_state=42)
 
             # RandomizedSearchCV로 하이퍼파라미터 튜닝
             grid_search = RandomizedSearchCV(
@@ -581,6 +582,19 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         conf_matrix = confusion_matrix(y_test_labels, y_pred)
         print("Confusion Matrix:")
         print(conf_matrix)
+
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues')
+        plt.title("Confusion Matrix")
+        plt.xlabel("Predicted Labels")
+        plt.ylabel("True Labels")
+
+        # Save the plot as an image
+        confusion_path = f"confusion_matrix_{self.model}.png"
+        plt.savefig("confusion_matrix.png")
+
+        # Show the plot (optional)
+        plt.show()
 
         y_scores = self.model.predict_proba(X_test_scaled)
         lb = LabelBinarizer()
@@ -882,8 +896,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         class_weights = compute_class_weight('balanced', classes=np.unique(y), y=y)
         class_weight_dict = dict(enumerate(class_weights))
 
-        early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1, restore_best_weights=True)
-        reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=0.001, verbose=1)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=-1, restore_best_weights=True)
+        reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=0.001, verbose=-1)
 
         # Train the model with class weights
         model.fit(X_train_scaled, y_train, epochs=300, batch_size=16, validation_data=(X_test_scaled, y_test),

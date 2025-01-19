@@ -1,0 +1,251 @@
+Feature,Importance
+sgpd,0.08836403511475922
+SPS_vui.max_dec_frame_buffering,0.07415306124620633
+SPS_vui.motion_vectors_over_pic_boundaries_flag,0.07213759598897647
+SPS_vui.max_bytes_per_pic_denom,0.06972512488559184
+SPS_log2_max_frame_num_minus4,0.05065175927250274
+SPS_vui.num_reorder_frames,0.04728075805679776
+sbgp,0.03934847795195588
+mdhd_Language Code,0.03377605860646107
+ftyp_Major Brand,0.032306510441744325
+SPS_vui.log2_max_mv_length_vertical,0.023685070636131903
+SPS_vui.max_bits_per_mb_denom,0.022382866689156396
+mdhd_Timescale,0.022187866272094823
+SPS_vui.log2_max_mv_length_horizontal,0.021591344695708937
+tapt,0.020609066706532085
+SDLN,0.019792436776561183
+elst(2)_Rate,0.018497468751697114
+mdhd(2)_Timescale,0.017958216789229094
+smta,0.015124720379888334
+ftyp_Compatible Brands,0.012808688605802119
+SPS_log2_max_pic_order_cnt_lsb_minus4,0.012796254086926855
+SPS_level_idc,0.0124820868172444
+mdhd(2)_Modify Time,0.012339983852765836
+hdlr(4),0.011580787836853805
+tkhd_Modify Time,0.011428088555480588
+elst(2)_Media Time,0.01061136877797753
+hdlr(3),0.010554181817300978
+sdtp,0.01035412060527137
+mvhd_Timescale,0.010229745494108987
+smrd,0.008930243313298307
+tkhd(2)_Modify Time,0.008893546720358884
+ctts,0.008685271549164698
+SPS_pic_order_cnt_type,0.008533941942147119
+SPS_vui.video_format,0.006883516064567494
+mdhd(3)_Modify Time,0.006766274823026339
+SPS_num_ref_frames,0.00675236444204469
+SPS_vui.time_scale,0.00616070120152366
+SPS_frame_crop_right_offset,0.005459139490986609
+cslg,0.005410476182804999
+SPS_vui.transfer_characteristics,0.005404823786164265
+SPS_vui.matrix_coefficients,0.005176200176146112
+tkhd(2)_Create Time,0.005061470411903624
+mdhd_Create Time,0.004925878486339127
+mvhd_Create Time,0.004893166333045247
+SPS_seq_parameter_set_id,0.004835250208818669
+SPS_frame_cropping_flag,0.004627452570220017
+elst_Media Time,0.004553758975563919
+SPS_pic_width_in_mbs_minus1,0.004259025704310126
+mdhd_Modify Time,0.004192802173569812
+sequence,0.004100257886998917
+stco,0.00399400381999862
+mdhd(2)_Create Time,0.003685354627379983
+tkhd(3)_Height,0.0036239864450942224
+SPS_constraint_set0_flag,0.0032814215040725507
+SPS_gaps_in_frame_num_value_allowed_flag,0.002972400655464276
+SPS_vui.timing_info_present_flag,0.0029097598581308425
+meta,0.0028439790402723215
+tkhd_Create Time,0.002566078837372325
+SPS_vui.num_units_in_tick,0.0023922425731264223
+mvhd_Modify Time,0.0023867561747121257
+ftyp_Minor Version,0.0022023690962582583
+stco(2),0.0021817406819782626
+SPS_vui.fixed_frame_rate_flag,0.00208398692921443
+SPS_constraint_set3_flag,0.0018787552195954566
+SPS_vui.colour_primaries,0.001832836943370623
+SPS_vui.vcl_hrd_parameters_present_flag,0.00171988470027786
+SPS_vui_parameters_present_flag,0.0016071215835022532
+SPS_pic_height_in_map_units_minus1,0.0015902990686580854
+SPS_frame_crop_left_offset,0.0015414901682736387
+tkhd_Height,0.0015057720738740285
+SPS_vui.aspect_ratio_idc,0.0014815849445034312
+SPS_vui.video_signal_type_present_flag,0.0014602940130501183
+SPS_hrd.initial_cpb_removal_delay_length_minus1,0.001423659036763217
+SPS_qpprime_y_zero_transform_bypass_flag,0.0013782645247102882
+SPS_profile_idc,0.0013087895821052528
+SPS_chroma_format_idc,0.0012468633423645624
+SPS_frame_crop_bottom_offset,0.0012123292725032479
+SPS_constraint_set1_flag,0.0010536893340758237
+SPS_direct_8x8_inference_flag,0.0010196601780979126
+SPS_vui.pic_struct_present_flag,0.0009520397124262884
+free,0.000839823948488453
+SPS_frame_mbs_only_flag,0.0007646520094227494
+SPS_hrd.cpb_removal_delay_length_minus1,0.0006928021495908093
+SPS_constraint_set4_flag,0.0006152271606061736
+tkhd_Width,0.0006055223837628497
+SPS_vui.bitstream_restriction_flag,0.0005465371864354902
+SPS_vui.low_delay_hrd_flag,0.0005410263973013465
+SPS_vui.nal_hrd_parameters_present_flag,0.000496851463388151
+SPS_bit_depth_luma_minus8,0.0004634520003477821
+SPS_constraint_set2_flag,0.00043922678989776045
+elst_Rate,0.00043582070259072926
+SPS_vui.overscan_info_present_flag,0.0004246723006091947
+SPS_hrd.dpb_output_delay_length_minus1,0.0003513833216624031
+mdhd(2)_Language Code,0.0003185471572676537
+elst(3)_Rate,0.00029182036263194924
+tkhd(2)_Width,0.00026463268607033265
+SPS_vui.chroma_loc_info_present_flag,0.0002364077503816743
+stss,0.00022583040878228024
+SPS_vui.aspect_ratio_info_present_flag,0.0001739162344995237
+SPS_hrd.cpb_cnt_minus1,0.00013154048054085855
+SPS_hrd.bit_rate_scale,9.477135840888004e-05
+SPS_vui.colour_description_present_flag,8.466838983992706e-05
+hdlr,8.087191242433726e-05
+SPS_bit_depth_chroma_minus8,8.067754909710016e-05
+SPS_vui.video_full_range_flag,7.570151506969676e-05
+sgpd(2),7.430067515754988e-05
+stsz(2)_Sample Size,3.44773410051991e-05
+SPS_frame_crop_top_offset,1.4116268761848766e-05
+sgpd(3),0.0
+mdhd(5)_Create Time,0.0
+tref(3),0.0
+elst(5)_Rate,0.0
+sbgp(2),0.0
+elst(5)_Media Time,0.0
+stsz(5)_Sample Count,0.0
+mdhd(5)_Modify Time,0.0
+csgm,0.0
+csgm(2),0.0
+sgpd(4),0.0
+tapt(2),0.0
+vmhd(2),0.0
+elst(5)_Entries,0.0
+meta(2),0.0
+mdhd(5)_Timescale,0.0
+mdhd(5)_Duration,0.0
+mdhd(5)_Language Code,0.0
+hdlr(9),0.0
+gmhd(3),0.0
+stco(5),0.0
+hdlr(10),0.0
+dinf(5),0.0
+stsd(5)_Entry Count,0.0
+stts(5)_Entry Count,0.0
+stsc(5)_Entry Count,0.0
+stsz(5)_Sample Size,0.0
+cslg(2),0.0
+ctts(2),0.0
+stsz_Sample Size,0.0
+stss(2),0.0
+SPS_vui.chroma_sample_loc_type_top_field,0.0
+0,0.0
+skip,0.0
+smme,0.0
+vhdr,0.0
+auth,0.0
+elst(2)_'Duration,0.0
+elst_'Duration,0.0
+type,0.0
+name(2),0.0
+co64(2)_Entry Count,0.0
+co64_Entry Count,0.0
+wide,0.0
+free(2),0.0
+SPS_vui.chroma_sample_loc_type_bottom_field,0.0
+SPS_hrd.time_offset_length,0.0
+sdtp(2),0.0
+SPS_hrd.cpb_size_scale,0.0
+tkhd(5)_Height,0.0
+tgas,0.0
+mvhd_Duration,0.0
+mvhd_Preferred Rate,0.0
+mvhd_Preferred Volume,0.0
+mvhd_Next Track ID,0.0
+tkhd_Track ID,0.0
+tkhd_Duration,0.0
+sbgp(3),0.0
+sgpd(5),0.0
+tagc(3),0.0
+tagc(2),0.0
+tagc,0.0
+elst(5)_Entry Count,0.0
+tkhd(4)_Duration,0.0
+tkhd(5)_Width,0.0
+tkhd(3)_Duration,0.0
+SPS_constraint_set5_flag,0.0
+SPS_seq_scaling_matrix_present_flag,0.0
+elst_Entries,0.0
+elst_Entry Count,0.0
+tkhd(3)_Track ID,0.0
+tkhd(3)_Create Time,0.0
+tkhd(3)_Modify Time,0.0
+tkhd(3)_Width,0.0
+mdhd_Duration,0.0
+elst(3)_Entry Count,0.0
+elst(3)_Entries,0.0
+elst(3)_Media Time,0.0
+tref,0.0
+mdhd(3)_Create Time,0.0
+mdhd(3)_Timescale,0.0
+mdhd(3)_Duration,0.0
+SPS,0.0
+stsz(2)_Sample Count,0.0
+hdlr(5),0.0
+stsd_Entry Count,0.0
+tkhd(2)_Track ID,0.0
+stsc_Entry Count,0.0
+tkhd(2)_Duration,0.0
+tkhd(2)_Height,0.0
+elst(2)_Entry Count,0.0
+elst(2)_Entries,0.0
+stts_Entry Count,0.0
+dinf,0.0
+stsc(2)_Entry Count,0.0
+mdhd(2)_Duration,0.0
+hdlr(2),0.0
+smhd,0.0
+vmhd,0.0
+dinf(2),0.0
+stsd(2)_Entry Count,0.0
+stts(2)_Entry Count,0.0
+mdhd(3)_Language Code,0.0
+gmhd,0.0
+tkhd(5)_Duration,0.0
+stsd(4)_Entry Count,0.0
+mdhd(4)_Timescale,0.0
+mdhd(4)_Duration,0.0
+mdhd(4)_Language Code,0.0
+hdlr(7),0.0
+gmhd(2),0.0
+hdlr(8),0.0
+dinf(4),0.0
+stts(4)_Entry Count,0.0
+mdhd(4)_Create Time,0.0
+stsc(4)_Entry Count,0.0
+stsz(4)_Sample Size,0.0
+stsz(4)_Sample Count,0.0
+stco(4),0.0
+tkhd(5)_Track ID,0.0
+tkhd(5)_Create Time,0.0
+tkhd(5)_Modify Time,0.0
+mdhd(4)_Modify Time,0.0
+tref(2),0.0
+hdlr(6),0.0
+tkhd(4)_Track ID,0.0
+dinf(3),0.0
+stsd(3)_Entry Count,0.0
+stts(3)_Entry Count,0.0
+stsc(3)_Entry Count,0.0
+stsz(3)_Sample Size,0.0
+stsz(3)_Sample Count,0.0
+stco(3),0.0
+tkhd(4)_Create Time,0.0
+elst(4)_Rate,0.0
+tkhd(4)_Modify Time,0.0
+stsz_Sample Count,0.0
+tkhd(4)_Width,0.0
+tkhd(4)_Height,0.0
+elst(4)_Entry Count,0.0
+elst(4)_Entries,0.0
+elst(4)_Media Time,0.0
+soct,0.0

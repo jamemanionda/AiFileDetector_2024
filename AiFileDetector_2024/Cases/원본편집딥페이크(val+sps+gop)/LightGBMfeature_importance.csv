@@ -1,0 +1,251 @@
+Feature,Importance
+stco(2),401
+SPS_pic_width_in_mbs_minus1,356
+stco,291
+stco(5),205
+GOP,188
+SPS_pic_height_in_map_units_minus1,159
+elst(2)_Media Time,157
+mdhd_Timescale,118
+mvhd_Timescale,115
+SPS_level_idc,111
+mdhd(2)_Timescale,100
+stco(4),90
+sgpd(2),89
+SPS_vui.video_format,86
+tkhd_Width,85
+ftyp_Minor Version,75
+sdtp,75
+elst_Media Time,71
+stss,68
+ftyp_Major Brand,67
+SPS_vui.log2_max_mv_length_horizontal,63
+SPS_vui.colour_primaries,60
+SPS_vui.num_units_in_tick,55
+stsz(5)_Sample Size,55
+tref,53
+free,47
+mdhd_Language Code,47
+meta,40
+tref(2),38
+SPS_vui.max_bytes_per_pic_denom,33
+tref(3),32
+mvhd_Next Track ID,32
+smta,31
+auth,31
+tkhd(5)_Track ID,31
+sgpd,30
+SPS_vui.chroma_sample_loc_type_top_field,27
+cslg,27
+SPS_vui.chroma_loc_info_present_flag,27
+sgpd(3),26
+SPS_frame_crop_bottom_offset,25
+SPS_log2_max_pic_order_cnt_lsb_minus4,24
+SPS_chroma_format_idc,23
+SPS_vui.matrix_coefficients,21
+SPS_pic_order_cnt_type,21
+SPS_frame_cropping_flag,21
+SPS_frame_crop_right_offset,17
+stsz(4)_Sample Size,16
+stsz(3)_Sample Size,16
+vmhd,15
+SPS_vui.video_signal_type_present_flag,15
+SPS_constraint_set0_flag,15
+SPS_profile_idc,15
+hdlr,15
+elst(2)_Rate,14
+SPS_vui_parameters_present_flag,14
+stsz(2)_Sample Size,12
+SPS_num_ref_frames,11
+mdhd(2)_Language Code,11
+SPS_seq_scaling_matrix_present_flag,10
+hdlr(3),9
+stco(3),7
+tkhd(2)_Width,7
+SPS_vui.aspect_ratio_info_present_flag,6
+SPS_vui.video_full_range_flag,5
+ctts,5
+ftyp_Compatible Brands,5
+SPS_vui.timing_info_present_flag,5
+mvhd_Create Time,4
+SPS_frame_crop_left_offset,4
+SPS_log2_max_frame_num_minus4,4
+meta(2),3
+SDLN,3
+elst(3)_Media Time,3
+SPS_vui.bitstream_restriction_flag,3
+elst_Rate,3
+hdlr(2),3
+tapt,3
+tkhd_Modify Time,2
+SPS_constraint_set1_flag,2
+SPS_vui.num_reorder_frames,2
+tkhd(4)_Create Time,1
+tkhd_Create Time,1
+csgm,1
+SPS_vui.log2_max_mv_length_vertical,1
+SPS_vui.time_scale,1
+smrd,1
+SPS_seq_parameter_set_id,0
+tkhd(2)_Track ID,0
+tkhd_Height,0
+stsz_Sample Count,0
+stsz_Sample Size,0
+stsc_Entry Count,0
+sbgp(2),0
+stsz(5)_Sample Count,0
+csgm(2),0
+sgpd(4),0
+tapt(2),0
+vmhd(2),0
+ctts(2),0
+cslg(2),0
+stss(2),0
+wide,0
+stts(5)_Entry Count,0
+tkhd(2)_Create Time,0
+mdhd(5)_Modify Time,0
+tkhd(5)_Width,0
+tkhd(5)_Height,0
+elst(5)_Entry Count,0
+elst(5)_Entries,0
+elst(5)_Media Time,0
+elst(5)_Rate,0
+tkhd(2)_Modify Time,0
+mdhd(5)_Create Time,0
+mdhd(5)_Timescale,0
+stsc(5)_Entry Count,0
+mdhd(5)_Duration,0
+mdhd(5)_Language Code,0
+hdlr(9),0
+gmhd(3),0
+hdlr(10),0
+dinf(5),0
+stsd(5)_Entry Count,0
+tagc,0
+sdtp(2),0
+elst_Entry Count,0
+tagc(2),0
+type,0
+SPS_vui.chroma_sample_loc_type_bottom_field,0
+free(2),0
+mdhd_Duration,0
+elst_Entries,0
+co64_Entry Count,0
+co64(2)_Entry Count,0
+name(2),0
+elst_'Duration,0
+SPS_hrd.time_offset_length,0
+elst(2)_'Duration,0
+mdhd_Modify Time,0
+vhdr,0
+smme,0
+skip,0
+0,0
+soct,0
+SPS_vui.low_delay_hrd_flag,0
+SPS_hrd.dpb_output_delay_length_minus1,0
+tagc(3),0
+SPS_vui.max_dec_frame_buffering,0
+sgpd(5),0
+sbgp(3),0
+tkhd(5)_Modify Time,0
+SPS_vui.motion_vectors_over_pic_boundaries_flag,0
+stts_Entry Count,0
+SPS_vui.max_bits_per_mb_denom,0
+stsd_Entry Count,0
+dinf,0
+SPS_hrd.cpb_removal_delay_length_minus1,0
+SPS_vui.fixed_frame_rate_flag,0
+SPS_vui.aspect_ratio_idc,0
+tgas,0
+SPS_hrd.cpb_cnt_minus1,0
+SPS_hrd.bit_rate_scale,0
+SPS_hrd.cpb_size_scale,0
+SPS_hrd.initial_cpb_removal_delay_length_minus1,0
+tkhd(5)_Duration,0
+tkhd(2)_Height,0
+tkhd(5)_Create Time,0
+SPS_vui.pic_struct_present_flag,0
+SPS_vui.colour_description_present_flag,0
+dinf(2),0
+SPS_vui.transfer_characteristics,0
+hdlr(4),0
+smhd,0
+mdhd(2)_Duration,0
+SPS_vui.nal_hrd_parameters_present_flag,0
+SPS_vui.vcl_hrd_parameters_present_flag,0
+tkhd(3)_Track ID,0
+tkhd(2)_Duration,0
+tkhd(3)_Create Time,0
+tkhd(3)_Modify Time,0
+tkhd(3)_Duration,0
+tkhd(3)_Width,0
+tkhd(3)_Height,0
+elst(3)_Entry Count,0
+elst(3)_Entries,0
+mdhd(2)_Modify Time,0
+stsd(2)_Entry Count,0
+mvhd_Duration,0
+stts(2)_Entry Count,0
+SPS_vui.overscan_info_present_flag,0
+SPS_bit_depth_luma_minus8,0
+SPS_bit_depth_chroma_minus8,0
+SPS_qpprime_y_zero_transform_bypass_flag,0
+SPS_constraint_set4_flag,0
+SPS_constraint_set3_flag,0
+SPS_constraint_set2_flag,0
+tkhd_Track ID,0
+SPS_gaps_in_frame_num_value_allowed_flag,0
+mvhd_Preferred Volume,0
+mvhd_Preferred Rate,0
+SPS_frame_mbs_only_flag,0
+SPS_direct_8x8_inference_flag,0
+SPS,0
+sbgp,0
+SPS_frame_crop_top_offset,0
+stsz(2)_Sample Count,0
+stsc(2)_Entry Count,0
+elst(3)_Rate,0
+mdhd(2)_Create Time,0
+mdhd(3)_Create Time,0
+elst(4)_Entries,0
+elst(4)_Rate,0
+elst(2)_Entries,0
+mdhd(4)_Create Time,0
+mdhd(4)_Modify Time,0
+mdhd(4)_Timescale,0
+mdhd(4)_Duration,0
+mdhd(4)_Language Code,0
+hdlr(7),0
+gmhd(2),0
+hdlr(8),0
+dinf(4),0
+stsd(4)_Entry Count,0
+stts(4)_Entry Count,0
+stsc(4)_Entry Count,0
+elst(2)_Entry Count,0
+stsz(4)_Sample Count,0
+SPS_constraint_set5_flag,0
+elst(4)_Media Time,0
+elst(4)_Entry Count,0
+mdhd(3)_Modify Time,0
+tkhd(4)_Height,0
+mvhd_Modify Time,0
+mdhd(3)_Duration,0
+mdhd(3)_Language Code,0
+hdlr(5),0
+gmhd,0
+hdlr(6),0
+dinf(3),0
+stsd(3)_Entry Count,0
+stts(3)_Entry Count,0
+stsc(3)_Entry Count,0
+mdhd_Create Time,0
+stsz(3)_Sample Count,0
+tkhd_Duration,0
+tkhd(4)_Track ID,0
+tkhd(4)_Modify Time,0
+tkhd(4)_Duration,0
+tkhd(4)_Width,0
+mdhd(3)_Timescale,0

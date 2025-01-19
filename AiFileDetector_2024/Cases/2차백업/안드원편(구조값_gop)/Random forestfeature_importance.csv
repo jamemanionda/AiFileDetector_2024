@@ -1,0 +1,184 @@
+Feature,Importance
+elst(2)_Rate,0.10268524297066482
+ftyp_Minor Version,0.07104111599759444
+tkhd(2)_Modify Time,0.055639467521524495
+elst(2)_Media Time,0.05370803324435911
+mvhd_Modify Time,0.053581326273643974
+mdhd_Timescale,0.04818723660820343
+tkhd(2)_Height,0.047809410965690496
+mdhd(2)_Timescale,0.04102713073197898
+tkhd_Modify Time,0.0396788804503628
+mdhd_Create Time,0.03808155067789433
+mdhd_Modify Time,0.03552874458287428
+mdhd(2)_Modify Time,0.03374562958490026
+tkhd(2)_Create Time,0.03313481049606417
+tkhd(2)_Width,0.03181357063049736
+tkhd_Height,0.030060469316862994
+mdhd(2)_Create Time,0.02915847701405806
+tkhd_Create Time,0.025425625303847673
+mdhd_Language Code,0.020834702684026814
+hdlr,0.020462677245524422
+tkhd_Width,0.01741649792846874
+auth,0.016019446774965206
+ctts,0.015091929849731265
+ftyp_Major Brand,0.01140568193959564
+stss,0.010742017010009071
+smrd,0.01048117899360287
+mvhd_Create Time,0.008706667694781949
+tkhd_Track ID,0.00844041005224652
+stco,0.008320146341859591
+vmhd,0.007569869642937253
+elst_Media Time,0.0067392554302365135
+soct,0.006571688837645928
+skip,0.006263961072927763
+meta,0.005822010756709171
+mdhd(2)_Language Code,0.00581992948469652
+elst_Rate,0.005581092641060919
+smta,0.005016962861874461
+stsz(2)_Sample Size,0.004904654868621325
+hdlr(2),0.004462940093392661
+SDLN,0.0029148062738459453
+free,0.0027013739741783634
+tkhd(2)_Track ID,0.00263457214171719
+sbgp,0.0021256138053487366
+smme,0.001881730296612362
+dinf,0.0015489346094580425
+vhdr,0.001510435151890769
+mvhd_Timescale,0.0013891190675147734
+stco(2),0.0012854353259158734
+smhd,0.0012606485938064871
+dinf(2),0.0011470872989241228
+ftyp_Compatible Brands,0.0009224066119572959
+type,0.0007120154585779796
+sgpd,0.0006450223304592742
+stsz_Sample Size,0.0003403544838564716
+dinf(5),0.0
+mdhd(5)_Modify Time,0.0
+stsz(5)_Sample Size,0.0
+stsc(5)_Entry Count,0.0
+mdhd(5)_Timescale,0.0
+mdhd(5)_Language Code,0.0
+mdhd(5)_Duration,0.0
+tref(3),0.0
+hdlr(9),0.0
+gmhd(3),0.0
+stts(5)_Entry Count,0.0
+stsd(5)_Entry Count,0.0
+hdlr(10),0.0
+mdhd(5)_Create Time,0.0
+stts_Entry Count,0.0
+elst(5)_Rate,0.0
+elst(5)_Media Time,0.0
+elst(5)_Entries,0.0
+elst(5)_Entry Count,0.0
+stco(5),0.0
+tkhd(5)_Height,0.0
+tkhd(5)_Width,0.0
+tkhd(5)_Duration,0.0
+tkhd(5)_Modify Time,0.0
+tkhd(5)_Create Time,0.0
+tkhd(5)_Track ID,0.0
+stco(4),0.0
+stsz(4)_Sample Count,0.0
+stsz(4)_Sample Size,0.0
+stsz(5)_Sample Count,0.0
+vmhd(2),0.0
+meta(2),0.0
+tagc(2),0.0
+0,0.0
+elst(2)_'Duration,0.0
+elst_'Duration,0.0
+name(2),0.0
+co64(2)_Entry Count,0.0
+co64_Entry Count,0.0
+wide,0.0
+free(2),0.0
+tgas,0.0
+sbgp(3),0.0
+sgpd(5),0.0
+tagc(3),0.0
+tagc,0.0
+cslg,0.0
+sdtp(2),0.0
+stss(2),0.0
+cslg(2),0.0
+ctts(2),0.0
+stts(4)_Entry Count,0.0
+tapt(2),0.0
+sgpd(4),0.0
+csgm(2),0.0
+csgm,0.0
+sgpd(3),0.0
+sbgp(2),0.0
+sgpd(2),0.0
+stsc(4)_Entry Count,0.0
+mdhd(4)_Duration,0.0
+stsd(4)_Entry Count,0.0
+tkhd(3)_Modify Time,0.0
+stsc(2)_Entry Count,0.0
+stsz(2)_Sample Count,0.0
+tapt,0.0
+sdtp,0.0
+tkhd(3)_Track ID,0.0
+tkhd(3)_Create Time,0.0
+tkhd(3)_Duration,0.0
+mdhd(3)_Create Time,0.0
+tkhd(3)_Width,0.0
+tkhd(3)_Height,0.0
+elst(3)_Entry Count,0.0
+elst(3)_Entries,0.0
+elst(3)_Media Time,0.0
+elst(3)_Rate,0.0
+stts(2)_Entry Count,0.0
+stsd(2)_Entry Count,0.0
+hdlr(4),0.0
+hdlr(3),0.0
+mdhd(2)_Duration,0.0
+mvhd_Preferred Rate,0.0
+mvhd_Preferred Volume,0.0
+mvhd_Next Track ID,0.0
+tkhd_Duration,0.0
+elst_Entry Count,0.0
+elst(2)_Entries,0.0
+elst(2)_Entry Count,0.0
+elst_Entries,0.0
+tkhd(2)_Duration,0.0
+mdhd_Duration,0.0
+stsz_Sample Count,0.0
+stsc_Entry Count,0.0
+tref,0.0
+mdhd(3)_Modify Time,0.0
+dinf(4),0.0
+mdhd(4)_Create Time,0.0
+tkhd(4)_Height,0.0
+elst(4)_Entry Count,0.0
+elst(4)_Entries,0.0
+elst(4)_Media Time,0.0
+elst(4)_Rate,0.0
+tref(2),0.0
+mdhd(4)_Modify Time,0.0
+mdhd(3)_Timescale,0.0
+mdhd(4)_Timescale,0.0
+stsd_Entry Count,0.0
+mdhd(4)_Language Code,0.0
+hdlr(7),0.0
+gmhd(2),0.0
+hdlr(8),0.0
+tkhd(4)_Width,0.0
+tkhd(4)_Duration,0.0
+tkhd(4)_Modify Time,0.0
+tkhd(4)_Create Time,0.0
+tkhd(4)_Track ID,0.0
+stco(3),0.0
+mvhd_Duration,0.0
+stsz(3)_Sample Size,0.0
+stsc(3)_Entry Count,0.0
+stts(3)_Entry Count,0.0
+stsd(3)_Entry Count,0.0
+dinf(3),0.0
+hdlr(6),0.0
+gmhd,0.0
+hdlr(5),0.0
+mdhd(3)_Language Code,0.0
+mdhd(3)_Duration,0.0
+stsz(3)_Sample Count,0.0
