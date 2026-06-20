@@ -1,0 +1,47 @@
+# IDE
+.vscode/
+.idea/
+AiFileDetector_2024/.vscode/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Local datasets and backups
+Cases/
+AiFileDetector_2024/Cases/
+AiFileDetector_2024/Cases - */
+AiFileDetector_2024/Cases/2603_backup*/
+AiFileDetector_2024/case_*/
+AiFileDetector_2024/oldCases/
+
+# Generated artifacts
+*.pkl
+AiFileDetector_2024/confusion_matrix.png
+AiFileDetector_2024/*_results.json
+AiFileDetector_2024/tmp_*.py
+AiFileDetector_2024/*.pdf
+
+# Local external copy
+AiFileDetector_2024/EVA-Code/
+
+# Local helper scripts (not for version control)
+AiFileDetector_2024/paper_results_analyzer.py
+README_CSV_Editor.md
+README_Ultra_CSV_Editor.md
+benchmark_csv_editors.py
+csv_editor.py
+csv_editor_fast.py
+csv_editor_ultra.py
+deleteduplicated.py
+group_merge_history.json
+label_rules.example.json
+label_rules.ios_android_consolidation.json
+my_dataset_rules.json
+pattern_analyses/
+pattern_analysis.json
+performance_test.py
+run_csv_editor.bat
+run_fast_csv_editor.bat
+run_ultra_csv_editor.bat
