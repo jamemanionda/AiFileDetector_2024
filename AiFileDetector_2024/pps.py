@@ -8,8 +8,30 @@ import re
 
 def analyzesps(file_path):
     # 분석할 H.264 비트스트림 파일 설정
-    H264_ANALYZE_PATH = "./h264Bitstream/h264_analyze.exe"  # 필요 시 경로 수정
-    INPUT_FILE = file_path
+    # 실행 파일/입력 파일은 절대경로로 실행(작업 디렉토리 영향을 제거)
+    candidates = [
+        "./h264Bitstream/h264_analyze.exe",
+        "./h264bitstream/h264_analyze.exe",
+    ]
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates += [
+        os.path.join(script_dir, "h264Bitstream", "h264_analyze.exe"),
+        os.path.join(script_dir, "h264bitstream", "h264_analyze.exe"),
+    ]
+    H264_ANALYZE_PATH = None
+    for cand in candidates:
+        try:
+            cand_abs = os.path.abspath(cand)
+            if os.path.exists(cand_abs):
+                H264_ANALYZE_PATH = cand_abs
+                break
+        except Exception:
+            continue
+    if not H264_ANALYZE_PATH:
+        # 기존 상대경로 fallback (그래도 실행 시도)
+        H264_ANALYZE_PATH = os.path.abspath("./h264Bitstream/h264_analyze.exe")
+
+    INPUT_FILE = os.path.abspath(file_path)
 
     # h264_analyze 프로그램 실행 및 출력 처리
     try:
@@ -34,6 +56,7 @@ def analyzesps(file_path):
 
     except Exception as e:
         print(f"Error occurred: {e}")
+        return ""
 
 
 

@@ -177,7 +177,7 @@ QListWidget {
         <x>10</x>
         <y>310</y>
         <width>761</width>
-        <height>231</height>
+        <height>200</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -198,6 +198,30 @@ QHeaderView::section {
   border-bottom: 1px solid rgb(80, 80, 80);
   padding: 4px;
 }</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="csv_info_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>515</y>
+        <width>761</width>
+        <height>55</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(200, 200, 200);
+background-color: rgba(0, 0, 0, 40);
+border: 1px solid rgb(80, 80, 80);
+border-radius: 6px;
+padding: 6px;
+font: 9pt &quot;Playfair Display&quot;;</string>
+      </property>
+      <property name="text">
+       <string>CSV 정보를 표시합니다.</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
       </property>
      </widget>
      <widget class="QLabel" name="label_3">
@@ -769,7 +793,7 @@ QPushButton:pressed {
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>180</y>
+        <y>168</y>
         <width>90</width>
         <height>16</height>
        </rect>
@@ -787,7 +811,7 @@ color: rgb(255, 255, 255);</string>
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>200</y>
+        <y>188</y>
         <width>90</width>
         <height>16</height>
        </rect>
@@ -804,8 +828,8 @@ color: rgb(255, 255, 255);</string>
      <widget class="QPushButton" name="label_info">
       <property name="geometry">
        <rect>
-        <x>670</x>
-        <y>550</y>
+        <x>700</x>
+        <y>608</y>
         <width>91</width>
         <height>31</height>
        </rect>
@@ -839,9 +863,9 @@ QPushButton:pressed {
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>270</y>
-        <width>511</width>
-        <height>231</height>
+        <y>472</y>
+        <width>693</width>
+        <height>178</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -868,17 +892,16 @@ QHeaderView::section {
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>240</y>
-        <width>171</width>
-        <height>16</height>
+        <y>444</y>
+        <width>400</width>
+        <height>20</height>
        </rect>
       </property>
       <property name="styleSheet">
-       <string notr="true">font: 16pt &quot;Arial&quot;;
-color: rgb(255, 255, 255);</string>
+       <string notr="true">color: rgb(230, 230, 230); font: 9pt &quot;Helvetica&quot;; margin: 0; padding: 0;</string>
       </property>
       <property name="text">
-       <string>Label list</string>
+       <string>Label list (매핑 · 라벨 데이터)</string>
       </property>
      </widget>
     </widget>

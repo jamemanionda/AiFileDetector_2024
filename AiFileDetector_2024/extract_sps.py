@@ -79,11 +79,59 @@ def find_avcc_in_avc1(f, avc1_end_pos, file_path):
 
 def parse_box(f, end_position, depth=0, max_depth=100):
 
+    def _is_plausible_type(t: bytes) -> bool:
+        # FourCC는 보통 ASCII printable 또는 0xA9(©) 포함
+        if not isinstance(t, (bytes, bytearray)) or len(t) != 4:
+            return False
+        for b in t:
+            if b == 0xA9:
+                continue
+            if b < 0x20 or b > 0x7E:
+                return False
+        return True
+
+    def _resync_find_next_box(start_pos: int, window: int = 4096):
+        """현재 위치부터 window 바이트 내에서 '그럴듯한' 박스 헤더를 찾아 위치를 반환."""
+        try:
+            cur = f.tell()
+            if cur >= end_position:
+                return None
+            scan = f.read(min(window, end_position - cur))
+            if not scan or len(scan) < 8:
+                return None
+            for i in range(0, len(scan) - 8):
+                size = struct.unpack(">I", scan[i:i+4])[0]
+                typ = scan[i+4:i+8]
+                if not _is_plausible_type(typ):
+                    continue
+                abs_pos = cur + i
+                remaining = end_position - abs_pos
+                if size == 0:
+                    # 컨테이너 끝까지
+                    return abs_pos
+                if size == 1:
+                    if i + 16 > len(scan):
+                        continue
+                    large = struct.unpack(">Q", scan[i+8:i+16])[0]
+                    if large < 16 or large > remaining:
+                        continue
+                    return abs_pos
+                if size < 8 or size > remaining:
+                    continue
+                return abs_pos
+            return None
+        finally:
+            try:
+                f.seek(start_pos)
+            except Exception:
+                pass
+
     if depth > max_depth:
         print("최대 재귀 깊이 도달 에러")
         return
 
     while f.tell() < end_position:
+        box_start = f.tell()
         box_header = f.read(8)  # 첫 8Bytes Box 헤더
 
 
@@ -93,26 +141,67 @@ def parse_box(f, end_position, depth=0, max_depth=100):
 
 
 
+        # FourCC는 ASCII 기반으로 안정적으로 처리
         try:
             box_size, box_type1 = struct.unpack(">I4s", box_header)  # size 4Bytes, type 4Bytes 추출
-            box_type = box_type1.decode("utf-8").strip()
-            if not box_type.isprintable() or len(box_type) != 4:
-                raise ValueError(f"잘못된 박스 타입 감지: {box_type}")
-        except Exception as e:
-            print(f"박스 타입 디코딩 오류: {e}, 위치: {f.tell() - 8}")
-            f.seek(0, 1)  # 잘못된 헤더일 경우 8바이트만 건너뛰고 계속
+            if not _is_plausible_type(box_type1):
+                raise ValueError("invalid fourcc")
+            box_type = box_type1.decode("ascii", errors="replace").strip()
+        except Exception:
+            # resync: 1바이트씩이 아니라, window 스캔으로 다음 헤더를 찾아 복구
+            next_pos = _resync_find_next_box(box_start)
+            if next_pos is not None and next_pos != box_start:
+                try:
+                    f.seek(next_pos)
+                except Exception:
+                    pass
+                continue
+            # 최후: 1바이트 이동
+            try:
+                f.seek(box_start + 1)
+            except Exception:
+                pass
             continue
 
 
         if box_size == 0:  # 파일의 끝까지 Box가 확장됨을 의미
-            break
+            actual_box_size = max(0, end_position - box_start)
+            header_len = 8
         elif box_size == 1:  # 실제 크기는 다음 8Bytes에 저장됨
             large_size = f.read(8)
+            if len(large_size) < 8:
+                break
             actual_box_size = struct.unpack(">Q", large_size)[0]
+            header_len = 16
         else:
             actual_box_size = box_size
+            header_len = 8
 
-        box_end_position = f.tell() + (actual_box_size - 8 if box_size == 1 else box_size - 8)
+        # 박스 끝 위치는 box_start + actual_box_size 가 정석
+        try:
+            box_end_position = box_start + int(actual_box_size)
+        except Exception:
+            break
+        if actual_box_size < header_len:
+            try:
+                f.seek(box_start + 1)
+            except Exception:
+                pass
+            continue
+        if box_end_position > end_position:
+            # 컨테이너 경계 밖이면 resync 시도
+            next_pos = _resync_find_next_box(box_start)
+            if next_pos is not None and next_pos != box_start:
+                try:
+                    f.seek(next_pos)
+                except Exception:
+                    pass
+                continue
+            try:
+                f.seek(box_start + 1)
+            except Exception:
+                pass
+            continue
 
         try:
 

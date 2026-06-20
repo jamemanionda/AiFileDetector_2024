@@ -1,6 +1,7 @@
 import json
 import math
 import pickle
+import re
 import plotly.express as px
 import pyautogui
 import seaborn as sns
@@ -33,6 +34,114 @@ from PyQt5 import uic, QtWidgets
 import joblib
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.python.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+import traceback
+import time
+from datetime import datetime
+
+
+def _numeric_class_atoms_from_label_cell(label_cell):
+    """숫자 클래스 목록이면 정규화 원자 리스트, 아니면 None(OEI·'O / E / I' 등은 한 덩어리)."""
+    s = str(label_cell or "").strip()
+    if not s:
+        return None
+    if " / " in s:
+        parts = [p.strip() for p in re.split(r"\s*/\s*", s) if p.strip()]
+    else:
+        parts = [s]
+    norm = []
+    for p in parts:
+        try:
+            v = float(p)
+            if not np.isfinite(v):
+                return None
+            norm.append(str(int(v)))
+        except (ValueError, TypeError, OverflowError):
+            return None
+    return norm
+
+
+def build_label_display_map_from_mapping_json(data):
+    """
+    label_mapping.json 전체 dict -> { '0': 'GALAXYS7EDGE', '1': 'G8', ... }.
+    우선순위: groups_detail > label_name_display_overrides > label_to_group.
+    숫자 복합('0 / 1 / 2')만 원자별 매핑 추가. 문자 복합('O / E / I')은 전체 문자열 키만 사용.
+    """
+    out = {}
+    if not isinstance(data, dict):
+        return out
+
+    def add_keys(raw_lbl, display, only_if_missing=False):
+        if display is None or not str(display).strip():
+            return
+        disp = str(display).strip()
+        s = str(raw_lbl).strip() if raw_lbl is not None else ""
+        if not s:
+            return
+        keys = [s]
+        try:
+            nk = str(int(float(s)))
+            if nk not in keys:
+                keys.append(nk)
+        except (ValueError, TypeError, OverflowError):
+            pass
+        for key in keys:
+            if only_if_missing and key in out:
+                continue
+            if not only_if_missing or key not in out:
+                out[key] = disp
+
+    for entry in data.get("groups_detail", []) or data.get("groups", []) or []:
+        if not isinstance(entry, dict):
+            continue
+        lnm = entry.get("label_name")
+        if lnm is None or not str(lnm).strip():
+            continue
+        disp = str(lnm).strip()
+        lbl_raw = entry.get("label", "")
+        lbl = str(lbl_raw).strip() if lbl_raw is not None else ""
+        if not lbl:
+            continue
+        add_keys(lbl, disp)
+        atoms = _numeric_class_atoms_from_label_cell(lbl)
+        if atoms:
+            for ak in atoms:
+                add_keys(ak, disp, only_if_missing=True)
+
+    for ent in data.get("label_name_display_overrides") or []:
+        if not isinstance(ent, dict):
+            continue
+        fl = ent.get("full_label", ent.get("label"))
+        disp = ent.get("display", "")
+        if fl is not None and str(disp).strip():
+            add_keys(fl, disp)
+
+    ltg = data.get("label_to_group") or {}
+    if isinstance(ltg, dict):
+        for k, v in ltg.items():
+            ks = str(k).strip() if k is not None else ""
+            vs = str(v).strip() if v is not None else ""
+            if not ks or not vs:
+                continue
+            try:
+                nk = str(int(float(ks)))
+            except (ValueError, TypeError, OverflowError):
+                nk = ks
+            if ks not in out and nk not in out:
+                add_keys(ks, vs)
+            ltg_atoms = _numeric_class_atoms_from_label_cell(ks)
+            if ltg_atoms and vs and vs != ks:
+                for ak in ltg_atoms:
+                    add_keys(ak, vs, only_if_missing=True)
+
+    if not out:
+        for entry in data.get("groups_detail", []) or data.get("groups", []) or []:
+            if not isinstance(entry, dict):
+                continue
+            lbl = str(entry.get("label", "")).strip()
+            grp = str(entry.get("group", "") or entry.get("pattern", "")).strip()
+            if lbl and grp and lbl not in out:
+                add_keys(lbl, grp)
+    return out
 
 
 '''
@@ -90,6 +199,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
                 #self.show_error_message("CSV 파일을 읽는 중 오류가 발생했습니다: " + str(e))
 
     def plot_feature_importance(self, importance_df):
+        if not getattr(self, 'show_feature_importance_plot', False):
+            return
 
         fig = px.bar(
             importance_df,
@@ -161,6 +272,12 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         print("학습csv : ", csv_path)
         print("선택한 모델 : ", model)
 
+        try:
+            if hasattr(self, "progress_callback") and callable(self.progress_callback):
+                self.progress_callback("데이터 전처리 중...")
+        except Exception:
+            pass
+
         self.csv_path = csv_path
         self.classmode = classmode
         self.index = trainindex
@@ -170,21 +287,35 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             df= df.drop(columns='md5')
         except:
             pass
+        df = self._sanitize_labels_for_training(df)
         self.extension = os.path.basename(os.path.dirname(self.csv_path))
         # 훈련 데이터와 테스트 데이터로 분할
         #df_train, df_test = train_test_split(df, test_size=0.25, random_state=42)
 
         # 훈련 데이터 전처리
         #df_train = df_train.drop(columns='label')
+        try:
+            if hasattr(self, "progress_callback") and callable(self.progress_callback):
+                self.progress_callback("Simhash 적용 중...")
+        except Exception:
+            pass
         df_train_processed = self.apply_simhash(df)
 
         # 모델 훈련
+        try:
+            if hasattr(self, "progress_callback") and callable(self.progress_callback):
+                self.progress_callback("모델 학습/탐색 중... (시간이 걸릴 수 있습니다)")
+        except Exception:
+            pass
         self.train_model(df_train_processed)
         #baseline_model, baseline_accuracy =self.train_baseline_model(df_train_processed)
 
         #print("베이스라인 정확도", baseline_accuracy)
         print(f"----------validation--------------")
-        self.save_model2()
+        if getattr(self, "save_training_outputs", True):
+            self.save_model2()
+        else:
+            print("[INFO] 결과 저장 OFF: 모델/스케일러 저장 생략")
         # self.original_df_test = df_test
         # df_test = df_test.drop(columns='label')
         # df_test_processed = self.apply_simhash(df_test)
@@ -245,6 +376,122 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             except Exception as e:
                 print(f"파일 열기 오류: {str(e)}")
 
+    @staticmethod
+    def _feature_column_category(col_name):
+        """
+        컬럼 이름 → Create 피처 종류 매핑.
+        - sequence → structure sequence (seq)
+        - SPS_* / PPS_* → SPS/PPS (sps)
+        - GOP → GOP frame (gop)
+        - 그 외 → structure value (val)
+        Create에서 피처 해제/설정에 따라 학습 시 해당 컬럼 삭제/추가됨.
+        """
+        if col_name in ('name', 'label', 'md5'):
+            return None
+        if col_name == 'sequence':
+            return 'seq'   # structure sequence
+        if isinstance(col_name, str) and (col_name.startswith('SPS_') or col_name.startswith('PPS_') or col_name in ('SPS', 'PPS')):
+            return 'sps'   # SPS/PPS
+        if col_name == 'GOP':
+            return 'gop'   # GOP frame
+        if col_name == 'GOP compression':
+            return 'ratio'
+        return 'val'       # structure value (그 외 전체)
+
+    def _sanitize_labels_for_training(self, df):
+        """
+        학습 전 label 컬럼을 안전하게 정제한다.
+        - NaN/inf 제거
+        - 정수로 해석 불가한 값 제거
+        - 정수형 라벨로 변환
+        """
+        if 'label' not in df.columns:
+            raise ValueError("학습 CSV에 'label' 컬럼이 없습니다.")
+
+        out = df.copy()
+        raw = pd.to_numeric(out['label'], errors='coerce')
+        finite_mask = np.isfinite(raw.to_numpy(dtype=float, copy=False))
+        rounded = np.round(raw)
+        int_like_mask = (np.abs(raw - rounded) < 1e-9).fillna(False)
+        valid_mask = finite_mask & int_like_mask.to_numpy(dtype=bool, copy=False)
+
+        removed = int((~valid_mask).sum())
+        if removed > 0:
+            print(f"[WARN] label 정제: 비정상 라벨 {removed}행 제거 (NaN/inf/정수아님)")
+            out = out.loc[valid_mask].copy()
+            raw = raw.loc[valid_mask]
+
+        if out.empty:
+            raise ValueError("유효한 label 행이 없어 학습할 수 없습니다.")
+
+        out['label'] = np.round(raw).astype(int).to_numpy()
+        uniq = out['label'].nunique(dropna=True)
+        if uniq < 2:
+            raise ValueError(f"유효한 클래스 수가 부족합니다. (현재 {uniq}개)")
+        return out
+
+    def _filter_columns_by_selected_features(self, df):
+        """선택된 피처(selected_feature_set)에 해당하는 컬럼만 남긴다. 비어 있으면 필터 없음."""
+        selected = getattr(self, 'selected_feature_set', None) or ''
+        feature_cols = [c for c in df.columns if c not in ['name', 'label']]
+        print(f"[DEBUG 피처필터] CSV 피처 컬럼 수: {len(feature_cols)}, selected_feature_set='{selected}'")
+        if not selected or not isinstance(selected, str):
+            print(f"[DEBUG 피처필터] selected_feature_set 비어 있음 → 필터 없이 전체 사용")
+            return df
+        want = set(s.strip().lower() for s in selected.split('_') if s.strip())
+        if not want:
+            print(f"[DEBUG 피처필터] 파싱된 want 비어 있음 → 필터 없이 전체 사용")
+            return df
+        print(f"[DEBUG 피처필터] 사용할 피처 종류( want ): {sorted(want)}")
+        # 컬럼별 분류 수집 (디버깅용)
+        col_to_cat = {}
+        for col in feature_cols:
+            col_to_cat[col] = self._feature_column_category(col)
+        by_cat = {}
+        for col, cat in col_to_cat.items():
+            by_cat.setdefault(cat or '?', []).append(col)
+        for cat in sorted(by_cat.keys()):
+            print(f"[DEBUG 피처필터]   분류 '{cat}': {len(by_cat[cat])}개 컬럼")
+        keep = ['name', 'label']
+        for col in df.columns:
+            if col in keep:
+                continue
+            cat = self._feature_column_category(col)
+            if cat and cat in want:
+                keep.append(col)
+        to_drop = [c for c in feature_cols if c not in keep]
+        kept_feature_count = len(keep) - 2
+        if not to_drop:
+            print(f"[DEBUG 피처필터] 제거할 컬럼 없음. 최종 학습 피처 수: {kept_feature_count}")
+            return df
+        df = df.drop(columns=[c for c in to_drop if c in df.columns], errors='ignore')
+        # 제거된 컬럼을 분류별로 요약 (None 분류는 '?'로 통일해 sorted 호환)
+        dropped_by_cat = {}
+        for c in to_drop:
+            cat = col_to_cat.get(c) or '?'
+            dropped_by_cat.setdefault(cat, []).append(c)
+        print(f"[DEBUG 피처필터] 제거된 컬럼(분류별): ", end="")
+        for cat in sorted(dropped_by_cat.keys()):
+            n = len(dropped_by_cat[cat])
+            print(f"'{cat}' {n}개 ", end="")
+        print("")
+        max_show = 15
+        for cat in sorted(dropped_by_cat.keys()):
+            names = dropped_by_cat[cat]
+            show = names[:max_show]
+            suffix = f" ... 외 {len(names)-max_show}개" if len(names) > max_show else ""
+            print(f"[DEBUG 피처필터]   제거 '{cat}': {show}{suffix}")
+        print(f"[DEBUG 피처필터] 유지된 컬럼(분류별): ", end="")
+        kept_by_cat = {}
+        for c in (c for c in keep if c not in ('name', 'label')):
+            cat = col_to_cat.get(c) or '?'
+            kept_by_cat.setdefault(cat, []).append(c)
+        for cat in sorted(kept_by_cat.keys()):
+            print(f"'{cat}' {len(kept_by_cat[cat])}개 ", end="")
+        print("")
+        print(f"[DEBUG 피처필터] 결과: {len(feature_cols)}개 → {kept_feature_count}개 사용, {len(to_drop)}개 제외")
+        return df
+
     def preprocess_data(self, filepath, is_train=True):
 
         sample_df = pd.read_csv(filepath, nrows=1, header=None)
@@ -263,6 +510,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         if is_train:
             features = [col for col in df.columns if col not in ['name', 'label']]
             df = df[1:]
+            # Create에서 선택한 피처(val/seq/sps/gop)만 사용
+            df = self._filter_columns_by_selected_features(df)
 
         else:
             features = df.columns[1:-1]
@@ -272,25 +521,38 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         return df, original_labels
 
     @staticmethod
-    def calculate_simhash_lib(value):
+    def calculate_simhash_lib(value, zero_as_missing=True, missing_sentinel=-99999999):
+        """Detect와 동일: 1.0, '1.0', 1, '1' 정규화 후 simhash 계산."""
         try:
-            value =  str(value)
-        except :
+            if value in [None, ""] or (isinstance(value, float) and math.isnan(value)):
+                return missing_sentinel
+            if zero_as_missing:
+                try:
+                    if float(value) == 0.0:
+                        return missing_sentinel
+                except Exception:
+                    pass
+        except Exception:
             pass
-
+        # 숫자 정규화: pandas가 CSV에서 1->1.0으로 읽으므로 1.0과 1을 동일하게
         try:
-            if value in [0, None, ""] or (isinstance(value, float) and math.isnan(value)):
-                return -99999999
-        except Exception as e:
-            pass
+            v = float(value)
+            if not math.isfinite(v):  # inf, -inf, NaN 처리 (int 변환 시 OverflowError 방지)
+                return missing_sentinel
+            if v == int(v):
+                value = str(int(v))
+            else:
+                value = str(v)
+        except (ValueError, TypeError, OverflowError):
+            value = str(value)
         try:
             try:
                 simval = Simhash(str(value)).value
-            except:
+            except Exception:
                 simval = Simhash(str(value[:200])).value
         except Exception as e:
             print(e)
-            simval = -99999999
+            simval = missing_sentinel
         return simval
 
     def apply_simhash(self, df):
@@ -298,7 +560,13 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         df.columns = df.columns.astype(str)
         columns_to_process = [col for col in df.columns if col not in ['name', 'label']]
         for column in columns_to_process:
-            df[column] = df[column].apply(self.calculate_simhash_lib)
+            if column == 'sequence':
+                # sequence는 0도 유효값으로 취급 (결측과 구분)
+                df[column] = df[column].apply(
+                    lambda v: self.calculate_simhash_lib(v, zero_as_missing=False, missing_sentinel=-99999998)
+                )
+            else:
+                df[column] = df[column].apply(self.calculate_simhash_lib)
         return df
 
         # df.columns = df.columns.astype(str)
@@ -385,6 +653,8 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         layout = QVBoxLayout()
         title_label = QLabel(title)
         message_label = QLabel(message)
+        message_label.setTextInteractionFlags(Qt.TextSelectableByMouse)  # 텍스트 선택/복사 가능
+        message_label.setWordWrap(True)
         layout.addWidget(title_label)
         layout.addWidget(message_label)
 
@@ -403,16 +673,219 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         # 알림 창 표시
         dialog.exec_()
 
+    def _load_label_mapping_for_history(self, base_dir):
+        """config 폴더(케이스 루트) 및 학습 CSV 디렉터리에서 label_mapping.json을 찾아 레이블 번호 -> 텍스트 이름 딕셔너리 반환."""
+        if not getattr(self, 'csv_path', None):
+            return None
+        csv_name = os.path.splitext(os.path.basename(self.csv_path))[0]
+        # 1) 케이스 루트의 config 폴더 우선 (createtraining에서 case_direc 전달 시)
+        case_config = None
+        if getattr(self, 'case_direc', None) and str(self.case_direc).strip():
+            case_config = os.path.join(os.path.abspath(self.case_direc), "config")
+        # 2) CSV와 같은 디렉터리 안의 config
+        base_config = os.path.join(base_dir, "config")
+        possible_paths = []
+        # createtraining에서 이미 찾은 매핑 경로(보통 config 내)가 있으면 최우선 사용
+        if getattr(self, 'mapping_json_path', None) and os.path.isfile(self.mapping_json_path):
+            possible_paths.append(os.path.abspath(self.mapping_json_path))
+        if case_config and os.path.isdir(case_config):
+            possible_paths.extend([
+                os.path.join(case_config, f"{csv_name}_label_mapping.json"),
+                os.path.join(case_config, "label_mapping.json"),
+            ])
+        possible_paths.extend([
+            os.path.join(base_config, f"{csv_name}_label_mapping.json"),
+            os.path.join(base_config, "label_mapping.json"),
+            os.path.join(base_dir, f"{csv_name}_label_mapping.json"),
+            os.path.join(base_dir, "label_mapping.json"),
+            os.path.join(os.path.dirname(base_dir), f"{csv_name}_label_mapping.json"),
+        ])
+        for path in possible_paths:
+            if os.path.exists(path):
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    return build_label_display_map_from_mapping_json(data)
+                except Exception as e:
+                    print(f"[WARN] 레이블 매핑 로드 실패 {path}: {e}")
+        return None
+
+    def _label_to_text(self, label_val, label_to_group):
+        """레이블 값을 매핑 dict로 표시 문자열로 변환. 없으면 원값 문자열."""
+        if not label_to_group:
+            return str(label_val)
+        raw = str(label_val).strip() if label_val is not None else ""
+        if raw in label_to_group:
+            return label_to_group[raw]
+        try:
+            key = str(int(float(label_val)))
+            return label_to_group.get(key, raw or str(label_val))
+        except (ValueError, TypeError, OverflowError):
+            return label_to_group.get(raw, str(label_val))
+
+    @staticmethod
+    def _filename_to_group_pattern(filename):
+        """파일명에서 그룹 패턴 추출 (예: sn_OEI_563.mp4 -> sn_OEI_*). JSON 매핑과 무관하게 실제 파일 기준."""
+        if not filename or not isinstance(filename, str):
+            return str(filename) if filename else ''
+        name = os.path.splitext(filename.strip())[0]
+        if not name:
+            return filename.strip()
+        # 끝의 _숫자(들) 를 _* 로 치환 (예: sn_OEI_563 -> sn_OEI_*)
+        pattern = re.sub(r'_\d+$', '_*', name)
+        return pattern if pattern else name
+
+    def save_training_history(self, results_df, original_labels, conf_matrix, y_test_labels, y_pred, y_pred_display,
+                              accuracy, weightedprecision, macroprecision, weightedrecall, macrorecall,
+                              weightedf1, macrof1, auroc, aupr):
+        """학습 결과를 케이스 내 training_results/{모델명}_{타임스탬프}/ 폴더에 저장"""
+        if not getattr(self, "save_training_outputs", True):
+            print("[INFO] 결과 저장 OFF: 학습 히스토리 저장 생략")
+            return
+        try:
+            base_dir = os.path.dirname(self.csv_path)
+            timestamp = getattr(self, '_run_timestamp', None) or datetime.now().strftime("%Y%m%d_%H%M%S")
+            model_name = self.aimodel
+            run_folder = getattr(self, '_run_output_dir', None)
+            if not run_folder or not os.path.isdir(run_folder):
+                run_folder = os.path.join(base_dir, "training_results", f"{model_name}_{timestamp}")
+                os.makedirs(run_folder, exist_ok=True)
+                self._run_output_dir = run_folder
+
+            # 1. 예측 결과 전체 저장 (파일명, 실제 레이블, 예측 레이블, 성공/실패)
+            # name 기준으로 병합하여 행 순서 불일치 방지 (results_df는 groupby 순서, original_labels는 테스트 순서)
+            actual_df = original_labels.rename(columns={'label': '실제_레이블_raw'})[['name', '실제_레이블_raw']]
+            pred_df = pd.DataFrame({'name': original_labels['name'].values, '예측_레이블_raw': y_pred_display})
+            prediction_results = results_df[['name']].merge(actual_df, on='name', how='left')
+            prediction_results = prediction_results.merge(pred_df, on='name', how='left')
+            label_map = self._load_label_mapping_for_history(base_dir)
+            to_name = lambda v: self._label_to_text(v, label_map)
+            prediction_results['실제_레이블'] = prediction_results['실제_레이블_raw'].map(to_name)
+            prediction_results['예측_레이블'] = prediction_results['예측_레이블_raw'].map(to_name)
+            prediction_results['성공여부'] = (
+                prediction_results['실제_레이블_raw'] == prediction_results['예측_레이블_raw']
+            ).map({True: '성공', False: '실패'})
+            prediction_results['result'] = prediction_results.apply(
+                lambda r: f"기존 label : {r['실제_레이블']}, 예측 label : {r['예측_레이블']}", axis=1)
+            prediction_results['success_failure'] = prediction_results['성공여부'].map({'성공': '예측 성공', '실패': '!!!예측 실패!!!'})
+
+            prediction_results['실제_레이블_이름'] = prediction_results['name'].apply(
+                lambda fn: self._filename_to_group_pattern(fn))
+            prediction_results['예측_레이블_이름'] = prediction_results['예측_레이블_raw'].map(to_name)
+            prediction_results = prediction_results[
+                [
+                    'name',
+                    '실제_레이블_raw',
+                    '예측_레이블_raw',
+                    'result',
+                    'success_failure',
+                    '실제_레이블',
+                    '실제_레이블_이름',
+                    '예측_레이블',
+                    '예측_레이블_이름',
+                    '성공여부',
+                ]
+            ]
+
+            prediction_file = os.path.join(run_folder, f"training_history_{model_name}_{timestamp}_predictions.csv")
+            prediction_results.to_csv(prediction_file, index=False, encoding='utf-8-sig')
+            print(f"[INFO] 예측 결과 저장: {prediction_file}")
+            
+            # 2. 오탐 케이스만 저장 (실제 레이블과 예측 레이블이 다른 경우, 텍스트 컬럼 포함)
+            misclassified = prediction_results[prediction_results['성공여부'] == '실패'].copy()
+            if len(misclassified) > 0:
+                misclassified_file = os.path.join(run_folder, f"training_history_{model_name}_{timestamp}_misclassified.csv")
+                misclassified.to_csv(misclassified_file, index=False, encoding='utf-8-sig')
+                print(f"[INFO] 오탐 케이스 저장: {misclassified_file} ({len(misclassified)}건)")
+            
+            # 3. Confusion Matrix 저장
+            conf_matrix_df = pd.DataFrame(conf_matrix)
+            conf_matrix_file = os.path.join(run_folder, f"training_history_{model_name}_{timestamp}_confusion_matrix.csv")
+            conf_matrix_df.to_csv(conf_matrix_file, index=False, encoding='utf-8-sig')
+            print(f"[INFO] Confusion Matrix 저장: {conf_matrix_file}")
+            
+            # 4. Classification Report 저장
+            report = classification_report(y_test_labels, y_pred, output_dict=True)
+            report_df = pd.DataFrame(report).transpose()
+            report_file = os.path.join(run_folder, f"training_history_{model_name}_{timestamp}_classification_report.csv")
+            report_df.to_csv(report_file, index=True, encoding='utf-8-sig')
+            print(f"[INFO] Classification Report 저장: {report_file}")
+            
+            # 5. 학습 히스토리 JSON 저장 (메트릭 요약)
+            # metrics는 "핵심 지표"만 앞쪽에 두고, 나머지는 metrics_detail로 분리
+            selected_features = getattr(self, 'selected_feature_set', None) or ''
+            history_data = {
+                'timestamp': timestamp,
+                'datetime': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'model': model_name,
+                'run_folder': run_folder,
+                'classmode': self.classmode,
+                'csv_path': self.csv_path,
+                'selected_features': selected_features,
+                'metrics': {
+                    'accuracy': float(accuracy),
+                    'macro_precision': float(macroprecision),
+                    'macro_recall': float(macrorecall),
+                    'macro_f1': float(macrof1),
+                    'auroc': float(auroc),
+                    'aupr': float(aupr)
+                },
+                'metrics_detail': {
+                    'weighted_precision': float(weightedprecision),
+                    'weighted_recall': float(weightedrecall),
+                    'weighted_f1': float(weightedf1),
+                },
+                'test_samples': len(y_test_labels),
+                'correct_predictions': int(np.sum(y_test_labels == y_pred)),
+                'misclassified': int(np.sum(y_test_labels != y_pred)),
+                'misclassification_rate': float(np.sum(y_test_labels != y_pred) / len(y_test_labels))
+            }
+            
+            history_file = os.path.join(run_folder, f"training_history_{model_name}_{timestamp}_summary.json")
+            with open(history_file, 'w', encoding='utf-8') as f:
+                json.dump(history_data, f, ensure_ascii=False, indent=2)
+            print(f"[INFO] 학습 히스토리 저장: {history_file}")
+            
+            # 6. 전체 히스토리 파일에 추가 (config에 저장, 불러올 때도 config 우선)
+            config_dir = os.path.join(base_dir, "config")
+            os.makedirs(config_dir, exist_ok=True)
+            all_history_file = os.path.join(config_dir, "training_history_all.json")
+            if os.path.exists(all_history_file):
+                with open(all_history_file, 'r', encoding='utf-8') as f:
+                    all_history = json.load(f)
+            else:
+                all_history = []
+            
+            all_history.append(history_data)
+            with open(all_history_file, 'w', encoding='utf-8') as f:
+                json.dump(all_history, f, ensure_ascii=False, indent=2)
+            print(f"[INFO] 전체 히스토리 업데이트: {all_history_file}")
+            
+        except Exception as e:
+            print(f"[WARN] 학습 결과 저장 중 오류 발생: {e}")
+            import traceback
+            traceback.print_exc()
+
     def train_model(self, df):
-        try :
+        try:
             if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
                 model, accuracy = self.ensemble(df)
-                #message = f"정확도 {accuracy}%로 학습되었습니다."
-                #self.show_alert(message)
+                # ensemble() 내부에서 show_alert를 띄우지만, 혹시라도 여기까지 왔는데 팝업이 없으면 안전하게 한 번 더 표시
+                try:
+                    self.show_alert(f"학습 완료: Accuracy {accuracy * 100:.2f}%")
+                except Exception:
+                    pass
             elif self.index == 1:
                 self.lstm(df)
         except Exception as e:
-            self.index = 0
+            tb = traceback.format_exc()
+            print("[ERROR] multi train_model 실패:", e)
+            print(tb)
+            try:
+                self.show_alert(f"학습 중 오류가 발생했습니다.\n\n{e}\n\n상세:\n{tb}")
+            except Exception:
+                pass
+            raise
 
     def confusion_matrix2(self, y_train, y_pred_classes):
         # Confusion matrix 생성
@@ -468,6 +941,18 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         return X
 
     def ensemble(self, df):
+        # 학습 결과 저장용 run 폴더 미리 생성 (모델/히스토리 모두 여기 저장)
+        base_dir = os.path.dirname(self.csv_path)
+        self._run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        model_name = self.aimodel
+        if getattr(self, "save_training_outputs", True):
+            run_folder = os.path.join(base_dir, "training_results", f"{model_name}_{self._run_timestamp}")
+            os.makedirs(run_folder, exist_ok=True)
+            self._run_output_dir = run_folder
+            print(f"[INFO] 학습 결과 저장 폴더: {run_folder}")
+        else:
+            self._run_output_dir = None
+            print("[INFO] 결과 저장 OFF: training_results 폴더 생성 생략")
 
         names = df['name']
         labels = df['label']
@@ -486,11 +971,15 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         X_test_scaled = self.scaler.transform(X_test)
         X_scaled = self.scaler.transform(X)
         # Define parameter grids
+        # NOTE: 전체 GridSearch는 (조합 수 × CV) 만큼 학습을 반복하므로 매우 오래 걸릴 수 있습니다.
+        # 여기서는 RandomizedSearch를 기본으로 사용해 시간을 현실적인 수준으로 줄입니다.
         params_xgb = {
             'max_depth': [2, 3, 4, 5, 6, 7, 8],
             'n_estimators': [150, 200, 250, 300],
             'learning_rate': [0.001, 0.01, 0.05, 0.1],
-            'eval_metric': ['logloss', 'error']
+            'subsample': [0.8, 1.0],
+            'colsample_bytree': [0.8, 1.0],
+            'reg_lambda': [1.0, 2.0, 5.0],
         }
         params_rf = {
             'n_estimators': [10, 20, 30, 40, 50],
@@ -504,22 +993,46 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             'learning_rate': [0.01, 0.05, 0.1]
         }
 
-        class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
-        class_weight_dict = dict(enumerate(class_weights))
+        # class_weight_dict는 "라벨값 -> weight" 매핑이어야 합니다.
+        # (기존 코드의 dict(enumerate(...))는 0..N-1 키가 되어 KeyError가 발생합니다)
+        classes = np.unique(y_train.astype(int))
+        class_weights = compute_class_weight(class_weight='balanced', classes=classes, y=y_train.astype(int))
+        class_weight_dict = dict(zip(classes, class_weights))
 
-        sample_weights = y_train.map(lambda x: class_weight_dict[x])
+        # pandas/numpy dtype 차이로 KeyError가 나지 않도록 int로 정규화 + 기본값 1.0
+        sample_weights = y_train.map(lambda x: float(class_weight_dict.get(int(x), 1.0)))
         if self.index == 0:  # XGBoost
 
-            self.model = xgb.XGBClassifier(random_state=42)
-            grid_search = GridSearchCV(self.model, params_xgb, cv=3, scoring='accuracy')
-            y_train_encoded = LabelEncoder().fit_transform(y_train)
+            start = time.time()
+            # tree_method='hist'는 CPU에서 일반적으로 더 빠릅니다.
+            self.model = xgb.XGBClassifier(
+                random_state=42,
+                tree_method='hist',
+                n_jobs=-1,
+                eval_metric='mlogloss'
+            )
+            # 기존 GridSearchCV는 조합 수가 많아 시간이 과도하게 걸릴 수 있어 RandomizedSearch로 변경
+            grid_search = RandomizedSearchCV(
+                self.model,
+                params_xgb,
+                n_iter=20,
+                cv=3,
+                scoring='accuracy',
+                random_state=42,
+                n_jobs=-1,
+                verbose=1
+            )
+            # XGBoost는 내부적으로 클래스가 0..K-1 형태일 때 가장 안정적입니다.
+            self._label_encoder = LabelEncoder()
+            y_train_encoded = self._label_encoder.fit_transform(y_train.astype(int))
             grid_search.fit(X_train_scaled, y_train_encoded, sample_weight=sample_weights)
             self.model = grid_search.best_estimator_
+            print(f"[INFO] XGBoost 탐색/학습 소요시간: {time.time() - start:.1f}초")
 
         elif self.index == 2:  # RandomForest
             self.model = RandomForestClassifier(class_weight=class_weight_dict)
             grid_search = RandomizedSearchCV(self.model, params_rf, n_iter=10, cv=3, scoring='accuracy',
-                                             random_state=42)
+                                             random_state=42, n_jobs=-1, verbose=1)
             grid_search.fit(X_train_scaled, y_train)
             self.model = grid_search.best_estimator_
 
@@ -538,7 +1051,9 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
                 n_iter=10,
                 cv=3,
                 scoring='accuracy',
-                random_state=42
+                random_state=42,
+                n_jobs=-1,
+                verbose=1
             )
             grid_search.fit(X_train_scaled, y_train)
             self.model = grid_search.best_estimator_
@@ -553,12 +1068,20 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             self.model.fit(X_train_scaled, y_train)
 
         # Model evaluation
-        y_pred = self.model.predict(X_test_scaled)
-        y_test_labels = y_test.astype(int)
+        if self.index == 0 and hasattr(self, "_label_encoder"):
+            # XGBoost는 encoded label 공간에서 평가(확률/클래스 정렬 문제 방지)
+            y_test_labels = self._label_encoder.transform(y_test.astype(int))
+            y_pred = self.model.predict(X_test_scaled).astype(int)
+            # 분석용(사람이 보는 결과)은 원래 라벨로 복원
+            y_pred_display = self._label_encoder.inverse_transform(y_pred)
+        else:
+            y_test_labels = y_test.astype(int)
+            y_pred = self.model.predict(X_test_scaled)
+            y_pred_display = y_pred
         # Combine test data with predicted labels
         df_test = pd.DataFrame(X_test, columns=X.columns)
         df_test['name'] = names_test.values
-        df_test['label'] = y_pred
+        df_test['label'] = y_pred_display
 
         # Original labels for comparison
         original_labels = pd.DataFrame({
@@ -593,8 +1116,9 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         confusion_path = f"confusion_matrix_{self.model}.png"
         plt.savefig("confusion_matrix.png")
 
-        # Show the plot (optional)
-        plt.show()
+        # NOTE: GUI 환경에서 plt.show()는 창을 닫기 전까지 실행이 멈춘 것처럼 보입니다.
+        # 학습이 "끝났는데 안 끝난 것처럼" 보이는 원인이 될 수 있어 show()는 호출하지 않습니다.
+        plt.close()
 
         y_scores = self.model.predict_proba(X_test_scaled)
         lb = LabelBinarizer()
@@ -703,9 +1227,11 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
                 # 피처 중요도 시각화
                 self.plot_feature_importance(importance_df)
 
-                importance_path = os.path.join(str(self.aimodel + "feature_importance.csv"))
-                file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
-                importance_df.to_csv(file_path, index=False)
+                importance_path = str(self.aimodel + "feature_importance.csv")
+                save_dir = getattr(self, '_run_output_dir', None) or os.path.dirname(self.csv_path)
+                file_path = os.path.join(save_dir, importance_path)
+                if getattr(self, "save_training_outputs", True):
+                    importance_df.to_csv(file_path, index=False)
         else :
             feature_importances = np.abs(self.model.coef_[0])  # 계수의 절대값
             importance_df = pd.DataFrame({
@@ -719,17 +1245,30 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
             # 피처 중요도 시각화
             self.plot_feature_importance(importance_df)
 
+            importance_path = str(self.aimodel + "feature_importance.csv")
+            save_dir = getattr(self, '_run_output_dir', None) or os.path.dirname(self.csv_path)
+            file_path = os.path.join(save_dir, importance_path)
+            if getattr(self, "save_training_outputs", True):
+                importance_df.to_csv(file_path, index=False)
 
-            # CSV 파일로 저장
-            importance_path = os.path.join(str(self.aimodel + "feature_importance.csv"))
-            file_path = os.path.join(os.path.dirname(self.csv_path), importance_path)
-            importance_df.to_csv(file_path, index=False)
-
-        # 추후 변경 필요 --> 파일이름을 피처 반영되게 / self.csv_path랑 동일 경로에 feature.json저장
+        # 학습에 사용된 피처 목록을 config/feature.json에 저장
         self.feature_list = X.columns.tolist()
-        jsonpath = os.path.join(os.path.dirname(self.csv_path), "feature.json")
-        with open(jsonpath, 'w') as f:
-            json.dump(self.feature_list, f)
+        if getattr(self, "save_training_outputs", True):
+            base_dir = os.path.dirname(self.csv_path)
+            config_dir = os.path.join(base_dir, "config")
+            os.makedirs(config_dir, exist_ok=True)
+            jsonpath = os.path.join(config_dir, "feature.json")
+            with open(jsonpath, 'w') as f:
+                json.dump(self.feature_list, f)
+            print(f"[INFO] feature.json 생성: {jsonpath} (피처 {len(self.feature_list)}개, CSV: {os.path.basename(self.csv_path)})")
+        
+        # 학습 결과 저장 (히스토리)
+        if self.index != 5 and getattr(self, "save_training_outputs", True):  # 분류 모델인 경우에만
+            self.save_training_history(
+                results_df, original_labels, conf_matrix, y_test_labels, y_pred, y_pred_display,
+                accuracy, weightedprecision, macroprecision, weightedrecall, macrorecall,
+                weightedf1, macrof1, auroc, aupr
+            )
 
         # print("******************은지********************")
         # print(recall_score(y_test_labels, y_pred, average=None))  # 클래스별 Recall
@@ -906,21 +1445,41 @@ class TrainClass(QMainWindow):  # QMainWindow, form_class
         self.model = model
 
     def save_model2(self):
-        """모델 저장"""
+        """모델 저장 (training_results/ run 폴더가 있으면 그 안에, 없으면 기존 방식)"""
+        if not getattr(self, "save_training_outputs", True):
+            print("[INFO] 결과 저장 OFF: save_model2 생략")
+            return
         if self.index == 0 or self.index == 2 or self.index == 3 or self.index == 4:
+            run_dir = getattr(self, '_run_output_dir', None)
+            if run_dir and os.path.isdir(run_dir):
+                folder_path = run_dir
+                pklname = os.path.join(folder_path, "model.pkl")
+                self.scalername = os.path.join(folder_path, "scaler.pkl")
+                enc_basename = "label_encoder.pkl"
+            else:
+                folder_path = os.getcwd()
+                pklname = os.path.join(folder_path, str(self.csv_path+"_" + self.aimodel + "model.pkl"))
+                self.scalername = os.path.join(folder_path, str(self.csv_path+"_" + self.aimodel + "scaler.pkl"))
+                enc_basename = str(self.csv_path+"_" + self.aimodel + "label_encoder.pkl")
 
-            folder_path = os.getcwd()
-            pklname = os.path.join(folder_path, str(self.csv_path+"_" + self.aimodel + "model.pkl"))
             joblib.dump(self.model, pklname)
-
-            self.scalername = os.path.join(folder_path, str(self.csv_path+"_" + self.aimodel + "scaler.pkl"))
             with open(self.scalername, 'wb') as f:
                 joblib.dump(self.scaler, f)
-                f.close()
-
+            
+            if hasattr(self, "_label_encoder") and self._label_encoder is not None:
+                enc_path = os.path.join(folder_path, enc_basename)
+                joblib.dump(self._label_encoder, enc_path)
+                print(f"[INFO] LabelEncoder 저장: {os.path.basename(enc_path)}")
+            print(f"[INFO] 모델/스케일러 저장: {folder_path}")
 
         elif self.index == 1:
-            self.model.save(str(self.extension + '\\' + 'model.h5'))
+            run_dir = getattr(self, '_run_output_dir', None)
+            if run_dir and os.path.isdir(run_dir):
+                h5_path = os.path.join(run_dir, "model.h5")
+                self.model.save(h5_path)
+                print(f"[INFO] LSTM 모델 저장: {h5_path}")
+            else:
+                self.model.save(str(self.extension + '\\' + 'model.h5'))
 
     def train_baseline_model(self, df):
 
