@@ -1,7 +1,7 @@
 # IDE
 .vscode/
 .idea/
-AiFileDetector_2024/.vscode/
+AiVideoDetector/.vscode/
 
 # Python cache
 __pycache__/
@@ -10,24 +10,24 @@ __pycache__/
 
 # Local datasets and backups
 Cases/
-AiFileDetector_2024/Cases/
-AiFileDetector_2024/Cases - */
-AiFileDetector_2024/Cases/2603_backup*/
-AiFileDetector_2024/case_*/
-AiFileDetector_2024/oldCases/
+AiVideoDetector/Cases/
+AiVideoDetector/Cases - */
+AiVideoDetector/Cases/2603_backup*/
+AiVideoDetector/case_*/
+AiVideoDetector/oldCases/
 
 # Generated artifacts
 *.pkl
-AiFileDetector_2024/confusion_matrix.png
-AiFileDetector_2024/*_results.json
-AiFileDetector_2024/tmp_*.py
-AiFileDetector_2024/*.pdf
+AiVideoDetector/confusion_matrix.png
+AiVideoDetector/*_results.json
+AiVideoDetector/tmp_*.py
+AiVideoDetector/*.pdf
 
 # Local external copy
-AiFileDetector_2024/EVA-Code/
+AiVideoDetector/EVA-Code/
 
 # Local helper scripts (not for version control)
-AiFileDetector_2024/paper_results_analyzer.py
+AiVideoDetector/paper_results_analyzer.py
 README_CSV_Editor.md
 README_Ultra_CSV_Editor.md
 benchmark_csv_editors.py
